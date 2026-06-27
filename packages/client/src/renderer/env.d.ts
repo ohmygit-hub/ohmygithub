@@ -33,6 +33,10 @@ type AuthState = {
   } | null
 }
 
+type WindowControlsState = {
+  isFullScreen: boolean
+}
+
 interface Window {
   ohMyGithub: {
     app: {
@@ -69,6 +73,10 @@ interface Window {
         path: string
         config: LocalConfig
       }>
+    }
+    windowControls: {
+      getState: () => Promise<WindowControlsState>
+      onFullscreenChange: (listener: (state: WindowControlsState) => void) => () => void
     }
   }
 }

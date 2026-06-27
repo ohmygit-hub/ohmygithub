@@ -19,6 +19,20 @@ const api = {
   config: {
     get: () => ipcRenderer.invoke('config:get'),
     update: (patch: unknown) => ipcRenderer.invoke('config:update', patch)
+  },
+  windowControls: {
+    getState: () => ipcRenderer.invoke('window:get-state'),
+    onFullscreenChange: (listener: (state: unknown) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, state: unknown): void => {
+        listener(state)
+      }
+
+      ipcRenderer.on('window:fullscreen-change', handler)
+
+      return () => {
+        ipcRenderer.removeListener('window:fullscreen-change', handler)
+      }
+    }
   }
 }
 

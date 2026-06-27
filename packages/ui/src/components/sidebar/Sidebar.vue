@@ -11,6 +11,7 @@ const props = withDefaults(defineProps<SidebarProps>(), {
   side: 'left',
   variant: 'sidebar',
   collapsible: 'offcanvas',
+  width: SIDEBAR_WIDTH,
 })
 
 const { state } = useSidebar()
@@ -20,6 +21,7 @@ const { state } = useSidebar()
   <div
     v-if="collapsible === 'none'"
     data-slot="sidebar"
+    :style="{ '--sidebar-width': props.width }"
     :class="cn('bg-sidebar text-sidebar-foreground flex h-full w-(--sidebar-width) flex-col', props.class)"
     v-bind="$attrs"
   >
@@ -34,7 +36,7 @@ const { state } = useSidebar()
     :data-collapsible="state === 'collapsed' ? collapsible : ''"
     :data-variant="variant"
     :data-side="side"
-    :style="{ '--sidebar-width': SIDEBAR_WIDTH }"
+    :style="{ '--sidebar-width': props.width }"
   >
     <!-- This is what handles the sidebar gap on desktop  -->
     <div

@@ -8,8 +8,8 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: '/',
-    name: 'home',
-    component: () => import('./pages/home/HomePage.vue')
+    name: 'workspace',
+    component: () => import('./pages/workspace/WorkspacePage.vue')
   }
 ]
 
@@ -31,7 +31,7 @@ router.beforeEach(async (to) => {
   }
 
   if (auth?.isAuthenticated && to.name === 'auth') {
-    return { name: 'home' }
+    return { name: 'workspace' }
   }
 
   return true

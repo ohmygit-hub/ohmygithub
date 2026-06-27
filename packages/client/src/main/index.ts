@@ -1,5 +1,5 @@
 import { join } from 'node:path'
-import { app, BrowserWindow, shell } from 'electron'
+import { app, BrowserWindow, ipcMain, shell } from 'electron'
 import { is } from '@electron-toolkit/utils'
 import { initializeAuth, registerAuthIpc } from './auth'
 import { initializeConfig, registerConfigIpc } from './config'
@@ -21,6 +21,16 @@ function createWindow(): void {
     }
   })
 
+  function sendFullscreenState(): void {
+    if (mainWindow.isDestroyed()) return
+    mainWindow.webContents.send('window:fullscreen-change', {
+      isFullScreen: mainWindow.isFullScreen()
+    })
+  }
+
+  mainWindow.on('enter-full-screen', sendFullscreenState)
+  mainWindow.on('leave-full-screen', sendFullscreenState)
+
   mainWindow.once('ready-to-show', () => {
     mainWindow.show()
   })
@@ -37,10 +47,21 @@ function createWindow(): void {
   }
 }
 
+function registerWindowIpc(): void {
+  ipcMain.handle('window:get-state', (event) => {
+    const window = BrowserWindow.fromWebContents(event.sender)
+
+    return {
+      isFullScreen: window?.isFullScreen() ?? false
+    }
+  })
+}
+
 void app.whenReady().then(() => {
   app.setAppUserModelId('dev.oh-my-github.client')
   registerAuthIpc()
   registerConfigIpc()
+  registerWindowIpc()
   initializeAuth()
   initializeConfig()
   createWindow()

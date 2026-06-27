@@ -9,6 +9,7 @@ import { provideSidebarContext, SIDEBAR_COOKIE_MAX_AGE, SIDEBAR_COOKIE_NAME, SID
 const props = withDefaults(defineProps<{
   defaultOpen?: boolean
   open?: boolean
+  width?: string
   class?: HTMLAttributes['class']
   /**
    * Skip the built-in Cmd/Ctrl+B listener. Set when the host app drives the
@@ -20,6 +21,7 @@ const props = withDefaults(defineProps<{
 }>(), {
   defaultOpen: !defaultDocument?.cookie.includes(`${SIDEBAR_COOKIE_NAME}=false`),
   open: undefined,
+  width: SIDEBAR_WIDTH,
   disableDefaultShortcut: false,
 })
 
@@ -80,7 +82,7 @@ provideSidebarContext({
     <div
       data-slot="sidebar-wrapper"
       :style="{
-        '--sidebar-width': SIDEBAR_WIDTH,
+        '--sidebar-width': props.width,
         '--sidebar-width-icon': SIDEBAR_WIDTH_ICON,
       }"
       :class="cn('group/sidebar-wrapper has-data-[variant=inset]:bg-sidebar flex min-h-svh w-full', props.class)"

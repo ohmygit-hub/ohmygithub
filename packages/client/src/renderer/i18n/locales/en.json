@@ -1,12 +1,4 @@
 {
-  "actions": {
-    "markDone": "Mark Done",
-    "openWorkspace": "Open Workspace",
-    "refresh": "Refresh"
-  },
-  "app": {
-    "localWorkspace": "Local workspace"
-  },
   "auth": {
     "browserOpened": "GitHub opened in your browser. Enter this code to authorize the app.",
     "electronRequired": "Authentication is only available in the desktop app window.",
@@ -22,23 +14,130 @@
     "usePersonalToken": "or use personal github token",
     "waitingForAuthorization": "Waiting for authorization at"
   },
-  "commands": {
-    "searchGitHub": "Search GitHub"
-  },
-  "home": {
-    "subtitle": "Fast triage across notifications, pull requests, issues, and actions."
-  },
-  "item": {
-    "author": "Author",
-    "number": "Number",
-    "state": "State",
-    "updated": "Updated"
-  },
-  "views": {
-    "actions": "Actions",
-    "inbox": "Inbox",
-    "issues": "Issues",
-    "pulls": "Pull Requests",
-    "repositories": "Repositories"
+  "workspace": {
+    "title": "Workspace",
+    "sidebar": {
+      "groups": {
+        "primary": "Workspace",
+        "repositories": "Repositories"
+      },
+      "items": {
+        "actions": "Actions",
+        "client": "Electron Client",
+        "inbox": "Inbox",
+        "issues": "Issues",
+        "pinned": "Pinned",
+        "pulls": "Pull Requests",
+        "ui": "UI Package"
+      },
+      "search": "Search workspace",
+      "settings": "Settings"
+    },
+    "tabs": {
+      "closeTab": "Close {title}",
+      "items": {
+        "activity": "Activity",
+        "draft": "Draft {number}",
+        "inbox": "Inbox",
+        "reviews": "Review Queue"
+      },
+      "newTab": "New tab"
+    },
+    "toolbar": {
+      "back": "Back",
+      "collapseSidebar": "Collapse sidebar",
+      "expandSidebar": "Expand sidebar",
+      "forward": "Forward"
+    },
+    "panel": {
+      "blocks": {
+        "draftOutline": {
+          "description": "This local draft panel is a placeholder for future data and editor surfaces.",
+          "meta": "Draft",
+          "title": "Blank workspace page"
+        },
+        "mergeReadiness": {
+          "description": "Reserved for merge checks, CI state, and reviewer feedback.",
+          "meta": "Stub",
+          "title": "Merge readiness"
+        },
+        "nextStep": {
+          "description": "Later this tab can bind to a real repository, query, or local workspace state.",
+          "meta": "Next",
+          "title": "Waiting for data"
+        },
+        "releaseWatch": {
+          "description": "Reserved for releases, workflows, and recent publication signals.",
+          "meta": "Stub",
+          "title": "Release watch"
+        },
+        "repositoryFocus": {
+          "description": "Reserved for repository groups, pinned projects, and recent workspaces.",
+          "meta": "Stub",
+          "title": "Repository focus"
+        },
+        "reviewQueue": {
+          "description": "Reserved for pull requests, mentions, and notifications that need attention.",
+          "meta": "Stub",
+          "title": "Triage queue"
+        },
+        "reviewStack": {
+          "description": "Reserved for prioritized review tasks and contextual summaries.",
+          "meta": "Stub",
+          "title": "Review stack"
+        },
+        "workflowFeed": {
+          "description": "Reserved for GitHub Actions, failing checks, and deployment state.",
+          "meta": "Stub",
+          "title": "Workflow feed"
+        }
+      },
+      "descriptions": {
+        "activity": "Track workflows, repository movement, and project state worth revisiting. This version only renders the shell.",
+        "draft": "New tabs open as local placeholder pages until real workspace data is connected.",
+        "inbox": "Collect notifications, mentions, and review requests into a clean workspace entry point.",
+        "reviews": "Keep pull requests and merge checks in a focused tab that can grow into real data later."
+      },
+      "eyebrows": {
+        "activity": "Activity",
+        "draft": "Draft",
+        "review": "Review",
+        "triage": "Triage"
+      },
+      "headings": {
+        "activity": "Activity",
+        "draft": "New workspace page",
+        "inbox": "Inbox",
+        "reviews": "Review Queue"
+      },
+      "stats": {
+        "alerts": "Alerts",
+        "assigned": "Assigned",
+        "drafts": "Drafts",
+        "mentions": "Mentions",
+        "repos": "Repositories",
+        "reviews": "Reviews",
+        "runs": "Runs",
+        "scope": "Scope",
+        "source": "Source",
+        "status": "Status",
+        "unread": "Unread",
+        "waiting": "Waiting"
+      },
+      "values": {
+        "alerts": "0",
+        "assigned": "0",
+        "drafts": "1",
+        "mentions": "0",
+        "repos": "3",
+        "reviews": "0",
+        "runs": "0",
+        "scope": "Local",
+        "source": "Static",
+        "status": "Disconnected",
+        "unread": "0",
+        "waiting": "0"
+      }
+    }
   }
 }
