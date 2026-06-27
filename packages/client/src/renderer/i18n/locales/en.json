@@ -86,6 +86,7 @@
         "error": "Could not load repositories",
         "loading": "Loading repositories"
       },
+      "resize": "Resize sidebar",
       "search": "Search workspace"
     },
     "tabs": {

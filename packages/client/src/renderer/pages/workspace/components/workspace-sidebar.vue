@@ -4,7 +4,6 @@ import { computed, reactive } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Inbox, Search } from 'lucide-vue-next'
 import {
-  Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
@@ -15,6 +14,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarMenuSkeleton,
+  useSidebar,
 } from '@oh-my-github/ui'
 import WorkspaceSidebarTree from './workspace-sidebar-tree.vue'
 import WorkspaceUserPanel from './workspace-user-panel.vue'
@@ -26,13 +26,16 @@ const props = defineProps<{
   organizationsError: boolean
   organizationsLoading: boolean
   viewer: AuthViewer | null
+  width: number
 }>()
 
 const emit = defineEmits<{
   select: [url: string]
+  startResize: [event: PointerEvent]
 }>()
 
 const { t } = useI18n()
+const { state } = useSidebar()
 const expandedIds = reactive(new Set<string>())
 const visibleCounts = reactive(new Map<string, number>())
 const hasOrganizations = computed(() => props.organizations.length > 0)
@@ -41,6 +44,11 @@ const showOrganizationsError = computed(() => props.organizationsError && !hasOr
 const showOrganizationsEmpty = computed(() =>
   !props.organizationsLoading && !props.organizationsError && !hasOrganizations.value,
 )
+const sidebarStyle = computed<Record<string, string>>(() => ({
+  width: `${props.width}px`,
+  marginLeft: state.value === 'expanded' ? '0px' : `-${props.width}px`,
+  transition: 'margin-left 200ms cubic-bezier(0.32, 0.72, 0, 1)',
+}))
 
 const organizationItems = computed<WorkspaceSidebarTreeItem[]>(() => {
   return props.organizations.map((organization) => {
@@ -86,11 +94,10 @@ function setVisibleCount(listId: string, visibleCount: number): void {
 </script>
 
 <template>
-  <Sidebar
+  <aside
     data-workspace-sidebar
-    collapsible="offcanvas"
-    width="24rem"
-    class="border-r border-border"
+    class="relative flex h-full shrink-0 flex-col border-r border-border bg-sidebar text-sidebar-foreground"
+    :style="sidebarStyle"
   >
     <SidebarHeader
       :class="isFullscreen
@@ -178,7 +185,17 @@ function setVisibleCount(listId: string, visibleCount: number): void {
     >
       <WorkspaceUserPanel :viewer="viewer" />
     </SidebarFooter>
-  </Sidebar>
+
+    <button
+      class="group absolute right-0 top-0 z-20 h-full w-1 translate-x-1/2 cursor-col-resize bg-transparent outline-hidden"
+      :aria-label="t('workspace.sidebar.resize')"
+      role="separator"
+      type="button"
+      @pointerdown="emit('startResize', $event)"
+    >
+      <span class="block h-full w-full transition-colors group-hover:bg-border group-focus-visible:bg-sidebar-ring" />
+    </button>
+  </aside>
 </template>
 
 <style scoped>
