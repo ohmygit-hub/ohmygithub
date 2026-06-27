@@ -24,12 +24,14 @@
         "repositories": "仓库"
       },
       "items": {
+        "activity": "活动",
         "actions": "工作流",
         "client": "Electron Client",
         "inbox": "收件箱",
         "issues": "议题",
         "pinned": "已收藏",
         "pulls": "拉取请求",
+        "reviews": "Review Queue",
         "ui": "UI Package"
       },
       "search": "搜索工作区",
@@ -78,6 +80,16 @@
           "meta": "占位",
           "title": "仓库焦点"
         },
+        "resourcePlaceholder": {
+          "description": "这个 tab 已经由 URL 和类型识别，真实数据接入会在后续实现。",
+          "meta": "占位",
+          "title": "资源内容"
+        },
+        "resourceRouting": {
+          "description": "当前页面只验证路由、tab 类型和恢复逻辑，不请求 GitHub API。",
+          "meta": "路由",
+          "title": "URL 驱动状态"
+        },
         "reviewQueue": {
           "description": "预留需要你处理的 PR、mention 和通知，第一版不接真实数据。",
           "meta": "占位",
@@ -95,42 +107,59 @@
         }
       },
       "descriptions": {
+        "account": "{owner} 已作为账号 tab 打开。本次只保留 URL、类型和占位面板。",
         "activity": "跟踪工作流、仓库动态和需要回看的项目状态。这里暂时只展示布局骨架。",
         "draft": "新的 tab 会先作为本地占位页打开，后续可以接入真实 workspace 数据。",
         "inbox": "把通知、mention 和 review 请求收束到一个干净的工作区入口。",
+        "org": "{owner} 已作为组织 tab 打开。本次只保留 URL、类型和占位面板。",
+        "repo": "{owner}/{repo} 已作为仓库 tab 打开。本次只保留 URL、类型和占位面板。",
         "reviews": "把等待你处理的拉取请求和合并前检查放在一个可切换 tab 中。"
       },
       "eyebrows": {
+        "account": "Account",
         "activity": "Activity",
         "draft": "Draft",
+        "org": "Organization",
+        "repo": "Repository",
         "review": "Review",
         "triage": "Triage"
       },
       "headings": {
+        "account": "{owner}",
         "activity": "活动",
         "draft": "新工作页",
         "inbox": "收件箱",
+        "org": "{owner}",
+        "repo": "{owner}/{repo}",
         "reviews": "Review Queue"
       },
       "stats": {
+        "account": "账号",
         "alerts": "告警",
         "assigned": "指派",
         "drafts": "草稿",
         "mentions": "Mentions",
+        "organization": "组织",
+        "owner": "Owner",
         "repos": "仓库",
+        "repository": "仓库",
         "reviews": "Review",
         "runs": "运行",
         "scope": "范围",
         "source": "来源",
         "status": "状态",
+        "type": "类型",
         "unread": "未读",
         "waiting": "等待"
       },
       "values": {
+        "account": "账号",
         "alerts": "0",
         "assigned": "0",
         "drafts": "1",
         "mentions": "0",
+        "org": "组织",
+        "placeholder": "未接入",
         "repos": "3",
         "reviews": "0",
         "runs": "0",

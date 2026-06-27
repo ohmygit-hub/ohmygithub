@@ -24,12 +24,14 @@
         "repositories": "Repositories"
       },
       "items": {
+        "activity": "Activity",
         "actions": "Actions",
         "client": "Electron Client",
         "inbox": "Inbox",
         "issues": "Issues",
         "pinned": "Pinned",
         "pulls": "Pull Requests",
+        "reviews": "Review Queue",
         "ui": "UI Package"
       },
       "search": "Search workspace",
@@ -78,6 +80,16 @@
           "meta": "Stub",
           "title": "Repository focus"
         },
+        "resourcePlaceholder": {
+          "description": "This tab is identified by its URL and type. Real data loading comes later.",
+          "meta": "Stub",
+          "title": "Resource content"
+        },
+        "resourceRouting": {
+          "description": "This version only verifies routing, tab type, and restore behavior without calling the GitHub API.",
+          "meta": "Route",
+          "title": "URL-driven state"
+        },
         "reviewQueue": {
           "description": "Reserved for pull requests, mentions, and notifications that need attention.",
           "meta": "Stub",
@@ -95,42 +107,59 @@
         }
       },
       "descriptions": {
+        "account": "{owner} is open as an account tab. This version only keeps URL, type, and placeholder state.",
         "activity": "Track workflows, repository movement, and project state worth revisiting. This version only renders the shell.",
         "draft": "New tabs open as local placeholder pages until real workspace data is connected.",
         "inbox": "Collect notifications, mentions, and review requests into a clean workspace entry point.",
+        "org": "{owner} is open as an organization tab. This version only keeps URL, type, and placeholder state.",
+        "repo": "{owner}/{repo} is open as a repository tab. This version only keeps URL, type, and placeholder state.",
         "reviews": "Keep pull requests and merge checks in a focused tab that can grow into real data later."
       },
       "eyebrows": {
+        "account": "Account",
         "activity": "Activity",
         "draft": "Draft",
+        "org": "Organization",
+        "repo": "Repository",
         "review": "Review",
         "triage": "Triage"
       },
       "headings": {
+        "account": "{owner}",
         "activity": "Activity",
         "draft": "New workspace page",
         "inbox": "Inbox",
+        "org": "{owner}",
+        "repo": "{owner}/{repo}",
         "reviews": "Review Queue"
       },
       "stats": {
+        "account": "Account",
         "alerts": "Alerts",
         "assigned": "Assigned",
         "drafts": "Drafts",
         "mentions": "Mentions",
+        "organization": "Organization",
+        "owner": "Owner",
         "repos": "Repositories",
+        "repository": "Repository",
         "reviews": "Reviews",
         "runs": "Runs",
         "scope": "Scope",
         "source": "Source",
         "status": "Status",
+        "type": "Type",
         "unread": "Unread",
         "waiting": "Waiting"
       },
       "values": {
+        "account": "Account",
         "alerts": "0",
         "assigned": "0",
         "drafts": "1",
         "mentions": "0",
+        "org": "Organization",
+        "placeholder": "Not connected",
         "repos": "3",
         "reviews": "0",
         "runs": "0",

@@ -1,13 +1,16 @@
 <script setup lang="ts">
 import type { WorkspaceMessageParams, WorkspaceTab } from '../types'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Badge } from '@oh-my-github/ui'
+import { getWorkspaceTabView } from '../tabPresentation'
 
 const props = defineProps<{
   tab: WorkspaceTab
 }>()
 
 const { t } = useI18n()
+const view = computed(() => getWorkspaceTabView(props.tab))
 
 function translate(key: string, params?: WorkspaceMessageParams): string {
   return t(key, params ?? {})
@@ -22,20 +25,20 @@ function translate(key: string, params?: WorkspaceMessageParams): string {
           class="justify-self-start"
           variant="secondary"
         >
-          <component :is="props.tab.icon" />
-          {{ translate(props.tab.eyebrowKey) }}
+          <component :is="view.icon" />
+          {{ translate(view.eyebrowKey) }}
         </Badge>
         <h1 class="truncate text-heading font-semibold text-foreground">
-          {{ translate(props.tab.headingKey, props.tab.titleParams) }}
+          {{ translate(view.headingKey, view.headingParams) }}
         </h1>
         <p class="max-w-2xl text-label text-muted-foreground">
-          {{ translate(props.tab.descriptionKey) }}
+          {{ translate(view.descriptionKey, view.descriptionParams) }}
         </p>
       </div>
 
       <div class="grid gap-2 sm:grid-cols-3">
         <div
-          v-for="stat in props.tab.stats"
+          v-for="stat in view.stats"
           :key="stat.id"
           class="grid gap-1 rounded-lg border border-border bg-card p-3"
         >
@@ -43,14 +46,14 @@ function translate(key: string, params?: WorkspaceMessageParams): string {
             {{ translate(stat.labelKey) }}
           </div>
           <div class="truncate text-control font-semibold text-foreground">
-            {{ translate(stat.valueKey) }}
+            {{ stat.value ?? translate(stat.valueKey ?? '') }}
           </div>
         </div>
       </div>
 
       <div class="grid gap-2">
         <div
-          v-for="block in props.tab.blocks"
+          v-for="block in view.blocks"
           :key="block.id"
           class="grid gap-1 rounded-lg border border-border bg-card p-3"
         >

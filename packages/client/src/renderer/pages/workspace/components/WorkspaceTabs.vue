@@ -4,18 +4,19 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ArrowLeft, ArrowRight, PanelLeftClose, PanelLeftOpen, Plus, X } from 'lucide-vue-next'
 import { Button, Tabs, TabsContent, TabsList, TabsTrigger, useSidebar } from '@oh-my-github/ui'
+import { getWorkspaceTabView } from '../tabPresentation'
 import WorkspacePanel from './WorkspacePanel.vue'
 
 const props = defineProps<{
   tabs: WorkspaceTab[]
-  activeTabId: string
+  activeUrl: string
   isFullscreen: boolean
 }>()
 
 const emit = defineEmits<{
-  'update:activeTabId': [id: string]
-  close: [id: string]
+  close: [url: string]
   create: []
+  select: [url: string]
 }>()
 
 const { t } = useI18n()
@@ -59,7 +60,7 @@ const scrollbarThumbStyle = computed(() => {
 })
 
 function setActiveTab(value: string | number): void {
-  emit('update:activeTabId', String(value))
+  emit('select', String(value))
 }
 
 function translate(key: string, params?: WorkspaceMessageParams): string {
@@ -67,7 +68,12 @@ function translate(key: string, params?: WorkspaceMessageParams): string {
 }
 
 function tabTitle(tab: WorkspaceTab): string {
-  return translate(tab.titleKey, tab.titleParams)
+  const view = getWorkspaceTabView(tab)
+  if (view.titleKey) {
+    return translate(view.titleKey, view.titleParams)
+  }
+
+  return view.title
 }
 
 function updateScrollMetrics(): void {
@@ -129,14 +135,14 @@ onBeforeUnmount(() => {
 })
 
 watch(
-  () => [props.tabs.length, props.activeTabId],
+  () => [props.tabs.length, props.activeUrl],
   () => nextTick(updateScrollMetrics),
 )
 </script>
 
 <template>
   <Tabs
-    :model-value="activeTabId"
+    :model-value="activeUrl"
     data-workspace-tabs
     class="min-h-0 flex-1 gap-0"
     @update:model-value="setActiveTab"
@@ -196,15 +202,15 @@ watch(
           <TabsList class="w-auto min-w-max border-b-0">
             <div
               v-for="tab in props.tabs"
-              :key="tab.id"
+              :key="tab.url"
               class="workspace-tab-chip"
-              :data-active="activeTabId === tab.id ? 'true' : undefined"
+              :data-active="activeUrl === tab.url ? 'true' : undefined"
             >
               <TabsTrigger
-                :value="tab.id"
+                :value="tab.url"
                 class="workspace-tab-trigger max-w-40 min-w-0"
               >
-                <component :is="tab.icon" />
+                <component :is="getWorkspaceTabView(tab).icon" />
                 <span class="truncate">{{ tabTitle(tab) }}</span>
               </TabsTrigger>
               <Button
@@ -214,7 +220,7 @@ watch(
                 size="icon-sm"
                 type="button"
                 variant="ghost"
-                @click.stop="emit('close', tab.id)"
+                @click.stop="emit('close', tab.url)"
               >
                 <X class="size-3" />
               </Button>
@@ -249,9 +255,9 @@ watch(
 
     <TabsContent
       v-for="tab in props.tabs"
-      :key="tab.id"
+      :key="tab.url"
       class="min-h-0 overflow-auto"
-      :value="tab.id"
+      :value="tab.url"
     >
       <WorkspacePanel :tab="tab" />
     </TabsContent>

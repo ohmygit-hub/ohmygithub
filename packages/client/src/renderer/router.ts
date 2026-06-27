@@ -8,6 +8,11 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: '/',
+    name: 'workspace-root',
+    component: () => import('./pages/workspace/WorkspacePage.vue')
+  },
+  {
+    path: '/:pathMatch(.*)*',
     name: 'workspace',
     component: () => import('./pages/workspace/WorkspacePage.vue')
   }
@@ -31,7 +36,7 @@ router.beforeEach(async (to) => {
   }
 
   if (auth?.isAuthenticated && to.name === 'auth') {
-    return { name: 'workspace' }
+    return { name: 'workspace-root' }
   }
 
   return true

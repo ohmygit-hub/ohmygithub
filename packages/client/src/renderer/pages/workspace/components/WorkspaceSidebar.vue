@@ -22,7 +22,7 @@ defineProps<{
 }>()
 
 const emit = defineEmits<{
-  select: [id: string]
+  select: [url: string]
 }>()
 
 const { t } = useI18n()
@@ -79,7 +79,7 @@ const { t } = useI18n()
                 :is-active="activeItemId === item.id"
                 :tooltip="t(item.labelKey)"
                 type="button"
-                @click="emit('select', item.id)"
+                @click="emit('select', item.url)"
               >
                 <component :is="item.icon" />
                 <span>{{ t(item.labelKey) }}</span>
