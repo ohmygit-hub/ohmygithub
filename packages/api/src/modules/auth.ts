@@ -1,5 +1,5 @@
 import type { GitHubOctokit } from '../transport'
-import { createOctokit } from '../transport'
+import { createOctokit, createProxyFetch } from '../transport'
 import type {
   GitHubAuthViewer,
   GitHubDeviceAuthorization,
@@ -31,16 +31,25 @@ interface AccessTokenResponse {
 
 export const defaultGitHubOAuthScopes = ['repo', 'notifications', 'read:user'] as const
 
+interface AuthApiOptions {
+  octokit?: GitHubOctokit
+  proxyUrl?: string
+}
+
 export class AuthApi {
-  constructor(private readonly octokit?: GitHubOctokit) {}
+  constructor(private readonly options: AuthApiOptions = {}) {}
 
   async startDeviceAuthorization(
     options: StartDeviceAuthorizationOptions
   ): Promise<GitHubDeviceAuthorization> {
-    const response = await postGitHubOAuth<DeviceCodeResponse>(deviceCodeEndpoint, {
-      client_id: options.clientId,
-      scope: options.scopes.join(' ')
-    })
+    const response = await postGitHubOAuth<DeviceCodeResponse>(
+      deviceCodeEndpoint,
+      {
+        client_id: options.clientId,
+        scope: options.scopes.join(' ')
+      },
+      this.options.proxyUrl
+    )
 
     return {
       deviceCode: response.device_code,
@@ -55,11 +64,15 @@ export class AuthApi {
   async pollDeviceAccessToken(
     options: PollDeviceAccessTokenOptions
   ): Promise<GitHubDeviceTokenResult> {
-    const response = await postGitHubOAuth<AccessTokenResponse>(accessTokenEndpoint, {
-      client_id: options.clientId,
-      device_code: options.deviceCode,
-      grant_type: 'urn:ietf:params:oauth:grant-type:device_code'
-    })
+    const response = await postGitHubOAuth<AccessTokenResponse>(
+      accessTokenEndpoint,
+      {
+        client_id: options.clientId,
+        device_code: options.deviceCode,
+        grant_type: 'urn:ietf:params:oauth:grant-type:device_code'
+      },
+      this.options.proxyUrl
+    )
 
     if (response.access_token) {
       return {
@@ -86,7 +99,9 @@ export class AuthApi {
   }
 
   async getViewer(token?: string): Promise<GitHubAuthViewer> {
-    const octokit = token ? createOctokit({ token }) : this.octokit
+    const octokit = token
+      ? createOctokit({ token, proxyUrl: this.options.proxyUrl })
+      : this.options.octokit
 
     if (!octokit) {
       throw new Error('A GitHub token is required to load the viewer')
@@ -103,8 +118,13 @@ export class AuthApi {
   }
 }
 
-async function postGitHubOAuth<T>(url: string, body: Record<string, string>): Promise<T> {
-  const response = await fetch(url, {
+async function postGitHubOAuth<T>(
+  url: string,
+  body: Record<string, string>,
+  proxyUrl: string | undefined
+): Promise<T> {
+  const fetchWithProxy = proxyUrl ? createProxyFetch(proxyUrl) : fetch
+  const response = await fetchWithProxy(url, {
     method: 'POST',
     headers: {
       Accept: 'application/json',

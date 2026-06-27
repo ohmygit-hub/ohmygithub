@@ -23,8 +23,37 @@ This first scaffold focuses on a fast Notion-like app shell with mock GitHub dat
 ## Scripts
 
 ```sh
-pnpm install
+pnpm run env:setup
 pnpm dev
 pnpm typecheck
 pnpm build
+```
+
+`pnpm run env:setup` installs workspace dependencies and explicitly downloads the Electron binary. The
+project pins `electron_mirror` in `.npmrc` so Electron installs reliably in local development.
+
+## Network Proxy
+
+GitHub requests use this proxy priority:
+
+1. `~/.oh-my-github/config.json` `network.proxyUrl`
+2. `HTTPS_PROXY` / `HTTP_PROXY` / `ALL_PROXY` environment variables
+3. The operating system proxy resolved by Electron
+
+Example local config:
+
+```json
+{
+  "schemaVersion": 1,
+  "github": {
+    "activeAccountLogin": null
+  },
+  "network": {
+    "proxyUrl": "http://127.0.0.1:7890"
+  },
+  "ui": {
+    "locale": "en",
+    "theme": "auto"
+  }
+}
 ```

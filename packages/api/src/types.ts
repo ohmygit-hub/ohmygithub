@@ -75,6 +75,7 @@ export interface GitHubClient {
 export interface GitHubApiOptions {
   token: string
   baseUrl?: string
+  proxyUrl?: string
   userAgent?: string
 }
 

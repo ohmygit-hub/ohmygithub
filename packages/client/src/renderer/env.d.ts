@@ -5,6 +5,9 @@ type LocalConfig = {
   github: {
     activeAccountLogin: string | null
   }
+  network: {
+    proxyUrl: string | null
+  }
   ui: {
     locale: 'en' | 'zh'
     theme: 'auto' | 'light' | 'dark'
@@ -69,6 +72,7 @@ interface Window {
       }>
       update: (patch: Partial<{
         github: Partial<LocalConfig['github']>
+        network: Partial<LocalConfig['network']>
         ui: Partial<LocalConfig['ui']>
       }>) => Promise<{
         path: string
