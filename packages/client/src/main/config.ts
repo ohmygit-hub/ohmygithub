@@ -8,6 +8,9 @@ export interface LocalConfig {
   github: {
     activeAccountLogin: string | null
   }
+  network: {
+    proxyUrl: string | null
+  }
   ui: {
     locale: 'en' | 'zh'
     theme: 'auto' | 'light' | 'dark'
@@ -21,6 +24,7 @@ export interface LocalConfigInfo {
 
 export type LocalConfigPatch = Partial<{
   github: Partial<LocalConfig['github']>
+  network: Partial<LocalConfig['network']>
   ui: Partial<LocalConfig['ui']>
 }>
 
@@ -49,6 +53,10 @@ export function registerConfigIpc(): void {
   })
 }
 
+export function getLocalConfig(): LocalConfig {
+  return readConfig()
+}
+
 function readConfig(): LocalConfig {
   try {
     const raw = readFileSync(configPath, 'utf8')
@@ -74,6 +82,10 @@ function mergeConfig(config: LocalConfig, patch: LocalConfigPatch): LocalConfig 
       ...config.github,
       ...patch.github
     },
+    network: {
+      ...config.network,
+      ...patch.network
+    },
     ui: {
       ...config.ui,
       ...patch.ui
@@ -86,6 +98,9 @@ function normalizeConfig(config: Partial<LocalConfig>): LocalConfig {
     schemaVersion: 1,
     github: {
       activeAccountLogin: config.github?.activeAccountLogin ?? null
+    },
+    network: {
+      proxyUrl: normalizeProxyUrl(config.network?.proxyUrl)
     },
     ui: {
       locale: normalizeLocale(config.ui?.locale),
@@ -100,11 +115,24 @@ function defaultConfig(): LocalConfig {
     github: {
       activeAccountLogin: null
     },
+    network: {
+      proxyUrl: null
+    },
     ui: {
       locale: 'en',
       theme: 'auto'
     }
   }
+}
+
+function normalizeProxyUrl(value: unknown): string | null {
+  if (typeof value !== 'string') {
+    return null
+  }
+
+  const proxyUrl = value.trim()
+
+  return proxyUrl ? proxyUrl : null
 }
 
 function normalizeLocale(value: unknown): LocalConfig['ui']['locale'] {

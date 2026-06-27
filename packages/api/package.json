@@ -13,7 +13,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "octokit": "^5.0.5"
+    "octokit": "^5.0.5",
+    "undici": "^8.5.0"
   },
   "devDependencies": {
     "typescript": "^5.8.3"

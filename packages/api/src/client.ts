@@ -11,7 +11,7 @@ export interface GitHubApi extends GitHubClient {
 
 export function createGitHubApi(options: GitHubApiOptions): GitHubApi {
   const octokit = createOctokit(options)
-  const auth = new AuthApi(octokit)
+  const auth = new AuthApi({ octokit, proxyUrl: options.proxyUrl })
   const inbox = new InboxApi(octokit)
 
   return {

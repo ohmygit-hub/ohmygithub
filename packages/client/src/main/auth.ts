@@ -4,6 +4,7 @@ import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { AuthApi, defaultGitHubOAuthScopes, type GitHubAuthViewer } from '@oh-my-github/api'
 import { clipboard, ipcMain, shell } from 'electron'
+import { resolveGitHubProxyUrl } from './proxy'
 
 export type AuthMethod = 'oauth_device' | 'personal_token'
 
@@ -34,7 +35,6 @@ export interface DeviceFlowResult {
 }
 
 const authPath = join(homedir(), '.oh-my-github', 'auth.json')
-const authApi = new AuthApi()
 const pendingDeviceFlows = new Map<
   string,
   {
@@ -75,6 +75,7 @@ async function startDeviceFlow(): Promise<DeviceFlowResult> {
     throw new Error('GITHUB_CLIENT_ID is not configured')
   }
 
+  const authApi = await createAuthApi()
   const authorization = await authApi.startDeviceAuthorization({
     clientId,
     scopes: [...defaultGitHubOAuthScopes]
@@ -119,11 +120,13 @@ async function completeDeviceFlow(sessionId: string): Promise<DeviceFlowResult> 
   }
 
   try {
+    const authApi = await createAuthApi()
     const token = await pollForToken({
       clientId: flow.clientId,
       deviceCode: flow.deviceCode,
       expiresIn: flow.expiresIn,
-      interval: flow.interval
+      interval: flow.interval,
+      authApi
     })
     const viewer = await authApi.getViewer(token.accessToken)
 
@@ -154,6 +157,7 @@ async function savePersonalToken(token: string): Promise<AuthState> {
     throw new Error('GitHub token is required')
   }
 
+  const authApi = await createAuthApi()
   const viewer = await authApi.getViewer(normalizedToken)
 
   writeStoredAuth({
@@ -251,6 +255,7 @@ async function pollForToken(options: {
   deviceCode: string
   expiresIn: number
   interval: number
+  authApi: AuthApi
 }): Promise<{ accessToken: string; tokenType: string; scopes: string[] }> {
   const expiresAt = Date.now() + options.expiresIn * 1000
   let interval = Math.max(options.interval, 1)
@@ -258,7 +263,7 @@ async function pollForToken(options: {
   while (Date.now() < expiresAt) {
     await delay(interval * 1000)
 
-    const result = await authApi.pollDeviceAccessToken({
+    const result = await options.authApi.pollDeviceAccessToken({
       clientId: options.clientId,
       deviceCode: options.deviceCode
     })
@@ -281,6 +286,10 @@ async function pollForToken(options: {
   }
 
   throw new Error('GitHub device authorization expired')
+}
+
+async function createAuthApi(): Promise<AuthApi> {
+  return new AuthApi({ proxyUrl: await resolveGitHubProxyUrl() })
 }
 
 function getGitHubClientId(): string {
