@@ -8,6 +8,7 @@ import WorkspaceTabs from './components/workspace-tabs.vue'
 
 const isSidebarOpen = ref(true)
 const isWindowFullscreen = ref(false)
+const viewer = ref<AuthViewer | null>(null)
 let stopFullscreenListener: (() => void) | undefined
 
 const {
@@ -24,6 +25,13 @@ const organizationsLoading = computed(() => organizationsQuery.isLoading.value)
 const organizationsError = computed(() => Boolean(organizationsQuery.error.value))
 
 onMounted(async () => {
+  try {
+    const authState = await window.ohMyGithub?.auth?.get?.()
+    viewer.value = authState?.auth?.viewer ?? null
+  } catch {
+    viewer.value = null
+  }
+
   try {
     const state = await window.ohMyGithub?.windowControls?.getState?.()
     isWindowFullscreen.value = Boolean(state?.isFullScreen)
@@ -52,6 +60,7 @@ onBeforeUnmount(() => {
       :organizations="organizations"
       :organizations-error="organizationsError"
       :organizations-loading="organizationsLoading"
+      :viewer="viewer"
       @select="selectTab"
     />
 

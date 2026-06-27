@@ -6,6 +6,7 @@ import { Inbox, Search } from 'lucide-vue-next'
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
@@ -16,6 +17,7 @@ import {
   SidebarMenuSkeleton,
 } from '@oh-my-github/ui'
 import WorkspaceSidebarTree from './workspace-sidebar-tree.vue'
+import WorkspaceUserPanel from './workspace-user-panel.vue'
 
 const props = defineProps<{
   activeUrl: string
@@ -23,6 +25,7 @@ const props = defineProps<{
   organizations: GitHubOrganization[]
   organizationsError: boolean
   organizationsLoading: boolean
+  viewer: AuthViewer | null
 }>()
 
 const emit = defineEmits<{
@@ -32,6 +35,12 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const expandedIds = reactive(new Set<string>())
 const visibleCounts = reactive(new Map<string, number>())
+const hasOrganizations = computed(() => props.organizations.length > 0)
+const showOrganizationsLoading = computed(() => props.organizationsLoading && !hasOrganizations.value)
+const showOrganizationsError = computed(() => props.organizationsError && !hasOrganizations.value)
+const showOrganizationsEmpty = computed(() =>
+  !props.organizationsLoading && !props.organizationsError && !hasOrganizations.value,
+)
 
 const organizationItems = computed<WorkspaceSidebarTreeItem[]>(() => {
   return props.organizations.map((organization) => {
@@ -125,7 +134,7 @@ function setVisibleCount(listId: string, visibleCount: number): void {
           {{ t('workspace.sidebar.groups.organizations') }}
         </SidebarGroupLabel>
         <SidebarGroupContent>
-          <SidebarMenu v-if="organizationsLoading">
+          <SidebarMenu v-if="showOrganizationsLoading">
             <SidebarMenuItem
               v-for="index in 3"
               :key="index"
@@ -135,14 +144,14 @@ function setVisibleCount(listId: string, visibleCount: number): void {
           </SidebarMenu>
 
           <p
-            v-else-if="organizationsError"
+            v-else-if="showOrganizationsError"
             class="px-2 py-1.5 text-caption text-muted-foreground"
           >
             {{ t('workspace.sidebar.organizations.error') }}
           </p>
 
           <p
-            v-else-if="organizations.length === 0"
+            v-else-if="showOrganizationsEmpty"
             class="px-2 py-1.5 text-caption text-muted-foreground"
           >
             {{ t('workspace.sidebar.organizations.empty') }}
@@ -162,6 +171,13 @@ function setVisibleCount(listId: string, visibleCount: number): void {
         </SidebarGroupContent>
       </SidebarGroup>
     </SidebarContent>
+
+    <SidebarFooter
+      v-if="viewer"
+      class="border-t border-border"
+    >
+      <WorkspaceUserPanel :viewer="viewer" />
+    </SidebarFooter>
   </Sidebar>
 </template>
 

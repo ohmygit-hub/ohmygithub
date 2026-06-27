@@ -68,6 +68,19 @@ const childVisibleCount = computed(() => props.visibleCounts.get(props.item.id) 
 const visibleChildren = computed(() => loadedChildren.value.slice(0, childVisibleCount.value))
 const showMoreChildren = computed(() => loadedChildren.value.length > childVisibleCount.value)
 const childStateVisible = computed(() => isExpanded.value && props.item.childrenLoader?.type === 'organization-repositories')
+const hasLoadedChildren = computed(() => loadedChildren.value.length > 0)
+const showChildLoading = computed(() =>
+  childStateVisible.value && repositoriesQuery.isLoading.value && !hasLoadedChildren.value,
+)
+const showChildError = computed(() =>
+  childStateVisible.value && Boolean(repositoriesQuery.error.value) && !hasLoadedChildren.value,
+)
+const showChildEmpty = computed(() =>
+  childStateVisible.value
+  && !repositoriesQuery.isLoading.value
+  && !repositoriesQuery.error.value
+  && !hasLoadedChildren.value,
+)
 
 function selectItem(): void {
   if (props.item.url) {
@@ -95,16 +108,17 @@ function showMoreItems(): void {
     <SidebarMenuButton
       as="div"
       class="gap-1 pr-1"
+      :class="item.url ? 'cursor-pointer' : 'cursor-default'"
+      role="button"
       size="sm"
+      tabindex="0"
       :is-active="item.isActive"
       :tooltip="item.label"
+      @click="selectItem"
+      @keydown.enter.prevent="selectItem"
+      @keydown.space.prevent="selectItem"
     >
-      <button
-        class="flex min-w-0 flex-1 items-center gap-2 text-left text-inherit disabled:cursor-default"
-        :disabled="!item.url"
-        type="button"
-        @click="selectItem"
-      >
+      <span class="flex min-w-0 flex-1 items-center gap-2 text-left text-inherit">
         <Avatar
           v-if="item.avatarUrl"
           class="size-4"
@@ -123,7 +137,7 @@ function showMoreItems(): void {
           class="size-3.5 shrink-0"
         />
         <span class="truncate">{{ item.label }}</span>
-      </button>
+      </span>
 
       <button
         v-if="hasChevron"
@@ -146,17 +160,17 @@ function showMoreItems(): void {
       v-if="isExpanded"
       class="!mx-0 !ml-2 !translate-x-0 !border-l-0 !px-0 !pl-1"
     >
-      <SidebarMenuSubItem v-if="childStateVisible && repositoriesQuery.isLoading.value">
+      <SidebarMenuSubItem v-if="showChildLoading">
         <SidebarMenuSkeleton show-icon />
       </SidebarMenuSubItem>
 
-      <SidebarMenuSubItem v-else-if="childStateVisible && repositoriesQuery.error.value">
+      <SidebarMenuSubItem v-else-if="showChildError">
         <p class="px-2 py-1.5 text-caption text-muted-foreground">
           {{ t('workspace.sidebar.repositories.error') }}
         </p>
       </SidebarMenuSubItem>
 
-      <SidebarMenuSubItem v-else-if="childStateVisible && loadedChildren.length === 0">
+      <SidebarMenuSubItem v-else-if="showChildEmpty">
         <p class="px-2 py-1.5 text-caption text-muted-foreground">
           {{ t('workspace.sidebar.repositories.empty') }}
         </p>
@@ -193,22 +207,23 @@ function showMoreItems(): void {
     <SidebarMenuSubButton
       as="div"
       class="gap-1 pr-1"
+      :class="item.url ? 'cursor-pointer' : 'cursor-default'"
+      role="button"
       size="sm"
+      tabindex="0"
       :is-active="item.isActive"
+      @click="selectItem"
+      @keydown.enter.prevent="selectItem"
+      @keydown.space.prevent="selectItem"
     >
-      <button
-        class="flex min-w-0 flex-1 items-center gap-2 text-left text-inherit disabled:cursor-default"
-        :disabled="!item.url"
-        type="button"
-        @click="selectItem"
-      >
+      <span class="flex min-w-0 flex-1 items-center gap-2 text-left text-inherit">
         <component
           :is="item.icon"
           v-if="item.icon"
           class="size-3.5 shrink-0"
         />
         <span class="truncate">{{ item.label }}</span>
-      </button>
+      </span>
 
       <button
         v-if="hasChevron"
