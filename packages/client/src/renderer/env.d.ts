@@ -466,6 +466,12 @@ interface Window {
       listRepositoryIssues: (owner: string, repo: string) => Promise<GitHubIssue[]>
       searchRepositoryIssues: (options: SearchRepositoryIssuesOptions) => Promise<GitHubIssueSearchResult>
       getIssueDetail: (owner: string, repo: string, number: number) => Promise<GitHubIssueDetail>
+      createIssueComment: (
+        owner: string,
+        repo: string,
+        number: number,
+        body: string
+      ) => Promise<GitHubIssueComment>
     }
     pulls: {
       listPullRequestCategory: (category: GitHubPullRequestCategory) => Promise<GitHubPullRequest[]>

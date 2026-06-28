@@ -494,6 +494,16 @@
       "empty": "No activity has been loaded for this issue yet.",
       "title": "Activity"
     },
+    "comment": {
+      "emptyPreview": "Nothing to preview.",
+      "error": "Comment could not be posted. Check your permissions and try again.",
+      "inputLabel": "Issue comment",
+      "modeLabel": "Comment editor mode",
+      "placeholder": "Leave a comment",
+      "preview": "Preview",
+      "submit": "Comment",
+      "write": "Write"
+    },
     "empty": {
       "body": "No description provided.",
       "missingIdentity": {

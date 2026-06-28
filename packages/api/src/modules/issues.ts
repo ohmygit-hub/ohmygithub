@@ -1,5 +1,6 @@
 import type { GitHubOctokit } from '../transport'
 import type {
+  CreateIssueCommentOptions,
   GetIssueDetailOptions,
   GitHubActor,
   GitHubIssue,
@@ -64,6 +65,20 @@ interface GraphQLIssueCommentNode {
   url: string
   author: GraphQLActorNode | null
   reactionGroups?: GraphQLReactionGroup[] | null
+}
+
+interface RestIssueCommentNode {
+  id: number
+  node_id?: string | null
+  body?: string | null
+  created_at?: string | null
+  updated_at?: string | null
+  author_association?: string | null
+  html_url?: string | null
+  user?: {
+    login?: string | null
+    avatar_url?: string | null
+  } | null
 }
 
 interface GraphQLTimelineSourceNode {
@@ -251,7 +266,7 @@ const issueDetailQuery = `
             avatarUrl
           }
         }
-        comments(first: 50) {
+        comments(last: 100) {
           nodes {
             id
             body
@@ -539,6 +554,17 @@ export class IssuesApi {
     return mapIssueDetailNode(issue, unreadKeys)
   }
 
+  async createIssueComment(options: CreateIssueCommentOptions): Promise<GitHubIssueComment> {
+    const response = await this.octokit.rest.issues.createComment({
+      owner: options.owner,
+      repo: options.repo,
+      issue_number: options.number,
+      body: options.body
+    })
+
+    return mapRestIssueComment(response.data)
+  }
+
   private async searchIssues(searchQuery: string, limit: number): Promise<GitHubIssue[]> {
     const response = await this.octokit.graphql<ViewerIssuesResponse>(
       viewerIssuesQuery,
@@ -745,6 +771,22 @@ function mapComments(
       }
     ]
   })
+}
+
+function mapRestIssueComment(comment: RestIssueCommentNode): GitHubIssueComment {
+  return {
+    id: `issue-comment:${comment.node_id ?? comment.id}`,
+    author: {
+      login: comment.user?.login ?? 'unknown',
+      avatarUrl: comment.user?.avatar_url ?? undefined
+    },
+    body: comment.body ?? '',
+    createdAt: comment.created_at ?? '',
+    updatedAt: comment.updated_at ?? comment.created_at ?? '',
+    authorAssociation: comment.author_association ?? 'NONE',
+    reactions: [],
+    url: comment.html_url ?? ''
+  }
 }
 
 function mapReactions(

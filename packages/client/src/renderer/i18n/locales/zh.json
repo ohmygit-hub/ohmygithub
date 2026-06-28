@@ -494,6 +494,16 @@
       "empty": "这个 Issue 还没有加载到动态。",
       "title": "动态"
     },
+    "comment": {
+      "emptyPreview": "没有可预览的内容。",
+      "error": "无法发表评论。请检查权限后重试。",
+      "inputLabel": "Issue 评论",
+      "modeLabel": "评论编辑模式",
+      "placeholder": "留下评论",
+      "preview": "预览",
+      "submit": "评论",
+      "write": "编辑"
+    },
     "empty": {
       "body": "没有填写描述。",
       "missingIdentity": {

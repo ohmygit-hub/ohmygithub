@@ -124,3 +124,16 @@ export function useIssueDetailQuery(
     },
   })
 }
+
+export async function createIssueComment(
+  owner: string,
+  repo: string,
+  issueNumber: number,
+  body: string,
+): Promise<GitHubIssueComment> {
+  if (!window.ohMyGithub?.issues) {
+    throw new Error('GitHub issues bridge is unavailable')
+  }
+
+  return window.ohMyGithub.issues.createIssueComment(owner, repo, issueNumber, body)
+}

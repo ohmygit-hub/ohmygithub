@@ -1,8 +1,10 @@
 import type {
+  CreateIssueCommentOptions,
   GetIssueDetailOptions,
   GitHubClient,
   GitHubIssue,
   GitHubIssueSearchResult,
+  GitHubIssueComment,
   GitHubIssueDetail,
   GitHubOrganization,
   GitHubPullRequest,
@@ -168,6 +170,7 @@ const issuesByRepository: Record<string, GitHubIssue[]> = {
 }
 
 const viewerStateByRepository = new Map<string, GitHubRepositoryViewerState>()
+const mockIssueCommentsByIssue = new Map<string, GitHubIssueComment[]>()
 
 export class MockGitHubClient implements GitHubClient {
   async listViewerOrganizations(): Promise<GitHubOrganization[]> {
@@ -405,6 +408,37 @@ export class MockGitHubClient implements GitHubClient {
     return createMockIssueDetail(options, issue)
   }
 
+  async createIssueComment(options: CreateIssueCommentOptions): Promise<GitHubIssueComment> {
+    const body = options.body.trim()
+
+    if (!body) {
+      throw new Error('Comment body is required')
+    }
+
+    const key = issueThreadKey(options)
+    const createdAt = new Date().toISOString()
+    const comment: GitHubIssueComment = {
+      id: `mock-comment:${repositoryKey(options)}:${options.number}:created:${Date.now()}`,
+      author: {
+        login: 'acbox',
+        avatarUrl: 'https://avatars.githubusercontent.com/u/9919?s=80&v=4',
+      },
+      body,
+      createdAt,
+      updatedAt: createdAt,
+      authorAssociation: 'OWNER',
+      reactions: [],
+      url: `https://github.com/${repositoryKey(options)}/issues/${options.number}#issuecomment-mock`,
+    }
+
+    mockIssueCommentsByIssue.set(key, [
+      ...(mockIssueCommentsByIssue.get(key) ?? []),
+      comment,
+    ])
+
+    return comment
+  }
+
   async getRepositoryViewerState(options: RepositoryOptions): Promise<GitHubRepositoryViewerState> {
     return readRepositoryViewerState(options)
   }
@@ -533,6 +567,10 @@ function matchesSearch(title: string, description: string | null, query: string)
 
 function repositoryKey(options: RepositoryOptions): string {
   return `${options.owner}/${options.repo}`
+}
+
+function issueThreadKey(options: GetIssueDetailOptions): string {
+  return `${repositoryKey(options)}#${options.number}`
 }
 
 function mockRepositoryStarCount(options: RepositoryOptions): number {
@@ -915,6 +953,7 @@ function createMockIssueDetail(options: GetIssueDetailOptions, issue?: GitHubIss
         ],
         url: `https://github.com/${key}/issues/${options.number}#issuecomment-2`,
       },
+      ...(mockIssueCommentsByIssue.get(issueThreadKey(options)) ?? []),
     ],
     timelineEvents: [
       {

@@ -12,6 +12,7 @@ import type {
   GitHubWorkspaceGotoResult,
   GitHubIssue,
   GitHubIssueSearchResult,
+  GitHubIssueComment,
   GitHubIssueDetail,
   GitHubOrganization,
   GitHubPullRequest,
@@ -75,13 +76,15 @@ export function createGitHubApi(options: GitHubApiOptions): GitHubApi {
     listViewerIssues: (options) => issues.listViewerIssues(options),
     listRepositoryIssues: (options) => issues.listRepositoryIssues(options),
     searchRepositoryIssues: (options) => issues.searchRepositoryIssues(options),
-    getIssueDetail: (options) => issues.getIssueDetail(options)
+    getIssueDetail: (options) => issues.getIssueDetail(options),
+    createIssueComment: (options) => issues.createIssueComment(options)
   }
 }
 
 export type {
   GitHubIssue,
   GitHubIssueSearchResult,
+  GitHubIssueComment,
   GitHubIssueDetail,
   GitHubOrganization,
   GitHubPullRequest,

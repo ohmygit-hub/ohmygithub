@@ -459,6 +459,7 @@ export interface GitHubClient {
   listRepositoryIssues(options: ListRepositoryWorkspaceItemsOptions): Promise<GitHubIssue[]>
   searchRepositoryIssues(options: SearchRepositoryIssuesOptions): Promise<GitHubIssueSearchResult>
   getIssueDetail(options: GetIssueDetailOptions): Promise<GitHubIssueDetail>
+  createIssueComment(options: CreateIssueCommentOptions): Promise<GitHubIssueComment>
   listViewerOrganizations(): Promise<GitHubOrganization[]>
   listOrganizationRepositories(owner: string): Promise<GitHubRepository[]>
   resolveWorkspaceGoto(input: string): Promise<GitHubWorkspaceGotoResult>
@@ -507,6 +508,10 @@ export interface ListRepositoryWorkspaceItemsOptions extends ListWorkspaceItemsO
 
 export interface GetIssueDetailOptions extends RepositoryOptions {
   number: number
+}
+
+export interface CreateIssueCommentOptions extends GetIssueDetailOptions {
+  body: string
 }
 
 export interface SearchRepositoryPullRequestsOptions extends RepositoryOptions {

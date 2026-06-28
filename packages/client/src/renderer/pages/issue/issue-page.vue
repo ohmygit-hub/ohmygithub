@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { WorkspaceTab } from '../workspace/types'
 import type { IssueDetail } from './components/types'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   Avatar,
@@ -22,7 +22,8 @@ import {
   ConversationEventRow,
   ConversationTimeline,
 } from '../../components'
-import { useIssueDetailQuery } from '../../composables/github/use-issues'
+import { createIssueComment, useIssueDetailQuery } from '../../composables/github/use-issues'
+import IssueCommentComposer from './components/issue-comment-composer.vue'
 import IssueHeader from './components/issue-header.vue'
 import IssueSidebar from './components/issue-sidebar.vue'
 import { useIssueTimelineItems } from './composables/use-issue-timeline-items'
@@ -48,6 +49,10 @@ const hasIdentity = computed(() =>
 const issueQuery = useIssueDetailQuery(owner, repo, number, hasIdentity)
 const issue = computed<IssueDetail | null>(() => (issueQuery.data.value ?? null) as IssueDetail | null)
 const timelineItems = useIssueTimelineItems(issue)
+const commentBody = ref('')
+const commentMode = ref<'write' | 'preview'>('write')
+const commentError = ref<string | null>(null)
+const isSubmittingComment = ref(false)
 const isLoading = computed(() => hasIdentity.value && issueQuery.isLoading.value && !issue.value)
 const hasError = computed(() => Boolean(issueQuery.error.value))
 const showUnavailable = computed(() =>
@@ -63,6 +68,25 @@ function retryIssue(): void {
 
 function actorFallback(actor: { login: string }): string {
   return actor.login.slice(0, 1).toUpperCase()
+}
+
+async function submitIssueComment(): Promise<void> {
+  const body = commentBody.value.trim()
+  if (!body || isSubmittingComment.value) return
+
+  isSubmittingComment.value = true
+  commentError.value = null
+
+  try {
+    await createIssueComment(owner.value, repo.value, number.value, body)
+    commentBody.value = ''
+    commentMode.value = 'write'
+    await issueQuery.refetch()
+  } catch {
+    commentError.value = t('issue.comment.error')
+  } finally {
+    isSubmittingComment.value = false
+  }
 }
 </script>
 
@@ -229,6 +253,16 @@ function actorFallback(actor: { login: string }): string {
                   </template>
                 </div>
               </ConversationTimeline>
+
+              <div class="border-t border-border p-3">
+                <IssueCommentComposer
+                  v-model="commentBody"
+                  v-model:mode="commentMode"
+                  :error="commentError"
+                  :is-submitting="isSubmittingComment"
+                  @submit="submitIssueComment"
+                />
+              </div>
             </section>
           </main>
 
