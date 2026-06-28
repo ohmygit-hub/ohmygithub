@@ -490,9 +490,7 @@
       "openOnGitHub": "Open on GitHub"
     },
     "activity": {
-      "description": "{count} timeline items",
-      "empty": "No activity has been loaded for this issue yet.",
-      "title": "Activity"
+      "empty": "No activity has been loaded for this issue yet."
     },
     "comment": {
       "emptyPreview": "Nothing to preview.",

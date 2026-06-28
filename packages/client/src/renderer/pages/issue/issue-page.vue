@@ -196,23 +196,12 @@ async function submitIssueComment(): Promise<void> {
               :updated-at="issue.updatedAt"
             />
 
-            <section class="overflow-hidden rounded-lg border border-border bg-card">
-              <header class="flex min-w-0 items-center justify-between gap-3 border-b border-border px-4 py-3">
-                <div class="min-w-0">
-                  <h2 class="truncate text-control font-semibold text-foreground">
-                    {{ t('issue.activity.title') }}
-                  </h2>
-                  <p class="truncate text-body text-muted-foreground">
-                    {{ t('issue.activity.description', { count: timelineItems.length }) }}
-                  </p>
-                </div>
-              </header>
-
+            <section class="min-w-0">
               <ConversationTimeline
                 :empty-label="t('issue.activity.empty')"
                 :items="timelineItems"
               >
-                <div class="grid min-w-0 gap-3.5 p-3">
+                <div class="grid min-w-0 gap-4 pb-0 pl-3 pt-1">
                   <template
                     v-for="item in timelineItems"
                     :key="item.id"
@@ -252,7 +241,11 @@ async function submitIssueComment(): Promise<void> {
                 </div>
               </ConversationTimeline>
 
-              <div class="border-t border-border p-3">
+              <div class="relative mt-5 min-w-0 pl-2">
+                <div
+                  class="absolute bottom-full left-7 h-3 w-px bg-border"
+                  aria-hidden="true"
+                />
                 <IssueCommentComposer
                   v-model="commentBody"
                   :error="commentError"

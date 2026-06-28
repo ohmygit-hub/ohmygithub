@@ -26,7 +26,7 @@ const shouldRenderSlot = computed(() => !props.isLoading && !shouldShowEmpty.val
     :aria-busy="isLoading ? 'true' : undefined"
   >
     <div
-      class="absolute bottom-8 left-7 top-8 w-px bg-border"
+      class="absolute bottom-0 left-7 top-4 w-px bg-border"
       aria-hidden="true"
     />
 
