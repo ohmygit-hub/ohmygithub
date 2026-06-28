@@ -1,4 +1,31 @@
 {
+  "debug": {
+    "richContent": {
+      "description": "内部渲染调试页，用来查看 Monaco 编辑、Shiki 预览、Markdown、Mermaid、KaTeX 和 diff 高亮。",
+      "eyebrow": "调试",
+      "sample": {
+        "body": "这个 Markdown 预览会复用统一的代码渲染器，并通过 Mermaid renderer 渲染流程图。",
+        "heading": "Markdown 预览",
+        "inlineMath": "行内公式",
+        "mermaid": {
+          "archive": "归档通知",
+          "inbox": "收件箱",
+          "leaveReview": "留下 review",
+          "needsReview": "需要 review?",
+          "no": "否",
+          "openPullRequest": "打开 PR",
+          "yes": "是"
+        }
+      },
+      "sections": {
+        "codePreview": "Shiki 代码",
+        "diffPreview": "Diff 预览",
+        "editor": "Monaco 编辑器",
+        "markdown": "Markdown"
+      },
+      "title": "富内容组件"
+    }
+  },
   "auth": {
     "browserOpened": "复制这个代码，然后打开 GitHub 授权应用。",
     "copyCodeAndOpenGitHub": "复制代码并打开 GitHub",

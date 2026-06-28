@@ -12,3 +12,84 @@ body {
   background: var(--background);
   color: var(--foreground);
 }
+
+.rich-content-code .shiki,
+.rich-content-code .shiki code {
+  background: transparent !important;
+}
+
+.rich-content-code .shiki {
+  margin: 0;
+}
+
+.rich-content-code .shiki code {
+  display: block;
+  min-width: max-content;
+}
+
+.rich-content-markdown .markstream-vue {
+  contain: none;
+  content-visibility: visible;
+  color: var(--foreground);
+  font-size: var(--text-control);
+  line-height: 1.65;
+  min-width: 0;
+}
+
+.rich-content-markdown .markstream-vue .node-slot,
+.rich-content-markdown .markstream-vue .node-content {
+  min-width: 0;
+  opacity: 1;
+  visibility: visible;
+}
+
+.rich-content-markdown .markstream-vue :where(h1, h2, h3, h4, h5, h6) {
+  color: var(--foreground);
+  font-weight: 520;
+  line-height: 1.25;
+}
+
+.rich-content-markdown .markstream-vue :where(h1) {
+  font-size: 1.25rem;
+}
+
+.rich-content-markdown .markstream-vue :where(h2) {
+  font-size: 1.125rem;
+}
+
+.rich-content-markdown .markstream-vue :where(h3, h4, h5, h6) {
+  font-size: 1rem;
+}
+
+.rich-content-markdown .markstream-vue :where(p, ul, ol, blockquote, pre, table) {
+  margin-block: 0.75rem;
+}
+
+.rich-content-markdown .markstream-vue :where(.heading-node, .paragraph-node) {
+  color: var(--foreground);
+}
+
+.rich-content-markdown .markstream-vue :where(.rich-content-mermaid) {
+  background: var(--card);
+  border-color: var(--border);
+}
+
+.rich-content-markdown .markstream-vue :where(._mermaid) {
+  content-visibility: visible;
+}
+
+.rich-content-markdown .markstream-vue :where(.mermaid-preview-area) {
+  min-height: 16rem;
+}
+
+.rich-content-markdown .markstream-vue :where(*:first-child) {
+  margin-top: 0;
+}
+
+.rich-content-markdown .markstream-vue :where(*:last-child) {
+  margin-bottom: 0;
+}
+
+.rich-content-markdown .katex {
+  color: var(--foreground);
+}

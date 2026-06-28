@@ -12,6 +12,11 @@ const routes: RouteRecordRaw[] = [
     component: () => import('./pages/workspace/workspace-page.vue')
   },
   {
+    path: '/debug/rich-content',
+    name: 'debug-rich-content',
+    component: () => import('./pages/debug/rich-content-debug-page.vue')
+  },
+  {
     path: '/:pathMatch(.*)*',
     name: 'workspace',
     component: () => import('./pages/workspace/workspace-page.vue')
@@ -24,6 +29,10 @@ export const router = createRouter({
 })
 
 router.beforeEach(async (to) => {
+  if (to.name === 'debug-rich-content') {
+    return import.meta.env.DEV ? true : { name: 'workspace-root' }
+  }
+
   const auth = await getAuthState()
 
   if (!auth?.isAuthenticated && to.name !== 'auth') {

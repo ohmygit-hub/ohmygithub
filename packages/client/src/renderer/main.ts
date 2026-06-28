@@ -5,8 +5,10 @@ import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
 import App from './app.vue'
 import { i18n } from './i18n'
 import { router } from './router'
-import './styles/app.css'
+import 'markstream-vue/index.css'
+import 'katex/dist/katex.min.css'
 import 'animate.css'
+import './styles/app.css'
 
 const app = createApp(App)
 const pinia = createPinia()
