@@ -4,6 +4,9 @@ import { is } from '@electron-toolkit/utils'
 import { registerAccountsIpc } from './accounts'
 import { initializeAuth, registerAuthIpc } from './auth'
 import { initializeConfig, registerConfigIpc } from './config'
+import { configureDevRemoteDebugging } from './debug'
+
+configureDevRemoteDebugging()
 
 function createWindow(): void {
   const mainWindow = new BrowserWindow({

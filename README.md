@@ -32,6 +32,31 @@ pnpm build
 `pnpm run env:setup` installs workspace dependencies and explicitly downloads the Electron binary. The
 project pins `electron_mirror` in `.npmrc` so Electron installs reliably in local development.
 
+## Developer Debugging
+
+The Electron renderer can expose a local Chrome DevTools Protocol endpoint in development builds.
+Set `OH_MY_GITHUB_CDP_PORT` before starting the app:
+
+```powershell
+$env:OH_MY_GITHUB_CDP_PORT = '9222'
+pnpm dev
+```
+
+The endpoint binds to `127.0.0.1` only and is disabled unless the environment variable is set.
+You can confirm it is available with:
+
+```powershell
+Invoke-RestMethod http://127.0.0.1:9222/json/version
+```
+
+For `chrome-devtools-mcp`, connect to this Electron endpoint with `--browserUrl`:
+
+```toml
+[mcp_servers.chrome-devtools]
+command = "npx"
+args = ["chrome-devtools-mcp@latest", "--browserUrl", "http://127.0.0.1:9222"]
+```
+
 ## Network Proxy
 
 GitHub requests use this proxy priority:
