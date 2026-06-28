@@ -6,6 +6,7 @@ import {
   GitPullRequest,
 } from 'lucide-vue-next'
 import { getWorkspaceTabView } from './tab-presentation'
+import { createRepositoryWorkspaceUrl } from './workspace-url'
 
 export interface WorkspaceSidebarTreeLabels {
   issues: string
@@ -130,6 +131,8 @@ export function repositoryToTreeItem(
     icon: Book,
     isActive: isActiveItem(itemId, url, options),
     children: createRepositoryChildren({
+      activeItemId: options.activeItemId,
+      activeUrl: options.activeUrl,
       labels: options.labels,
       nameWithOwner: repository.nameWithOwner,
       owner: repository.owner,
@@ -140,35 +143,46 @@ export function repositoryToTreeItem(
 }
 
 function createRepositoryChildren(options: {
+  activeItemId: string | null
+  activeUrl: string
   labels: WorkspaceSidebarTreeLabels
   nameWithOwner: string
   owner: string
   repo: string
   scope: string
 }): WorkspaceSidebarTreeItem[] {
+  const pullRequestsItemId = scopedId(options.scope, `repo-pull-requests:${options.nameWithOwner}`)
+  const pullRequestsUrl = createRepositoryWorkspaceUrl(options.owner, options.repo, 'pullRequests')
+  const issuesItemId = scopedId(options.scope, `repo-issues:${options.nameWithOwner}`)
+  const issuesUrl = createRepositoryWorkspaceUrl(options.owner, options.repo, 'issues')
+
   return [
     {
-      id: scopedId(options.scope, `repo-pull-requests:${options.nameWithOwner}`),
+      id: pullRequestsItemId,
       label: options.labels.pullRequests,
+      url: pullRequestsUrl,
       icon: GitPullRequest,
+      isActive: isActiveItem(pullRequestsItemId, pullRequestsUrl, options),
       canExpand: true,
       childrenLoader: {
         type: 'repository-pull-requests',
         owner: options.owner,
         repo: options.repo,
-        scope: scopedId(options.scope, `repo-pull-requests:${options.nameWithOwner}`),
+        scope: pullRequestsItemId,
       },
     },
     {
-      id: scopedId(options.scope, `repo-issues:${options.nameWithOwner}`),
+      id: issuesItemId,
       label: options.labels.issues,
+      url: issuesUrl,
       icon: CircleDot,
+      isActive: isActiveItem(issuesItemId, issuesUrl, options),
       canExpand: true,
       childrenLoader: {
         type: 'repository-issues',
         owner: options.owner,
         repo: options.repo,
-        scope: scopedId(options.scope, `repo-issues:${options.nameWithOwner}`),
+        scope: issuesItemId,
       },
     },
   ]

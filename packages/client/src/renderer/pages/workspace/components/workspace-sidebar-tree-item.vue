@@ -170,14 +170,14 @@ const childErrorKey = computed(() => {
   return 'workspace.sidebar.repositories.error'
 })
 const showChildLoading = computed(() =>
-  childStateVisible.value && Boolean(activeQuery.value?.isLoading.value) && !hasLoadedChildren.value,
+  childStateVisible.value && Boolean(activeQuery.value?.isPending.value) && !hasLoadedChildren.value,
 )
 const showChildError = computed(() =>
   childStateVisible.value && Boolean(activeQuery.value?.error.value) && !hasLoadedChildren.value,
 )
 const showChildEmpty = computed(() =>
   childStateVisible.value
-  && !activeQuery.value?.isLoading.value
+  && !activeQuery.value?.isPending.value
   && !activeQuery.value?.error.value
   && !hasLoadedChildren.value,
 )
