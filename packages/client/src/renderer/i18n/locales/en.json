@@ -1,4 +1,31 @@
 {
+  "debug": {
+    "richContent": {
+      "description": "Internal renderer surface for Monaco editing, Shiki previews, Markdown, Mermaid, KaTeX, and diff highlighting.",
+      "eyebrow": "Debug",
+      "sample": {
+        "body": "This Markdown preview uses the shared code renderer and the Mermaid renderer.",
+        "heading": "Markdown preview",
+        "inlineMath": "Inline math",
+        "mermaid": {
+          "archive": "Archive notification",
+          "inbox": "Inbox",
+          "leaveReview": "Leave review",
+          "needsReview": "Needs review?",
+          "no": "No",
+          "openPullRequest": "Open pull request",
+          "yes": "Yes"
+        }
+      },
+      "sections": {
+        "codePreview": "Shiki code",
+        "diffPreview": "Diff preview",
+        "editor": "Monaco editor",
+        "markdown": "Markdown"
+      },
+      "title": "Rich content components"
+    }
+  },
   "auth": {
     "browserOpened": "Copy this code, then open GitHub to authorize the app.",
     "copyCodeAndOpenGitHub": "Copy code and open GitHub",

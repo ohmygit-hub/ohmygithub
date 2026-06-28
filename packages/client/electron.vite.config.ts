@@ -45,9 +45,32 @@ export default defineConfig(({ mode }) => {
           '@oh-my-github/ui': resolve(__dirname, '../ui/src/index.ts')
         }
       },
+      optimizeDeps: {
+        include: ['monaco-editor', 'stream-monaco', 'shiki']
+      },
       build: {
         rollupOptions: {
-          input: resolve(__dirname, 'src/renderer/index.html')
+          input: resolve(__dirname, 'src/renderer/index.html'),
+          output: {
+            manualChunks(id) {
+              if (id.includes('monaco-editor') || id.includes('stream-monaco')) {
+                return 'monaco-editor'
+              }
+
+              if (
+                id.includes('markstream-vue') ||
+                id.includes('stream-markdown') ||
+                id.includes('mermaid') ||
+                id.includes('katex') ||
+                id.includes('shiki') ||
+                id.includes('@shikijs')
+              ) {
+                return 'rich-content'
+              }
+
+              return undefined
+            }
+          }
         }
       },
       plugins: [vue(), tailwindcss()]
