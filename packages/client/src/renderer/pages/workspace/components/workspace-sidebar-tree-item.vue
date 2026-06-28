@@ -415,6 +415,22 @@ watch(
       v-if="isExpanded"
       class="!mx-0 !ml-2 !translate-x-0 !border-l-0 !px-0 !pl-1"
     >
+      <SidebarMenuSubItem v-if="showChildLoading">
+        <SidebarMenuSkeleton show-icon />
+      </SidebarMenuSubItem>
+
+      <SidebarMenuSubItem v-else-if="showChildError">
+        <p class="px-2 py-1.5 text-caption text-muted-foreground">
+          {{ t(childErrorKey) }}
+        </p>
+      </SidebarMenuSubItem>
+
+      <SidebarMenuSubItem v-else-if="showChildEmpty">
+        <p class="px-2 py-1.5 text-caption text-muted-foreground">
+          {{ t(childEmptyKey) }}
+        </p>
+      </SidebarMenuSubItem>
+
       <WorkspaceSidebarTreeItem
         v-for="child in visibleChildren"
         :key="child.id"
