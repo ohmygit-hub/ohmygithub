@@ -50,7 +50,6 @@ const issueQuery = useIssueDetailQuery(owner, repo, number, hasIdentity)
 const issue = computed<IssueDetail | null>(() => (issueQuery.data.value ?? null) as IssueDetail | null)
 const timelineItems = useIssueTimelineItems(issue)
 const commentBody = ref('')
-const commentMode = ref<'write' | 'preview'>('write')
 const commentError = ref<string | null>(null)
 const isSubmittingComment = ref(false)
 const isLoading = computed(() => hasIdentity.value && issueQuery.isLoading.value && !issue.value)
@@ -80,7 +79,6 @@ async function submitIssueComment(): Promise<void> {
   try {
     await createIssueComment(owner.value, repo.value, number.value, body)
     commentBody.value = ''
-    commentMode.value = 'write'
     await issueQuery.refetch()
   } catch {
     commentError.value = t('issue.comment.error')
@@ -257,7 +255,6 @@ async function submitIssueComment(): Promise<void> {
               <div class="border-t border-border p-3">
                 <IssueCommentComposer
                   v-model="commentBody"
-                  v-model:mode="commentMode"
                   :error="commentError"
                   :is-submitting="isSubmittingComment"
                   @submit="submitIssueComment"

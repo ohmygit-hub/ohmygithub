@@ -498,7 +498,6 @@
       "emptyPreview": "Nothing to preview.",
       "error": "Comment could not be posted. Check your permissions and try again.",
       "inputLabel": "Issue comment",
-      "modeLabel": "Comment editor mode",
       "placeholder": "Leave a comment",
       "preview": "Preview",
       "submit": "Comment",
