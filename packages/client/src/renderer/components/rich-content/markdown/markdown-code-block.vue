@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { MarkdownCodeNode } from './markdown-node-types'
-import ShikiCode from './shiki-code.vue'
+import ShikiCode from '../code/preview/shiki-code.vue'
+import type { MarkdownCodeNode } from '../shared/markstream-node-types'
 
 const props = defineProps<{
   node: MarkdownCodeNode

@@ -2,8 +2,8 @@
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type { MonacoLanguage, MonacoOptions, MonacoTheme } from 'stream-monaco'
 import { ensureMonacoWorkers, useMonaco } from 'stream-monaco'
-import { useCodeTheme } from './code-theme'
-import { resolveCodeLanguage } from './code-language'
+import { useCodeTheme } from '../code-theme'
+import { resolveCodeLanguage } from '../code-language'
 
 const props = withDefaults(defineProps<{
   modelValue: string

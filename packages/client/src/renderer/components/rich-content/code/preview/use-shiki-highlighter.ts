@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import type { BundledLanguage, BundledTheme, HighlighterGeneric } from 'shiki'
-import { useSettingsStore } from '../stores/settings'
-import { normalizeCodeLanguage, resolveCodeLanguage } from '../components/rich-content/code-language'
+import { useSettingsStore } from '../../../../stores/settings'
+import { normalizeCodeLanguage, resolveCodeLanguage } from '../code-language'
 
 type Highlighter = HighlighterGeneric<BundledLanguage, BundledTheme>
 

@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import MarkdownRender, { enableKatex, enableMermaid, setCustomComponents } from 'markstream-vue'
-import { useSettingsStore } from '../../stores/settings'
+import { useSettingsStore } from '../../../stores/settings'
+import MermaidRenderer from '../mermaid/mermaid-renderer.vue'
 import MarkdownCodeBlock from './markdown-code-block.vue'
-import MermaidRenderer from './mermaid-renderer.vue'
 
 const RICH_CONTENT_MARKDOWN_ID = 'oh-my-github-rich-content'
 

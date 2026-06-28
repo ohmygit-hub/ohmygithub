@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { watch } from 'vue'
-import { useShikiHighlighter } from '../../composables/use-shiki-highlighter'
+import { useShikiHighlighter } from './use-shiki-highlighter'
 
 const props = withDefaults(defineProps<{
   code: string

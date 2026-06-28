@@ -1,5 +1,5 @@
 import { computed } from 'vue'
-import { useSettingsStore } from '../../stores/settings'
+import { useSettingsStore } from '../../../stores/settings'
 
 export interface CodeThemePair {
   light: string
