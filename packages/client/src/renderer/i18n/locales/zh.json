@@ -494,17 +494,6 @@
       "empty": "这个 Issue 还没有加载到动态。",
       "title": "动态"
     },
-    "development": {
-      "description": "关联的分支、Pull Request 和提交。",
-      "empty": "暂时没有关联工作。后续 detail API 扩展后，Pull Request、分支和提交会连接到这里。",
-      "readOnly": "只读",
-      "summary": {
-        "branches": "分支",
-        "commits": "提交",
-        "pullRequests": "Pull Requests"
-      },
-      "title": "Development"
-    },
     "empty": {
       "body": "没有填写描述。",
       "missingIdentity": {
@@ -550,7 +539,6 @@
       },
       "empty": {
         "assignees": "没有负责人",
-        "development": "没有关联开发工作",
         "labels": "没有标签",
         "milestone": "没有里程碑",
         "participants": "没有参与者"

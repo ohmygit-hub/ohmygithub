@@ -2,9 +2,9 @@
 import type {
   IssueActorSummary,
   IssueDetail,
-  IssueDevelopmentSummary,
   IssueLabelSummary,
 } from './types'
+import type { Component } from 'vue'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
@@ -12,12 +12,19 @@ import {
   AvatarFallback,
   AvatarImage,
 } from '@oh-my-github/ui'
-import { CalendarDays, GitBranch, GitCommitHorizontal, GitPullRequest, Link2 } from 'lucide-vue-next'
+import { CalendarDays, GitBranch, GitCommitHorizontal, GitPullRequest } from 'lucide-vue-next'
 import { WorkItemLabelList, WorkItemSidebarSection } from '../../../components'
 
 const props = defineProps<{
   issue: IssueDetail
 }>()
+
+interface DevelopmentItem {
+  id: string
+  icon: Component
+  label: string
+  value: string
+}
 
 const { t } = useI18n()
 
@@ -25,34 +32,44 @@ const assignees = computed(() => props.issue.assignees ?? [])
 const labels = computed(() => normalizeLabels(props.issue.labels))
 const labelNames = computed(() => labels.value.map((label) => label.name))
 const participants = computed(() => props.issue.participants ?? [])
-const development = computed<IssueDevelopmentSummary>(() => ({
-  branches: props.issue.development?.branches ?? null,
-  commits: props.issue.development?.commits ?? null,
-  pullRequests: props.issue.development?.pullRequests ?? props.issue.linkedWork ?? [],
-}))
-const developmentItems = computed(() => [
-  {
-    id: 'pullRequests',
-    icon: GitPullRequest,
-    label: t('issue.sidebar.development.pullRequests'),
-    value: String(development.value.pullRequests?.length ?? 0),
-  },
-  {
-    id: 'branches',
-    icon: GitBranch,
-    label: t('issue.sidebar.development.branches'),
-    value: formatNullableCount(development.value.branches),
-  },
-  {
-    id: 'commits',
-    icon: GitCommitHorizontal,
-    label: t('issue.sidebar.development.commits'),
-    value: formatNullableCount(development.value.commits),
-  },
-])
-const hasDevelopmentSummary = computed(() =>
-  developmentItems.value.some((item) => item.value !== t('issue.values.notAvailable') && item.value !== '0')
+const linkedPullRequests = computed(() =>
+  props.issue.development?.pullRequests ?? props.issue.linkedWork ?? []
 )
+const developmentItems = computed<DevelopmentItem[]>(() => {
+  const branches = props.issue.development?.branches
+  const commits = props.issue.development?.commits
+  const items: DevelopmentItem[] = []
+
+  if (linkedPullRequests.value.length > 0) {
+    items.push({
+      id: 'pullRequests',
+      icon: GitPullRequest,
+      label: t('issue.sidebar.development.pullRequests'),
+      value: formatCount(linkedPullRequests.value.length),
+    })
+  }
+
+  if (isLinkedCount(branches)) {
+    items.push({
+      id: 'branches',
+      icon: GitBranch,
+      label: t('issue.sidebar.development.branches'),
+      value: formatCount(branches),
+    })
+  }
+
+  if (isLinkedCount(commits)) {
+    items.push({
+      id: 'commits',
+      icon: GitCommitHorizontal,
+      label: t('issue.sidebar.development.commits'),
+      value: formatCount(commits),
+    })
+  }
+
+  return items
+})
+const shouldShowDevelopment = computed(() => developmentItems.value.length > 0)
 const dates = computed(() => [
   {
     id: 'created',
@@ -90,10 +107,12 @@ function formatDate(value: string | null | undefined): string {
   }).format(date)
 }
 
-function formatNullableCount(value: number | null | undefined): string {
-  if (value === null || value === undefined) return t('issue.values.notAvailable')
-
+function formatCount(value: number): string {
   return new Intl.NumberFormat().format(value)
+}
+
+function isLinkedCount(value: number | null | undefined): value is number {
+  return typeof value === 'number' && value > 0
 }
 
 function normalizeLabels(labels: Array<IssueLabelSummary | string>): IssueLabelSummary[] {
@@ -114,6 +133,7 @@ function isDateItem(
 ): value is { id: string, label: string, value: string } {
   return value !== null
 }
+
 </script>
 
 <template>
@@ -240,7 +260,10 @@ function isDateItem(
       </p>
     </WorkItemSidebarSection>
 
-    <WorkItemSidebarSection :title="t('issue.sidebar.sections.development')">
+    <WorkItemSidebarSection
+      v-if="shouldShowDevelopment"
+      :title="t('issue.sidebar.sections.development')"
+    >
       <div class="grid gap-2.5">
         <div
           v-for="item in developmentItems"
@@ -256,13 +279,6 @@ function isDateItem(
           </span>
           <span class="shrink-0 font-medium tabular-nums text-foreground">{{ item.value }}</span>
         </div>
-        <p
-          v-if="!hasDevelopmentSummary"
-          class="inline-flex min-w-0 items-start gap-2 text-body text-muted-foreground"
-        >
-          <Link2 class="mt-0.5 size-3.5 shrink-0" />
-          <span>{{ t('issue.sidebar.empty.development') }}</span>
-        </p>
       </div>
     </WorkItemSidebarSection>
   </aside>

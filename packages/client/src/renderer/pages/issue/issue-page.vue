@@ -23,7 +23,6 @@ import {
   ConversationTimeline,
 } from '../../components'
 import { useIssueDetailQuery } from '../../composables/github/use-issues'
-import IssueDevelopmentCard from './components/issue-development-card.vue'
 import IssueHeader from './components/issue-header.vue'
 import IssueSidebar from './components/issue-sidebar.vue'
 import { useIssueTimelineItems } from './composables/use-issue-timeline-items'
@@ -103,7 +102,6 @@ function actorFallback(actor: { login: string }): string {
         <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_18rem]">
           <main class="grid min-w-0 gap-4">
             <Skeleton class="h-52 rounded-lg" />
-            <Skeleton class="h-36 rounded-lg" />
             <Skeleton class="h-72 rounded-lg" />
           </main>
           <aside class="grid content-start gap-3">
@@ -174,11 +172,6 @@ function actorFallback(actor: { login: string }): string {
               :empty-label="t('issue.empty.body')"
               :reactions="issue.reactions ?? []"
               :updated-at="issue.updatedAt"
-            />
-
-            <IssueDevelopmentCard
-              :development="issue.development"
-              :linked-work="issue.linkedWork"
             />
 
             <section class="overflow-hidden rounded-lg border border-border bg-card">

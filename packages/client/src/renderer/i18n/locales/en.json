@@ -494,17 +494,6 @@
       "empty": "No activity has been loaded for this issue yet.",
       "title": "Activity"
     },
-    "development": {
-      "description": "Linked branches, pull requests, and commits.",
-      "empty": "No linked work is available yet. Pull requests, branches, and commits can connect here when the detail API expands.",
-      "readOnly": "Read-only",
-      "summary": {
-        "branches": "Branches",
-        "commits": "Commits",
-        "pullRequests": "Pull requests"
-      },
-      "title": "Development"
-    },
     "empty": {
       "body": "No description provided.",
       "missingIdentity": {
@@ -550,7 +539,6 @@
       },
       "empty": {
         "assignees": "No assignees",
-        "development": "No linked development work",
         "labels": "No labels",
         "milestone": "No milestone",
         "participants": "No participants"
