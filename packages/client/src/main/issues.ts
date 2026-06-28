@@ -19,6 +19,9 @@ export function registerIssuesIpc(): void {
   ipcMain.handle('issues:search-repository', (_event, options: SearchRepositoryIssuesOptions) =>
     searchRepositoryIssues(options)
   )
+  ipcMain.handle('issues:get-detail', (_event, owner: string, repo: string, number: number) =>
+    getIssueDetail(owner, repo, number)
+  )
 }
 
 async function listIssueCategory(category: GitHubIssueCategory) {
@@ -84,6 +87,28 @@ function normalizeSearchRepositoryIssuesOptions(
     page: normalizePositiveInteger(options.page, 1),
     perPage: normalizePositiveInteger(options.perPage, 20),
   }
+}
+
+async function getIssueDetail(owner: string, repo: string, number: number) {
+  const normalizedOwner = owner.trim()
+  const normalizedRepo = repo.trim()
+  const normalizedNumber = Number(number)
+
+  if (!normalizedOwner || !normalizedRepo) {
+    throw new Error('Repository owner and name are required')
+  }
+
+  if (!Number.isInteger(normalizedNumber) || normalizedNumber <= 0) {
+    throw new Error('Issue number must be a positive integer')
+  }
+
+  const api = await createAuthenticatedGitHubApi()
+
+  return api.issues.getIssueDetail({
+    owner: normalizedOwner,
+    repo: normalizedRepo,
+    number: normalizedNumber
+  })
 }
 
 function normalizeIssueSearchState(state: GitHubIssueSearchState | undefined): GitHubIssueSearchState {

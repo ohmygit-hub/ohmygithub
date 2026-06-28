@@ -139,9 +139,22 @@ body {
   min-width: 0;
 }
 
+.rich-content-markdown.rich-content-markdown--compact {
+  line-height: 1.5;
+}
+
+.rich-content-markdown.rich-content-markdown--compact :where(.markstream-vue) {
+  --ms-leading-body: 1.5;
+  --ms-flow-paragraph-y: 0.5rem;
+}
+
 .rich-content-markdown .markstream-vue.markdown-renderer {
   font-size: var(--text-control);
   line-height: 1.6;
+}
+
+.rich-content-markdown.rich-content-markdown--compact .markstream-vue.markdown-renderer {
+  line-height: 1.5;
 }
 
 .rich-content-markdown .markstream-vue .paragraph-node,
@@ -208,12 +221,20 @@ body {
   margin-block: 0.75rem;
 }
 
+.rich-content-markdown.rich-content-markdown--compact :where(p, ul, ol, blockquote, pre, table) {
+  margin-block: 0.5rem;
+}
+
 .rich-content-markdown :where(ul, ol) {
   padding-left: 1.35rem;
 }
 
 .rich-content-markdown :where(li) {
   margin-block: 0.25rem;
+}
+
+.rich-content-markdown.rich-content-markdown--compact :where(li) {
+  margin-block: 0.125rem;
 }
 
 .rich-content-markdown :where(a) {

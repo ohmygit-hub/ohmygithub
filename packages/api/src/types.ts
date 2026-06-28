@@ -308,6 +308,92 @@ export interface GitHubIssueSearchResult {
   incompleteResults: boolean
 }
 
+export interface GitHubIssueReaction {
+  content: string
+  count: number
+  viewerHasReacted?: boolean
+}
+
+export interface GitHubIssueMilestone {
+  id: string
+  number: number
+  title: string
+  description: string | null
+  dueOn: string | null
+  state: 'open' | 'closed'
+  url: string
+}
+
+export interface GitHubIssueComment {
+  id: string
+  author: GitHubActor
+  body: string
+  createdAt: string
+  updatedAt: string
+  authorAssociation: string
+  reactions: GitHubIssueReaction[]
+  url: string
+}
+
+export type GitHubIssueTimelineEventType =
+  | 'assigned'
+  | 'unassigned'
+  | 'labeled'
+  | 'unlabeled'
+  | 'closed'
+  | 'reopened'
+  | 'renamed'
+  | 'cross-referenced'
+  | 'mentioned'
+  | 'generic'
+
+export interface GitHubIssueTimelineReference {
+  type: string
+  repository?: string
+  number?: number
+  title?: string
+  url?: string | null
+}
+
+export interface GitHubIssueTimelineEvent {
+  id: string
+  type: GitHubIssueTimelineEventType
+  actor: GitHubActor
+  createdAt: string
+  body?: string | null
+  text?: string | null
+  label?: string | null
+  from?: string | null
+  to?: string | null
+  url?: string | null
+  assignee?: GitHubActor
+  source?: GitHubIssueTimelineReference
+}
+
+export interface GitHubIssueDetail {
+  id: string
+  owner: string
+  repo: string
+  repository: string
+  number: number
+  title: string
+  state: GitHubIssueState
+  author: GitHubActor
+  createdAt: string
+  updatedAt: string
+  closedAt: string | null
+  body: string
+  labels: string[]
+  assignees: GitHubActor[]
+  milestone: GitHubIssueMilestone | null
+  participants: GitHubActor[]
+  comments: GitHubIssueComment[]
+  timelineEvents: GitHubIssueTimelineEvent[]
+  reactions: GitHubIssueReaction[]
+  url: string
+  hasUpdates: boolean
+}
+
 export interface GitHubDeviceAuthorization {
   deviceCode: string
   userCode: string
@@ -372,6 +458,7 @@ export interface GitHubClient {
   listViewerIssues(options?: ListWorkspaceItemsOptions): Promise<GitHubIssue[]>
   listRepositoryIssues(options: ListRepositoryWorkspaceItemsOptions): Promise<GitHubIssue[]>
   searchRepositoryIssues(options: SearchRepositoryIssuesOptions): Promise<GitHubIssueSearchResult>
+  getIssueDetail(options: GetIssueDetailOptions): Promise<GitHubIssueDetail>
   listViewerOrganizations(): Promise<GitHubOrganization[]>
   listOrganizationRepositories(owner: string): Promise<GitHubRepository[]>
   resolveWorkspaceGoto(input: string): Promise<GitHubWorkspaceGotoResult>
@@ -416,6 +503,10 @@ export interface ListIssueCategoryOptions extends ListWorkspaceItemsOptions {
 export interface ListRepositoryWorkspaceItemsOptions extends ListWorkspaceItemsOptions {
   owner: string
   repo: string
+}
+
+export interface GetIssueDetailOptions extends RepositoryOptions {
+  number: number
 }
 
 export interface SearchRepositoryPullRequestsOptions extends RepositoryOptions {

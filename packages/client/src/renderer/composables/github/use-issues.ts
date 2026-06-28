@@ -93,3 +93,34 @@ export function useRepositoryIssueSearchQuery(
     },
   })
 }
+
+export function useIssueDetailQuery(
+  owner: MaybeRefOrGetter<string>,
+  repo: MaybeRefOrGetter<string>,
+  issueNumber: MaybeRefOrGetter<number>,
+  enabled: MaybeRefOrGetter<boolean>,
+) {
+  return useQuery<GitHubIssueDetail>({
+    key: () => ['github', 'issue-detail', toValue(owner), toValue(repo), toValue(issueNumber)],
+    enabled: () => {
+      const number = toValue(issueNumber)
+
+      return Boolean(toValue(owner))
+        && Boolean(toValue(repo))
+        && Number.isInteger(number)
+        && number > 0
+        && toValue(enabled)
+    },
+    query: async () => {
+      if (!window.ohMyGithub?.issues) {
+        throw new Error('GitHub issues bridge is unavailable')
+      }
+
+      return window.ohMyGithub.issues.getIssueDetail(
+        toValue(owner),
+        toValue(repo),
+        toValue(issueNumber),
+      )
+    },
+  })
+}

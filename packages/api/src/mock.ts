@@ -1,7 +1,9 @@
 import type {
+  GetIssueDetailOptions,
   GitHubClient,
   GitHubIssue,
   GitHubIssueSearchResult,
+  GitHubIssueDetail,
   GitHubOrganization,
   GitHubPullRequest,
   GitHubPullRequestSearchResult,
@@ -394,6 +396,13 @@ export class MockGitHubClient implements GitHubClient {
       hasNextPage: offset + perPage < filtered.length,
       incompleteResults: false,
     }
+  }
+
+  async getIssueDetail(options: GetIssueDetailOptions): Promise<GitHubIssueDetail> {
+    const issue = issuesByRepository[repositoryKey(options)]
+      ?.find((item) => item.number === options.number)
+
+    return createMockIssueDetail(options, issue)
   }
 
   async getRepositoryViewerState(options: RepositoryOptions): Promise<GitHubRepositoryViewerState> {
@@ -829,4 +838,133 @@ function createMockIssues(owner: string, repo: string, titles: string[]): GitHub
     url: `https://github.com/${owner}/${repo}/issues/${index + 31}`,
     hasUpdates: index === 1,
   }))
+}
+
+function createMockIssueDetail(options: GetIssueDetailOptions, issue?: GitHubIssue): GitHubIssueDetail {
+  const key = repositoryKey(options)
+  const title = issue?.title ?? `Follow up on ${options.repo} issue detail`
+  const author = issue?.author ?? { login: 'acbox', avatarUrl: 'https://avatars.githubusercontent.com/u/9919?s=80&v=4' }
+  const updatedAt = issue?.updatedAt ?? new Date(Date.UTC(2026, 5, 26, 10)).toISOString()
+  const createdAt = new Date(Date.UTC(2026, 5, 24, 9, 30)).toISOString()
+  const secondCommentAt = new Date(Date.UTC(2026, 5, 26, 8, 45)).toISOString()
+
+  return {
+    id: issue?.id ?? `mock-issue:${key}:${options.number}`,
+    owner: options.owner,
+    repo: options.repo,
+    repository: key,
+    number: options.number,
+    title,
+    state: issue?.state ?? 'open',
+    author,
+    createdAt,
+    updatedAt,
+    closedAt: issue?.state === 'open' || !issue ? null : updatedAt,
+    body: [
+      `The issue detail surface needs a reliable read-only contract for ${key}.`,
+      '',
+      'Expected data:',
+      '',
+      '- issue body and metadata',
+      '- labels, assignees, milestone, and participants',
+      '- comments with reactions',
+      '- core timeline events for triage and state changes',
+    ].join('\n'),
+    labels: issue?.labels ?? ['triage', 'detail'],
+    assignees: [
+      { login: 'octo-lina', avatarUrl: 'https://avatars.githubusercontent.com/u/583231?s=80&v=4' },
+      { login: 'maya', avatarUrl: 'https://avatars.githubusercontent.com/u/69631?s=80&v=4' },
+    ],
+    milestone: {
+      id: `mock-milestone:${key}:1`,
+      number: 1,
+      title: 'Issue detail beta',
+      description: 'Read-only issue detail data for the desktop workspace.',
+      dueOn: '2026-07-10T00:00:00.000Z',
+      state: 'open',
+      url: `https://github.com/${key}/milestone/1`,
+    },
+    participants: [
+      author,
+      { login: 'octo-lina', avatarUrl: 'https://avatars.githubusercontent.com/u/583231?s=80&v=4' },
+      { login: 'arden', avatarUrl: 'https://avatars.githubusercontent.com/u/810438?s=80&v=4' },
+    ],
+    comments: [
+      {
+        id: `mock-comment:${key}:${options.number}:1`,
+        author: { login: 'octo-lina', avatarUrl: 'https://avatars.githubusercontent.com/u/583231?s=80&v=4' },
+        body: 'I can reproduce this from the repository issue list. The detail route should be able to render without extra renderer-side GitHub calls.',
+        createdAt: new Date(Date.UTC(2026, 5, 25, 13, 15)).toISOString(),
+        updatedAt: new Date(Date.UTC(2026, 5, 25, 13, 15)).toISOString(),
+        authorAssociation: 'MEMBER',
+        reactions: [
+          { content: 'thumbs-up', count: 3, viewerHasReacted: true },
+          { content: 'eyes', count: 1 },
+        ],
+        url: `https://github.com/${key}/issues/${options.number}#issuecomment-1`,
+      },
+      {
+        id: `mock-comment:${key}:${options.number}:2`,
+        author: { login: 'arden', avatarUrl: 'https://avatars.githubusercontent.com/u/810438?s=80&v=4' },
+        body: 'Mock data should include at least one cross-reference and one rename event so the activity list can be designed against real shapes.',
+        createdAt: secondCommentAt,
+        updatedAt: secondCommentAt,
+        authorAssociation: 'CONTRIBUTOR',
+        reactions: [
+          { content: 'heart', count: 2 },
+        ],
+        url: `https://github.com/${key}/issues/${options.number}#issuecomment-2`,
+      },
+    ],
+    timelineEvents: [
+      {
+        id: `mock-event:${key}:${options.number}:mentioned`,
+        type: 'mentioned',
+        actor: { login: 'github-actions', avatarUrl: 'https://avatars.githubusercontent.com/u/44036562?s=80&v=4' },
+        createdAt: new Date(Date.UTC(2026, 5, 24, 10)).toISOString(),
+      },
+      {
+        id: `mock-event:${key}:${options.number}:labeled`,
+        type: 'labeled',
+        actor: { login: 'acbox', avatarUrl: 'https://avatars.githubusercontent.com/u/9919?s=80&v=4' },
+        createdAt: new Date(Date.UTC(2026, 5, 24, 10, 6)).toISOString(),
+        label: issue?.labels[0] ?? 'triage',
+      },
+      {
+        id: `mock-event:${key}:${options.number}:assigned`,
+        type: 'assigned',
+        actor: { login: 'acbox', avatarUrl: 'https://avatars.githubusercontent.com/u/9919?s=80&v=4' },
+        createdAt: new Date(Date.UTC(2026, 5, 24, 10, 12)).toISOString(),
+        assignee: { login: 'octo-lina', avatarUrl: 'https://avatars.githubusercontent.com/u/583231?s=80&v=4' },
+      },
+      {
+        id: `mock-event:${key}:${options.number}:renamed`,
+        type: 'renamed',
+        actor: { login: 'octo-lina', avatarUrl: 'https://avatars.githubusercontent.com/u/583231?s=80&v=4' },
+        createdAt: new Date(Date.UTC(2026, 5, 25, 9)).toISOString(),
+        from: 'Draft issue detail routes',
+        to: title,
+      },
+      {
+        id: `mock-event:${key}:${options.number}:cross-reference`,
+        type: 'cross-referenced',
+        actor: { login: 'maya', avatarUrl: 'https://avatars.githubusercontent.com/u/69631?s=80&v=4' },
+        createdAt: new Date(Date.UTC(2026, 5, 26, 8)).toISOString(),
+        url: `https://github.com/${key}/pull/42`,
+        source: {
+          type: 'pull-request',
+          repository: key,
+          number: 42,
+          title: 'Wire issue detail data bridge',
+          url: `https://github.com/${key}/pull/42`,
+        },
+      },
+    ],
+    reactions: [
+      { content: 'thumbs-up', count: 5 },
+      { content: 'rocket', count: 1 },
+    ],
+    url: issue?.url ?? `https://github.com/${key}/issues/${options.number}`,
+    hasUpdates: issue?.hasUpdates ?? false,
+  }
 }

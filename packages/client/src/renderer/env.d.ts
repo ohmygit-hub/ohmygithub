@@ -345,6 +345,92 @@ type GitHubIssueSearchResult = {
   incompleteResults: boolean
 }
 
+type GitHubIssueReaction = {
+  content: string
+  count: number
+  viewerHasReacted?: boolean
+}
+
+type GitHubIssueMilestone = {
+  id: string
+  number: number
+  title: string
+  description: string | null
+  dueOn: string | null
+  state: 'open' | 'closed'
+  url: string
+}
+
+type GitHubIssueComment = {
+  id: string
+  author: GitHubActor
+  body: string
+  createdAt: string
+  updatedAt: string
+  authorAssociation: string
+  reactions: GitHubIssueReaction[]
+  url: string
+}
+
+type GitHubIssueTimelineEventType =
+  | 'assigned'
+  | 'unassigned'
+  | 'labeled'
+  | 'unlabeled'
+  | 'closed'
+  | 'reopened'
+  | 'renamed'
+  | 'cross-referenced'
+  | 'mentioned'
+  | 'generic'
+
+type GitHubIssueTimelineReference = {
+  type: string
+  repository?: string
+  number?: number
+  title?: string
+  url?: string | null
+}
+
+type GitHubIssueTimelineEvent = {
+  id: string
+  type: GitHubIssueTimelineEventType
+  actor: GitHubActor
+  createdAt: string
+  body?: string | null
+  text?: string | null
+  label?: string | null
+  from?: string | null
+  to?: string | null
+  url?: string | null
+  assignee?: GitHubActor
+  source?: GitHubIssueTimelineReference
+}
+
+type GitHubIssueDetail = {
+  id: string
+  owner: string
+  repo: string
+  repository: string
+  number: number
+  title: string
+  state: GitHubIssueState
+  author: GitHubActor
+  createdAt: string
+  updatedAt: string
+  closedAt: string | null
+  body: string
+  labels: string[]
+  assignees: GitHubActor[]
+  milestone: GitHubIssueMilestone | null
+  participants: GitHubActor[]
+  comments: GitHubIssueComment[]
+  timelineEvents: GitHubIssueTimelineEvent[]
+  reactions: GitHubIssueReaction[]
+  url: string
+  hasUpdates: boolean
+}
+
 type AuthState = {
   isAuthenticated: boolean
   path: string
@@ -379,6 +465,7 @@ interface Window {
       listViewerIssues: () => Promise<GitHubIssue[]>
       listRepositoryIssues: (owner: string, repo: string) => Promise<GitHubIssue[]>
       searchRepositoryIssues: (options: SearchRepositoryIssuesOptions) => Promise<GitHubIssueSearchResult>
+      getIssueDetail: (owner: string, repo: string, number: number) => Promise<GitHubIssueDetail>
     }
     pulls: {
       listPullRequestCategory: (category: GitHubPullRequestCategory) => Promise<GitHubPullRequest[]>

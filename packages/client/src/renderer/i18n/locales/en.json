@@ -484,6 +484,48 @@
   "issue": {
     "description": "{repository} {number} is open as an issue workspace. Conversation, labels, and project data will be connected here later.",
     "eyebrow": "Issue",
+    "actions": {
+      "copyUrl": "Copy URL",
+      "more": "More issue actions",
+      "openOnGitHub": "Open on GitHub"
+    },
+    "activity": {
+      "description": "{count} timeline items",
+      "empty": "No activity has been loaded for this issue yet.",
+      "title": "Activity"
+    },
+    "development": {
+      "description": "Linked branches, pull requests, and commits.",
+      "empty": "No linked work is available yet. Pull requests, branches, and commits can connect here when the detail API expands.",
+      "readOnly": "Read-only",
+      "summary": {
+        "branches": "Branches",
+        "commits": "Commits",
+        "pullRequests": "Pull requests"
+      },
+      "title": "Development"
+    },
+    "empty": {
+      "body": "No description provided.",
+      "missingIdentity": {
+        "description": "Open an issue tab with an owner, repository, and issue number to load the discussion.",
+        "title": "Issue is not available"
+      },
+      "unavailable": {
+        "description": "GitHub did not return an issue for this tab. It may have moved, been deleted, or require more permissions.",
+        "title": "Issue could not be found"
+      }
+    },
+    "error": {
+      "description": "GitHub issue details could not be loaded. Check the connection and try again.",
+      "retry": "Retry",
+      "title": "Could not load issue"
+    },
+    "loading": "Loading issue...",
+    "meta": {
+      "createdBy": "Opened by {author} on {date}",
+      "updated": "Updated {date}"
+    },
     "sections": {
       "activity": {
         "description": "A future activity area can collect comments, assignments, and project updates.",
@@ -494,12 +536,60 @@
         "title": "Overview"
       }
     },
+    "sidebar": {
+      "dates": {
+        "closed": "Closed",
+        "created": "Created",
+        "due": "Due {date}",
+        "updated": "Updated"
+      },
+      "development": {
+        "branches": "Branches",
+        "commits": "Commits",
+        "pullRequests": "Pull requests"
+      },
+      "empty": {
+        "assignees": "No assignees",
+        "development": "No linked development work",
+        "labels": "No labels",
+        "milestone": "No milestone",
+        "participants": "No participants"
+      },
+      "sections": {
+        "assignees": "Assignees",
+        "dates": "Dates",
+        "development": "Development",
+        "labels": "Labels",
+        "milestone": "Milestone",
+        "participants": "Participants"
+      }
+    },
+    "states": {
+      "completed": "Completed",
+      "not_planned": "Not planned",
+      "open": "Open",
+      "unknown": "Unknown"
+    },
+    "timeline": {
+      "assigned": "assigned {target}",
+      "closed": "closed this issue",
+      "crossReferenced": "referenced {source}",
+      "generic": "updated the timeline",
+      "labeled": "added {label}",
+      "mentioned": "mentioned this issue",
+      "renamed": "renamed from \"{from}\" to \"{to}\"",
+      "reopened": "reopened this issue",
+      "unassigned": "removed {target} from assignees",
+      "unlabeled": "removed {label}"
+    },
     "summary": {
       "comments": "Comments",
       "labels": "Labels",
       "repository": "Repository"
     },
     "values": {
+      "notAvailable": "Not available",
+      "unknown": "Unknown",
       "placeholder": "Not connected"
     }
   },
