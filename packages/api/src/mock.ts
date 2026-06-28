@@ -3,13 +3,21 @@ import type {
   GitHubIssue,
   GitHubOrganization,
   GitHubPullRequest,
+  GitHubPullRequestSearchResult,
   GitHubRepository,
+  GitHubRepositoryFileNode,
+  GitHubRepositoryFilePreview,
+  GitHubRepositoryFileTree,
+  GitHubRepositoryOverview,
   GitHubRepositoryViewerState,
   GitHubWorkspaceItem,
   ListIssueCategoryOptions,
   ListPullRequestCategoryOptions,
   ListRepositoryWorkspaceItemsOptions,
+  RepositoryFilePreviewOptions,
+  RepositoryFilesOptions,
   RepositoryOptions,
+  SearchRepositoryPullRequestsOptions,
   SetRepositoryStarredOptions,
   SetRepositoryWatchingOptions
 } from './types'
@@ -164,7 +172,34 @@ export class MockGitHubClient implements GitHubClient {
   }
 
   async listRepositoryPullRequests(options: ListRepositoryWorkspaceItemsOptions): Promise<GitHubPullRequest[]> {
-    return pullRequestsByRepository[`${options.owner}/${options.repo}`] ?? []
+    return (pullRequestsByRepository[`${options.owner}/${options.repo}`] ?? [])
+      .filter((pullRequest) => pullRequest.state === 'open' || pullRequest.state === 'draft')
+  }
+
+  async searchRepositoryPullRequests(options: SearchRepositoryPullRequestsOptions): Promise<GitHubPullRequestSearchResult> {
+    const pullRequests = pullRequestsByRepository[`${options.owner}/${options.repo}`] ?? []
+    const search = options.search?.trim().toLowerCase() ?? ''
+    const state = options.state ?? 'open'
+    const page = options.page ?? 1
+    const perPage = options.perPage ?? 20
+    const filtered = pullRequests.filter((pullRequest) => {
+      const matchesSearch = !search || pullRequest.title.toLowerCase().includes(search)
+      const matchesState = state === 'all'
+        || pullRequest.state === state
+        || (state === 'closed' && pullRequest.state === 'merged')
+
+      return matchesSearch && matchesState
+    })
+    const offset = Math.max(0, page - 1) * perPage
+
+    return {
+      items: filtered.slice(offset, offset + perPage),
+      totalCount: filtered.length,
+      page,
+      perPage,
+      hasNextPage: offset + perPage < filtered.length,
+      incompleteResults: false,
+    }
   }
 
   async listViewerIssues(): Promise<GitHubIssue[]> {
@@ -191,6 +226,18 @@ export class MockGitHubClient implements GitHubClient {
 
   async getRepositoryViewerState(options: RepositoryOptions): Promise<GitHubRepositoryViewerState> {
     return readRepositoryViewerState(options)
+  }
+
+  async getRepositoryOverview(options: RepositoryOptions): Promise<GitHubRepositoryOverview> {
+    return createMockRepositoryOverview(options)
+  }
+
+  async listRepositoryFiles(options: RepositoryFilesOptions): Promise<GitHubRepositoryFileTree> {
+    return createMockRepositoryFileTree(options)
+  }
+
+  async getRepositoryFilePreview(options: RepositoryFilePreviewOptions): Promise<GitHubRepositoryFilePreview> {
+    return createMockRepositoryFilePreview(options)
   }
 
   async setRepositoryStarred(options: SetRepositoryStarredOptions): Promise<void> {
@@ -240,6 +287,255 @@ function mockRepositoryStarCount(options: RepositoryOptions): number {
   return Array.from(repositoryKey(options)).reduce((count, character) => count + character.charCodeAt(0), 0)
 }
 
+function createMockRepositoryOverview(options: RepositoryOptions): GitHubRepositoryOverview {
+  const key = repositoryKey(options)
+  const viewerState = readRepositoryViewerState(options)
+  const now = new Date(Date.UTC(2026, 5, 27, 10)).toISOString()
+
+  return {
+    id: mockRepositoryStarCount(options),
+    name: options.repo,
+    nameWithOwner: key,
+    owner: options.owner,
+    description: `${options.repo} is a GitHub desktop workspace surface with repository metadata, work items, and documents.`,
+    homepageUrl: `https://${options.repo}.example.dev`,
+    url: `https://github.com/${key}`,
+    visibility: options.repo.includes('private') ? 'private' : 'public',
+    isFork: options.repo.includes('fork'),
+    isArchived: false,
+    isTemplate: options.repo.includes('template'),
+    defaultBranch: 'main',
+    primaryLanguage: 'TypeScript',
+    languages: [
+      { name: 'TypeScript', bytes: 164000 },
+      { name: 'Vue', bytes: 82000 },
+      { name: 'CSS', bytes: 21000 },
+    ],
+    topics: ['desktop', 'github', 'electron', 'vue'],
+    license: {
+      key: 'mit',
+      name: 'MIT License',
+      spdxId: 'MIT',
+      url: `https://api.github.com/repos/${key}/license`,
+    },
+    counts: {
+      stars: viewerState.starCount,
+      watchers: 12,
+      forks: 184,
+      openIssues: 7,
+      openPullRequests: 3,
+      releases: 5,
+      branches: 4,
+      tags: 12,
+      packages: 2,
+    },
+    pushedAt: now,
+    updatedAt: now,
+    documents: [
+      {
+        kind: 'readme',
+        title: 'README',
+        path: 'README.md',
+        url: `https://github.com/${key}/blob/main/README.md`,
+        format: 'markdown',
+        content: `# ${options.repo}\n\nThis mock README is rendered through the shared Markdown renderer.\n\n- Real repository metadata is loaded through the main-process GitHub API bridge.\n- Markdown code blocks, tables, and links should render inside this panel.\n\n\`\`\`ts\nconsole.log('${key}')\n\`\`\`\n`,
+      },
+      {
+        kind: 'contributing',
+        title: 'Contributing',
+        path: 'CONTRIBUTING.md',
+        url: `https://github.com/${key}/blob/main/CONTRIBUTING.md`,
+        format: 'markdown',
+        content: '# Contributing\n\nOpen an issue or pull request with a focused description and reproduction steps.\n',
+      },
+      {
+        kind: 'license',
+        title: 'License',
+        path: 'LICENSE',
+        url: `https://github.com/${key}/blob/main/LICENSE`,
+        format: 'text',
+        content: 'MIT License\n\nCopyright (c) 2026 Oh My GitHub\n\nPermission is hereby granted...',
+      },
+    ],
+    customProperties: [
+      { name: 'Product area', value: 'Repository workspace' },
+    ],
+    missingScopes: [],
+    warnings: [],
+  }
+}
+
+function createMockRepositoryFileTree(options: RepositoryFilesOptions): GitHubRepositoryFileTree {
+  const ref = options.ref?.trim() || 'main'
+
+  return {
+    ref,
+    truncated: false,
+    items: [
+      mockFolder(options, ref, 'src', [
+        mockFolder(options, ref, 'src/main', [
+          mockFile(options, ref, 'src/main/index.ts', 492),
+          mockFile(options, ref, 'src/main/repositories.ts', 2190),
+        ]),
+        mockFolder(options, ref, 'src/renderer', [
+          mockFolder(options, ref, 'src/renderer/pages', [
+            mockFile(options, ref, 'src/renderer/pages/repository-page.vue', 5840),
+          ]),
+          mockFile(options, ref, 'src/renderer/app.css', 1840),
+        ]),
+      ]),
+      mockFolder(options, ref, 'public', [
+        mockFile(options, ref, 'public/preview.png', 32768),
+        mockFile(options, ref, 'public/demo.mp4', 2097152),
+      ]),
+      mockFile(options, ref, 'README.md', 860),
+      mockFile(options, ref, 'package.json', 640),
+      mockFile(options, ref, 'release.bin', 4194304),
+    ],
+  }
+}
+
+function createMockRepositoryFilePreview(options: RepositoryFilePreviewOptions): GitHubRepositoryFilePreview {
+  const key = repositoryKey(options)
+  const ref = options.ref?.trim() || 'main'
+  const path = options.path.replace(/^\/+/, '')
+  const name = path.split('/').pop() ?? path
+  const htmlUrl = mockBlobUrl(key, ref, path)
+  const downloadUrl = mockRawUrl(key, ref, path)
+  const base = {
+    downloadUrl,
+    htmlUrl,
+    name,
+    path,
+    title: path,
+  }
+
+  if (path.endsWith('.md')) {
+    return {
+      ...base,
+      type: 'markdown',
+      content: `# ${name}\n\nThis mock repository file is rendered in the right panel.\n\n- Folders expand in place.\n- Files open previews without changing routes.\n\n\`\`\`ts\nconsole.log('${key}:${path}')\n\`\`\`\n`,
+    }
+  }
+
+  if (path.endsWith('.png')) {
+    return {
+      ...base,
+      type: 'image',
+      url: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360"><rect width="640" height="360" fill="%23f4f4f5"/><circle cx="320" cy="180" r="72" fill="%2318181b"/><text x="320" y="286" font-family="system-ui" font-size="28" text-anchor="middle" fill="%2318181b">Oh My GitHub</text></svg>',
+    }
+  }
+
+  if (path.endsWith('.mp4')) {
+    return {
+      ...base,
+      type: 'video',
+      url: 'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4',
+      posterUrl: null,
+    }
+  }
+
+  if (path.endsWith('.bin')) {
+    return {
+      ...base,
+      type: 'download',
+      description: 'This file type is not supported for preview.',
+      url: downloadUrl,
+    }
+  }
+
+  return {
+    ...base,
+    type: 'code',
+    content: mockFileContent(path, key),
+    language: mockLanguageForPath(path),
+  }
+}
+
+function mockFolder(
+  options: RepositoryOptions,
+  ref: string,
+  path: string,
+  children: GitHubRepositoryFileNode[],
+): GitHubRepositoryFileNode {
+  return {
+    type: 'tree',
+    name: path.split('/').pop() ?? path,
+    path,
+    sha: mockSha(`${repositoryKey(options)}:${ref}:${path}`),
+    size: null,
+    downloadUrl: null,
+    htmlUrl: mockTreeUrl(repositoryKey(options), ref, path),
+    children,
+  }
+}
+
+function mockFile(
+  options: RepositoryOptions,
+  ref: string,
+  path: string,
+  size: number,
+): GitHubRepositoryFileNode {
+  return {
+    type: 'file',
+    name: path.split('/').pop() ?? path,
+    path,
+    sha: mockSha(`${repositoryKey(options)}:${ref}:${path}`),
+    size,
+    downloadUrl: mockRawUrl(repositoryKey(options), ref, path),
+    htmlUrl: mockBlobUrl(repositoryKey(options), ref, path),
+    children: [],
+  }
+}
+
+function mockFileContent(path: string, key: string): string {
+  if (path.endsWith('.json')) {
+    return JSON.stringify({ name: key, private: true, scripts: { dev: 'electron-vite dev' } }, null, 2)
+  }
+
+  if (path.endsWith('.css')) {
+    return ':root {\n  color-scheme: light dark;\n}\n\n.repository-file-row {\n  display: grid;\n}\n'
+  }
+
+  if (path.endsWith('.vue')) {
+    return '<script setup lang="ts">\nconst title = "Repository"\n</script>\n\n<template>\n  <section>{{ title }}</section>\n</template>\n'
+  }
+
+  return `export function describeRepositoryFile(): string {\n  return '${key}:${path}'\n}\n`
+}
+
+function mockLanguageForPath(path: string): string {
+  if (path.endsWith('.css')) return 'css'
+  if (path.endsWith('.json')) return 'json'
+  if (path.endsWith('.vue')) return 'vue'
+  if (path.endsWith('.ts')) return 'typescript'
+
+  return 'plaintext'
+}
+
+function mockSha(value: string): string {
+  return Array.from(value)
+    .reduce((hash, character) => (hash * 31 + character.charCodeAt(0)) >>> 0, 0)
+    .toString(16)
+    .padStart(8, '0')
+}
+
+function mockBlobUrl(key: string, ref: string, path: string): string {
+  return `https://github.com/${key}/blob/${ref}/${encodeMockPath(path)}`
+}
+
+function mockTreeUrl(key: string, ref: string, path: string): string {
+  return `https://github.com/${key}/tree/${ref}/${encodeMockPath(path)}`
+}
+
+function mockRawUrl(key: string, ref: string, path: string): string {
+  return `https://raw.githubusercontent.com/${key}/${ref}/${encodeMockPath(path)}`
+}
+
+function encodeMockPath(path: string): string {
+  return path.split('/').map(encodeURIComponent).join('/')
+}
+
 function createMockRepositories(owner: string, names: string[]): GitHubRepository[] {
   return names.map((name, index) => ({
     id: Number(`${organizations.find((organization) => organization.login === owner)?.id ?? 9}${index + 1}`),
@@ -261,7 +557,7 @@ function createMockPullRequests(owner: string, repo: string, titles: string[]): 
     repository: `${owner}/${repo}`,
     number: index + 11,
     title,
-    state: index === 2 ? 'draft' : index === 1 ? 'cannot_merge' : 'open',
+    state: index === 3 ? 'merged' : index === 2 ? 'draft' : index === 1 ? 'closed' : 'open',
     ciState: index === 0 ? 'success' : index === 1 ? 'failure' : 'pending',
     author: { login: index % 2 === 0 ? 'acbox' : 'octo-lina' },
     updatedAt: new Date(Date.UTC(2026, 5, 27 - index, 8)).toISOString(),

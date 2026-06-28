@@ -103,26 +103,149 @@
     },
     "overview": {
       "basicInfo": "Basic information",
-      "documents": "Repository documents"
+      "customProperties": "Custom properties",
+      "documents": "Repository documents",
+      "error": "Could not load repository overview.",
+      "loading": "Loading repository overview...",
+      "missingScopes": {
+        "description": "Reconnect GitHub to grant: {scopes}. Some repository data may be hidden until these scopes are available.",
+        "title": "More GitHub permissions are required"
+      },
+      "noDescription": "No description provided.",
+      "openOnGitHub": "Open on GitHub",
+      "title": "Overview"
+    },
+    "files": {
+      "branch": "{branch}",
+      "count": "{count} items",
+      "empty": {
+        "description": "This repository does not have files on the selected branch.",
+        "title": "No files"
+      },
+      "error": "Could not load repository files.",
+      "missingIdentity": {
+        "description": "Open a repository tab with an owner and repository name to browse files.",
+        "title": "Repository is not available"
+      },
+      "preview": {
+        "downloadDescription": "This file cannot be previewed in Oh My GitHub.",
+        "error": "The preview could not be loaded. Download the file instead.",
+        "loading": "Loading preview..."
+      },
+      "title": "Files",
+      "truncated": {
+        "description": "GitHub returned a partial tree because this repository is large. The available files are still shown.",
+        "title": "Partial file tree"
+      }
+    },
+    "pullRequests": {
+      "checks": {
+        "failure": "Checks failed",
+        "pending": "Checks pending",
+        "success": "Checks passed"
+      },
+      "empty": {
+        "allDescription": "This repository does not have pull requests that match the current filters.",
+        "closedDescription": "This repository does not have closed pull requests.",
+        "missingRepositoryDescription": "Open a repository with an owner and name to load pull requests.",
+        "missingRepositoryTitle": "No repository selected",
+        "openDescription": "This repository does not have open pull requests.",
+        "searchDescription": "No pull requests match this search.",
+        "title": "No pull requests"
+      },
+      "error": {
+        "description": "GitHub pull requests could not be loaded. Check the connection and try again.",
+        "retry": "Retry",
+        "title": "Could not load pull requests"
+      },
+      "filters": {
+        "all": "All",
+        "closed": "Closed",
+        "label": "Filter pull requests",
+        "open": "Open"
+      },
+      "meta": {
+        "updated": "Updated {date}"
+      },
+      "pagination": {
+        "incomplete": "GitHub returned incomplete search results. Try narrowing the search.",
+        "summary": "Page {page} of {pageCount} · {totalCount} results"
+      },
+      "search": {
+        "placeholder": "Search pull requests"
+      },
+      "states": {
+        "closed": "Closed",
+        "draft": "Draft",
+        "merged": "Merged",
+        "open": "Open"
+      }
     },
     "summary": {
       "branches": "Branches",
+      "customProperties": "Custom properties",
+      "defaultBranch": "Default branch",
+      "forks": "Forks",
+      "language": "Language",
+      "lastPushed": "Last pushed",
+      "license": "License",
+      "openIssues": "Open issues",
+      "openPullRequests": "Open pull requests",
+      "packages": "Packages",
+      "releases": "Releases",
       "stars": "Stars",
-      "visibility": "Visibility"
+      "status": "Status",
+      "tags": "Tags",
+      "visibility": "Visibility",
+      "watchers": "Watching"
     },
     "documents": {
+      "citation": {
+        "title": "Citation"
+      },
+      "codeOfConduct": {
+        "title": "Code of conduct"
+      },
       "contributing": {
         "description": "Contribution guidelines will appear here once repository files are connected.",
-        "title": "CONTRIBUTING"
+        "title": "Contributing"
+      },
+      "empty": {
+        "description": "This repository does not expose a README or community document through GitHub yet.",
+        "title": "No repository document"
+      },
+      "error": "Could not load repository documents.",
+      "funding": {
+        "title": "Funding"
+      },
+      "issueTemplate": {
+        "title": "Issue template"
       },
       "license": {
         "description": "License details will appear here once repository files are connected.",
-        "title": "LICENSE"
+        "title": "License"
+      },
+      "loading": "Loading repository documents...",
+      "pullRequestTemplate": {
+        "title": "Pull request template"
       },
       "readme": {
         "description": "The README preview will appear here once repository files are connected.",
         "title": "README"
+      },
+      "security": {
+        "title": "Security"
       }
+    },
+    "status": {
+      "archived": "Archived",
+      "fork": "Fork",
+      "template": "Template"
+    },
+    "visibility": {
+      "internal": "Internal",
+      "private": "Private",
+      "public": "Public"
     },
     "empty": {
       "description": "This section is intentionally empty for now so it can be refined in place later.",
@@ -319,6 +442,19 @@
       "collapseSidebar": "Collapse sidebar",
       "expandSidebar": "Expand sidebar",
       "forward": "Forward"
+    },
+    "rightPanel": {
+      "close": "Close preview panel",
+      "download": {
+        "action": "Download",
+        "description": "This file cannot be previewed in Oh My GitHub.",
+        "title": "Download file",
+        "unavailable": "Download unavailable"
+      },
+      "empty": "No preview is open. Code, image, video, and Markdown previews will appear here.",
+      "open": "Open preview panel",
+      "resize": "Resize preview panel",
+      "title": "Preview"
     },
     "panel": {
       "blocks": {

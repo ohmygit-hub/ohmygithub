@@ -62,6 +62,17 @@ export function getAuthenticatedAccessToken(): string {
   return auth.accessToken
 }
 
+export function getAuthenticatedAuthMetadata(): Pick<StoredAuth, 'method' | 'scopes'> | null {
+  const auth = readStoredAuth()
+
+  if (!auth) return null
+
+  return {
+    method: auth.method,
+    scopes: [...auth.scopes]
+  }
+}
+
 export function registerAuthIpc(): void {
   ipcMain.handle('auth:get', () => getAuthState())
   ipcMain.handle('auth:start-device-flow', () => startDeviceFlow())

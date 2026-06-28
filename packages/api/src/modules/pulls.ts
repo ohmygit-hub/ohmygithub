@@ -2,10 +2,13 @@ import type { GitHubOctokit } from '../transport'
 import type {
   GitHubCiState,
   GitHubPullRequest,
+  GitHubPullRequestSearchResult,
+  GitHubPullRequestSearchState,
   GitHubPullRequestState,
   ListPullRequestCategoryOptions,
   ListRepositoryWorkspaceItemsOptions,
-  ListWorkspaceItemsOptions
+  ListWorkspaceItemsOptions,
+  SearchRepositoryPullRequestsOptions
 } from '../types'
 import {
   createWorkItemKey,
@@ -21,8 +24,6 @@ import {
 interface GraphQLPullRequestNode extends GraphQLWorkItemBase {
   isDraft: boolean
   merged: boolean
-  mergeable?: string | null
-  mergeStateStatus?: string | null
   statusCheckRollup?: {
     state?: string | null
   } | null
@@ -48,6 +49,20 @@ interface PullRequestByNumberResponse {
   } | null
 }
 
+interface PullRequestNodesResponse {
+  nodes?: Array<GraphQLPullRequestNode | null> | null
+}
+
+interface SearchPullRequestItem {
+  node_id?: string | null
+}
+
+interface SearchPullRequestsResponse {
+  incomplete_results?: boolean
+  items?: SearchPullRequestItem[]
+  total_count?: number
+}
+
 const pullRequestFields = `
   fragment PullRequestFields on PullRequest {
     id
@@ -58,8 +73,6 @@ const pullRequestFields = `
     updatedAt
     isDraft
     merged
-    mergeable
-    mergeStateStatus
     author {
       login
       avatarUrl
@@ -116,6 +129,18 @@ const pullRequestByNumberQuery = `
   ${pullRequestFields}
 `
 
+const pullRequestNodesQuery = `
+  query PullRequestNodes($ids: [ID!]!) {
+    nodes(ids: $ids) {
+      ...PullRequestFields
+    }
+  }
+
+  ${pullRequestFields}
+`
+
+const MAX_SEARCH_RESULTS = 1000
+
 export class PullsApi {
   constructor(private readonly octokit: GitHubOctokit) {}
 
@@ -160,6 +185,43 @@ export class PullsApi {
     return mapPullRequestNodes(response.repository?.pullRequests.nodes, unreadKeys)
   }
 
+  async searchRepositoryPullRequests(
+    options: SearchRepositoryPullRequestsOptions
+  ): Promise<GitHubPullRequestSearchResult> {
+    const page = normalizePage(options.page)
+    const perPage = normalizeLimit(options.perPage)
+    const state = normalizeSearchState(options.state)
+    const searchQuery = repositorySearchQuery({
+      owner: options.owner,
+      repo: options.repo,
+      search: options.search,
+      state,
+    })
+    const response = await this.octokit.request('GET /search/issues', {
+      q: searchQuery,
+      sort: 'updated',
+      order: 'desc',
+      page,
+      per_page: perPage,
+    })
+    const payload = response.data as SearchPullRequestsResponse
+    const ids = (payload.items ?? [])
+      .map((item) => item.node_id)
+      .filter(isString)
+    const unreadKeys = await listUnreadWorkItemKeys(this.octokit)
+    const pullRequests = await this.fetchPullRequestNodes(ids, unreadKeys)
+    const totalCount = payload.total_count ?? pullRequests.length
+
+    return {
+      items: pullRequests,
+      totalCount,
+      page,
+      perPage,
+      hasNextPage: page * perPage < Math.min(totalCount, MAX_SEARCH_RESULTS),
+      incompleteResults: Boolean(payload.incomplete_results),
+    }
+  }
+
   private async searchPullRequests(searchQuery: string, limit: number): Promise<GitHubPullRequest[]> {
     const response = await this.octokit.graphql<ViewerPullRequestsResponse>(
       viewerPullRequestsQuery,
@@ -189,6 +251,20 @@ export class PullsApi {
 
     return response.repository?.pullRequest ?? null
   }
+
+  private async fetchPullRequestNodes(
+    ids: string[],
+    unreadKeys: Set<string>
+  ): Promise<GitHubPullRequest[]> {
+    if (ids.length === 0) return []
+
+    const response = await this.octokit.graphql<PullRequestNodesResponse>(
+      pullRequestNodesQuery,
+      { ids }
+    )
+
+    return mapPullRequestNodes(response.nodes, unreadKeys)
+  }
 }
 
 function isOpenPullRequestNode(node: GraphQLPullRequestNode | null): node is GraphQLPullRequestNode {
@@ -205,6 +281,47 @@ function categorySearchQuery(category: ListPullRequestCategoryOptions['category'
   }
 
   return `is:pr is:open archived:false mentions:${login} sort:updated-desc`
+}
+
+function repositorySearchQuery(options: {
+  owner: string
+  repo: string
+  search?: string
+  state: GitHubPullRequestSearchState
+}): string {
+  const parts = [
+    `repo:${options.owner}/${options.repo}`,
+    'is:pr',
+  ]
+
+  if (options.state === 'open') {
+    parts.push('is:open')
+  } else if (options.state === 'closed') {
+    parts.push('is:closed')
+  }
+
+  const search = options.search?.trim()
+  if (search) {
+    parts.push(search)
+  }
+
+  return parts.join(' ')
+}
+
+function normalizePage(value: number | undefined): number {
+  return Math.min(Math.max(Math.round(value ?? 1), 1), 50)
+}
+
+function normalizeSearchState(
+  value: SearchRepositoryPullRequestsOptions['state']
+): GitHubPullRequestSearchState {
+  if (value === 'closed' || value === 'all') return value
+
+  return 'open'
+}
+
+function isString(value: string | null | undefined): value is string {
+  return Boolean(value)
 }
 
 function mapPullRequestNodes(
@@ -251,11 +368,9 @@ function dedupePullRequests(pullRequests: GitHubPullRequest[]): GitHubPullReques
 }
 
 function normalizePullRequestState(node: GraphQLPullRequestNode): GitHubPullRequestState {
-  if (node.isDraft) return 'draft'
   if (node.merged || node.state === 'MERGED') return 'merged'
-  if (node.mergeable === 'CONFLICTING' || node.mergeStateStatus === 'BLOCKED' || node.mergeStateStatus === 'DIRTY') {
-    return 'cannot_merge'
-  }
+  if (node.state === 'CLOSED') return 'closed'
+  if (node.isDraft) return 'draft'
 
   return 'open'
 }

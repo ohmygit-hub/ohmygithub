@@ -38,13 +38,163 @@ export interface GitHubRepositoryViewerState {
   starCount: number
 }
 
+export type GitHubRepositoryVisibility = 'public' | 'private' | 'internal'
+
+export type GitHubRepositoryDocumentKind =
+  | 'readme'
+  | 'contributing'
+  | 'license'
+  | 'codeOfConduct'
+  | 'security'
+  | 'citation'
+  | 'funding'
+  | 'issueTemplate'
+  | 'pullRequestTemplate'
+
+export type GitHubRepositoryDocumentFormat = 'markdown' | 'text'
+
+export interface GitHubRepositoryLanguage {
+  name: string
+  bytes: number
+}
+
+export interface GitHubRepositoryLicense {
+  key: string
+  name: string
+  spdxId: string | null
+  url: string | null
+}
+
+export interface GitHubRepositoryDocument {
+  kind: GitHubRepositoryDocumentKind
+  title: string
+  path: string
+  url: string | null
+  format: GitHubRepositoryDocumentFormat
+  content: string
+}
+
+export interface GitHubRepositoryCustomProperty {
+  name: string
+  value: string
+}
+
+export interface GitHubRepositoryOverviewCounts {
+  stars: number
+  watchers: number
+  forks: number
+  openIssues: number
+  openPullRequests: number | null
+  releases: number | null
+  branches: number | null
+  tags: number | null
+  packages: number | null
+}
+
+export interface GitHubRepositoryOverview {
+  id: number
+  name: string
+  nameWithOwner: string
+  owner: string
+  description: string | null
+  homepageUrl: string | null
+  url: string
+  visibility: GitHubRepositoryVisibility
+  isFork: boolean
+  isArchived: boolean
+  isTemplate: boolean
+  defaultBranch: string | null
+  primaryLanguage: string | null
+  languages: GitHubRepositoryLanguage[]
+  topics: string[]
+  license: GitHubRepositoryLicense | null
+  counts: GitHubRepositoryOverviewCounts
+  pushedAt: string | null
+  updatedAt: string | null
+  documents: GitHubRepositoryDocument[]
+  customProperties: GitHubRepositoryCustomProperty[]
+  missingScopes: string[]
+  warnings: string[]
+}
+
+export type GitHubRepositoryFileNodeType = 'tree' | 'file'
+
+export interface GitHubRepositoryFileNode {
+  type: GitHubRepositoryFileNodeType
+  name: string
+  path: string
+  sha: string
+  size: number | null
+  downloadUrl: string | null
+  htmlUrl: string | null
+  children: GitHubRepositoryFileNode[]
+}
+
+export interface GitHubRepositoryFileTree {
+  ref: string
+  truncated: boolean
+  items: GitHubRepositoryFileNode[]
+}
+
+export type GitHubRepositoryFilePreview =
+  | {
+      type: 'markdown'
+      path: string
+      name: string
+      title: string
+      content: string
+      downloadUrl: string | null
+      htmlUrl: string | null
+    }
+  | {
+      type: 'code'
+      path: string
+      name: string
+      title: string
+      content: string
+      language: string
+      downloadUrl: string | null
+      htmlUrl: string | null
+    }
+  | {
+      type: 'image'
+      path: string
+      name: string
+      title: string
+      url: string
+      downloadUrl: string | null
+      htmlUrl: string | null
+    }
+  | {
+      type: 'video'
+      path: string
+      name: string
+      title: string
+      url: string
+      posterUrl: string | null
+      downloadUrl: string | null
+      htmlUrl: string | null
+    }
+  | {
+      type: 'download'
+      path: string
+      name: string
+      title: string
+      description: string | null
+      url: string
+      downloadUrl: string | null
+      htmlUrl: string | null
+    }
+
 export type GitHubCiState = 'pending' | 'success' | 'failure'
 
 export type GitHubPullRequestState =
   | 'draft'
   | 'merged'
   | 'open'
-  | 'cannot_merge'
+  | 'closed'
+
+export type GitHubPullRequestSearchState = 'open' | 'closed' | 'all'
 
 export type GitHubIssueState =
   | 'open'
@@ -76,6 +226,15 @@ export interface GitHubPullRequest {
   labels: string[]
   url: string
   hasUpdates: boolean
+}
+
+export interface GitHubPullRequestSearchResult {
+  items: GitHubPullRequest[]
+  totalCount: number
+  page: number
+  perPage: number
+  hasNextPage: boolean
+  incompleteResults: boolean
 }
 
 export interface GitHubIssue {
@@ -152,12 +311,16 @@ export interface GitHubClient {
   listPullRequestCategory(options: ListPullRequestCategoryOptions): Promise<GitHubPullRequest[]>
   listViewerPullRequests(options?: ListWorkspaceItemsOptions): Promise<GitHubPullRequest[]>
   listRepositoryPullRequests(options: ListRepositoryWorkspaceItemsOptions): Promise<GitHubPullRequest[]>
+  searchRepositoryPullRequests(options: SearchRepositoryPullRequestsOptions): Promise<GitHubPullRequestSearchResult>
   listIssueCategory(options: ListIssueCategoryOptions): Promise<GitHubIssue[]>
   listViewerIssues(options?: ListWorkspaceItemsOptions): Promise<GitHubIssue[]>
   listRepositoryIssues(options: ListRepositoryWorkspaceItemsOptions): Promise<GitHubIssue[]>
   listViewerOrganizations(): Promise<GitHubOrganization[]>
   listOrganizationRepositories(owner: string): Promise<GitHubRepository[]>
   getRepositoryViewerState(options: RepositoryOptions): Promise<GitHubRepositoryViewerState>
+  getRepositoryOverview(options: RepositoryOptions): Promise<GitHubRepositoryOverview>
+  listRepositoryFiles(options: RepositoryFilesOptions): Promise<GitHubRepositoryFileTree>
+  getRepositoryFilePreview(options: RepositoryFilePreviewOptions): Promise<GitHubRepositoryFilePreview>
   setRepositoryStarred(options: SetRepositoryStarredOptions): Promise<void>
   setRepositoryWatching(options: SetRepositoryWatchingOptions): Promise<void>
 }
@@ -196,9 +359,24 @@ export interface ListRepositoryWorkspaceItemsOptions extends ListWorkspaceItemsO
   repo: string
 }
 
+export interface SearchRepositoryPullRequestsOptions extends RepositoryOptions {
+  page?: number
+  perPage?: number
+  search?: string
+  state?: GitHubPullRequestSearchState
+}
+
 export interface RepositoryOptions {
   owner: string
   repo: string
+}
+
+export interface RepositoryFilesOptions extends RepositoryOptions {
+  ref?: string | null
+}
+
+export interface RepositoryFilePreviewOptions extends RepositoryFilesOptions {
+  path: string
 }
 
 export interface SetRepositoryStarredOptions extends RepositoryOptions {

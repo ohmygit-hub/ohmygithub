@@ -20,12 +20,12 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
 } from '@oh-my-github/ui'
-import { useWorkspaceIssueCategory, useWorkspaceRepositoryIssues } from '../composables/use-workspace-issues'
-import { useWorkspaceOrganizationRepositories } from '../composables/use-workspace-organizations'
+import { useIssueCategoryQuery, useRepositoryIssuesQuery } from '../../../composables/github/use-issues'
+import { useOrganizationRepositoriesQuery } from '../../../composables/github/use-organizations'
 import {
-  useWorkspacePullRequestCategory,
-  useWorkspaceRepositoryPullRequests,
-} from '../composables/use-workspace-pull-requests'
+  usePullRequestCategoryQuery,
+  useRepositoryPullRequestsQuery,
+} from '../../../composables/github/use-pull-requests'
 import { repositoryToTreeItem } from '../sidebar-tree-items'
 import { issueToTreeItem, pullRequestToTreeItem } from '../sidebar-work-items'
 
@@ -70,24 +70,24 @@ const treeLabels = computed(() => ({
   pullRequests: t('workspace.sidebar.groups.pullRequests'),
 }))
 
-const repositoriesQuery = useWorkspaceOrganizationRepositories(
+const repositoriesQuery = useOrganizationRepositoriesQuery(
   repositoryOwner,
   computed(() => isExpanded.value && loaderType.value === 'organization-repositories'),
 )
-const pullRequestCategoryQuery = useWorkspacePullRequestCategory(
+const pullRequestCategoryQuery = usePullRequestCategoryQuery(
   pullRequestCategory,
   computed(() => isExpanded.value && loaderType.value === 'pull-request-category'),
 )
-const issueCategoryQuery = useWorkspaceIssueCategory(
+const issueCategoryQuery = useIssueCategoryQuery(
   issueCategory,
   computed(() => isExpanded.value && loaderType.value === 'issue-category'),
 )
-const pullRequestsQuery = useWorkspaceRepositoryPullRequests(
+const pullRequestsQuery = useRepositoryPullRequestsQuery(
   repositoryOwner,
   repositoryName,
   computed(() => isExpanded.value && loaderType.value === 'repository-pull-requests'),
 )
-const issuesQuery = useWorkspaceRepositoryIssues(
+const issuesQuery = useRepositoryIssuesQuery(
   repositoryOwner,
   repositoryName,
   computed(() => isExpanded.value && loaderType.value === 'repository-issues'),
@@ -183,6 +183,15 @@ const showChildEmpty = computed(() =>
   && !hasLoadedChildren.value,
 )
 
+function workItemIconClass(item: WorkspaceSidebarTreeItem): string {
+  if (item.workItem?.iconTone === 'success') return 'text-success'
+  if (item.workItem?.iconTone === 'destructive') return 'text-destructive'
+  if (item.workItem?.iconTone === 'merged') return 'text-[color:var(--accent-purple)]'
+  if (item.workItem?.iconTone === 'muted') return 'text-muted-foreground'
+
+  return ''
+}
+
 function selectItem(): void {
   if (props.item.url) {
     emit('select', props.item.url, props.item.id)
@@ -250,6 +259,7 @@ watch(
           :is="item.icon"
           v-else-if="item.icon"
           class="size-3.5 shrink-0"
+          :class="workItemIconClass(item)"
         />
         <span
           v-if="item.workItem?.type === 'pull-request' && item.workItem.ciState"
@@ -361,6 +371,7 @@ watch(
           :is="item.icon"
           v-if="item.icon"
           class="size-3.5 shrink-0"
+          :class="workItemIconClass(item)"
         />
         <span
           v-if="item.workItem?.type === 'pull-request' && item.workItem.ciState"

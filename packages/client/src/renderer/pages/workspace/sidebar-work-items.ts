@@ -1,5 +1,5 @@
 import type { Component } from 'vue'
-import type { WorkspaceSidebarTreeItem } from './types'
+import type { WorkspaceSidebarTreeItem, WorkspaceSidebarWorkItemIconTone } from './types'
 import {
   AtSign,
   CircleCheck,
@@ -110,6 +110,7 @@ export function pullRequestToTreeItem(
     workItem: {
       type: 'pull-request',
       state: pullRequest.state,
+      iconTone: pullRequestIconTone(pullRequest.state),
       ciState: pullRequest.ciState,
       hasUpdates: pullRequest.hasUpdates,
     },
@@ -134,6 +135,7 @@ export function issueToTreeItem(
     workItem: {
       type: 'issue',
       state: issue.state,
+      iconTone: issueIconTone(issue.state),
       hasUpdates: issue.hasUpdates,
     },
   }
@@ -158,9 +160,17 @@ function issueCategoryIcon(category: GitHubIssueCategory): Component {
 function pullRequestIcon(state: GitHubPullRequestState): Component {
   if (state === 'draft') return GitPullRequestDraft
   if (state === 'merged') return GitMerge
-  if (state === 'cannot_merge') return GitPullRequestClosed
+  if (state === 'closed') return GitPullRequestClosed
 
   return GitPullRequest
+}
+
+function pullRequestIconTone(state: GitHubPullRequestState): WorkspaceSidebarWorkItemIconTone {
+  if (state === 'draft') return 'muted'
+  if (state === 'merged') return 'merged'
+  if (state === 'closed') return 'destructive'
+
+  return 'success'
 }
 
 function scopedId(scope: string | undefined, id: string): string {
@@ -185,4 +195,11 @@ function issueIcon(state: GitHubIssueState): Component {
   if (state === 'not_planned') return CircleSlash
 
   return CircleDot
+}
+
+function issueIconTone(state: GitHubIssueState): WorkspaceSidebarWorkItemIconTone {
+  if (state === 'completed') return 'merged'
+  if (state === 'not_planned') return 'muted'
+
+  return 'success'
 }

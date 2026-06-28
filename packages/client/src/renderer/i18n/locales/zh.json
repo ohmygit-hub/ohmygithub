@@ -103,26 +103,149 @@
     },
     "overview": {
       "basicInfo": "基本信息",
-      "documents": "仓库文档"
+      "customProperties": "自定义属性",
+      "documents": "仓库文档",
+      "error": "无法加载仓库概览。",
+      "loading": "正在加载仓库概览...",
+      "missingScopes": {
+        "description": "请重新连接 GitHub 以授权：{scopes}。授权前部分仓库数据可能不会显示。",
+        "title": "需要更多 GitHub 权限"
+      },
+      "noDescription": "这个仓库没有填写描述。",
+      "openOnGitHub": "在 GitHub 打开",
+      "title": "概览"
+    },
+    "files": {
+      "branch": "{branch}",
+      "count": "{count} 项",
+      "empty": {
+        "description": "这个仓库在当前分支没有文件。",
+        "title": "没有文件"
+      },
+      "error": "无法加载仓库文件。",
+      "missingIdentity": {
+        "description": "打开带有 owner 和仓库名的仓库 tab 后，才会加载文件。",
+        "title": "仓库不可用"
+      },
+      "preview": {
+        "downloadDescription": "这个文件暂时不能在 Oh My GitHub 内预览。",
+        "error": "无法加载预览。你可以改为下载这个文件。",
+        "loading": "正在加载预览..."
+      },
+      "title": "Files",
+      "truncated": {
+        "description": "这个仓库较大，GitHub 只返回了部分文件树。当前能拿到的文件仍会显示。",
+        "title": "文件树不完整"
+      }
+    },
+    "pullRequests": {
+      "checks": {
+        "failure": "检查失败",
+        "pending": "检查中",
+        "success": "检查通过"
+      },
+      "empty": {
+        "allDescription": "这个仓库没有符合当前筛选条件的 Pull Request。",
+        "closedDescription": "这个仓库没有已关闭的 Pull Request。",
+        "missingRepositoryDescription": "打开带有 owner 和仓库名的仓库后，才会加载 Pull Request。",
+        "missingRepositoryTitle": "没有选中仓库",
+        "openDescription": "这个仓库没有 open 状态的 Pull Request。",
+        "searchDescription": "没有 Pull Request 匹配当前搜索。",
+        "title": "没有 Pull Request"
+      },
+      "error": {
+        "description": "无法从 GitHub 加载 Pull Request。请检查连接后重试。",
+        "retry": "重试",
+        "title": "无法加载 Pull Request"
+      },
+      "filters": {
+        "all": "全部",
+        "closed": "已关闭",
+        "label": "筛选 Pull Request",
+        "open": "open"
+      },
+      "meta": {
+        "updated": "更新于 {date}"
+      },
+      "pagination": {
+        "incomplete": "GitHub 返回的搜索结果不完整，可以缩小搜索范围后重试。",
+        "summary": "第 {page} / {pageCount} 页 · 共 {totalCount} 条"
+      },
+      "search": {
+        "placeholder": "搜索 Pull Request"
+      },
+      "states": {
+        "closed": "已关闭",
+        "draft": "草稿",
+        "merged": "已合并",
+        "open": "open"
+      }
     },
     "summary": {
       "branches": "分支",
+      "customProperties": "自定义属性",
+      "defaultBranch": "默认分支",
+      "forks": "Forks",
+      "language": "语言",
+      "lastPushed": "最近推送",
+      "license": "许可证",
+      "openIssues": "Open issues",
+      "openPullRequests": "Open pull requests",
+      "packages": "Packages",
+      "releases": "Releases",
       "stars": "Stars",
-      "visibility": "可见性"
+      "status": "状态",
+      "tags": "Tags",
+      "visibility": "可见性",
+      "watchers": "Watching"
     },
     "documents": {
+      "citation": {
+        "title": "Citation"
+      },
+      "codeOfConduct": {
+        "title": "Code of conduct"
+      },
       "contributing": {
         "description": "接入仓库文件后，这里会展示贡献指南。",
-        "title": "CONTRIBUTING"
+        "title": "Contributing"
+      },
+      "empty": {
+        "description": "这个仓库还没有通过 GitHub 暴露 README 或社区文档。",
+        "title": "没有仓库文档"
+      },
+      "error": "无法加载仓库文档。",
+      "funding": {
+        "title": "Funding"
+      },
+      "issueTemplate": {
+        "title": "Issue template"
       },
       "license": {
         "description": "接入仓库文件后，这里会展示许可证信息。",
-        "title": "LICENSE"
+        "title": "License"
+      },
+      "loading": "正在加载仓库文档...",
+      "pullRequestTemplate": {
+        "title": "Pull request template"
       },
       "readme": {
         "description": "接入仓库文件后，这里会展示 README 预览。",
         "title": "README"
+      },
+      "security": {
+        "title": "Security"
       }
+    },
+    "status": {
+      "archived": "已归档",
+      "fork": "Fork",
+      "template": "Template"
+    },
+    "visibility": {
+      "internal": "Internal",
+      "private": "Private",
+      "public": "Public"
     },
     "empty": {
       "description": "这个页面现在先保持为空，后续可以直接在这里继续微调。",
@@ -319,6 +442,19 @@
       "collapseSidebar": "收起侧边栏",
       "expandSidebar": "展开侧边栏",
       "forward": "前进"
+    },
+    "rightPanel": {
+      "close": "关闭预览面板",
+      "download": {
+        "action": "下载",
+        "description": "这个文件暂时不能在 Oh My GitHub 内预览。",
+        "title": "下载文件",
+        "unavailable": "无法下载"
+      },
+      "empty": "当前没有打开预览。代码、图片、视频和 Markdown 预览会显示在这里。",
+      "open": "打开预览面板",
+      "resize": "调整预览面板宽度",
+      "title": "预览"
     },
     "panel": {
       "blocks": {

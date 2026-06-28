@@ -1,49 +1,45 @@
 <script setup lang="ts">
-import type { Component } from 'vue'
 import type { WorkspaceTab } from '../workspace/types'
+import type { RepositoryOverviewInfoItem, RepositorySection, RepositorySectionId } from './components/types'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import {
   Activity,
+  Archive,
   Book,
+  Box,
   CircleDot,
-  FileText,
+  Clock3,
+  Code,
   Folder,
   GitFork,
   GitBranch,
   GitPullRequest,
+  Globe,
   Eye,
+  Package,
+  Scale,
   Settings,
   Shield,
   Star,
-  Users,
+  Tags,
 } from 'lucide-vue-next'
 import {
-  Button,
-  ButtonGroup,
   Empty,
   EmptyDescription,
   EmptyHeader,
   EmptyTitle,
 } from '@oh-my-github/ui'
+import { useRepositoryOverviewQuery } from '../../composables/github/use-repositories'
+import RepositoryOverview from './components/overview/repository-overview.vue'
+import PullRequestsSection from './components/pulls/section.vue'
+import FilesPanel from './components/files/files-panel.vue'
+import RepositorySidebar from './components/repository-sidebar.vue'
 
 const props = defineProps<{
   tab: WorkspaceTab
 }>()
-
-type RepositorySectionId =
-  | 'overview'
-  | 'files'
-  | 'pullRequests'
-  | 'issues'
-  | 'actions'
-  | 'settings'
-
-interface RepositorySection {
-  id: RepositorySectionId
-  icon: Component
-}
 
 const repositorySections: readonly RepositorySection[] = [
   { id: 'overview', icon: Book },
@@ -59,6 +55,7 @@ type RepositoryActionId = 'star' | 'watch'
 const { t } = useI18n()
 const router = useRouter()
 const activeSection = ref<RepositorySectionId>('overview')
+const activeDocumentKind = ref<GitHubRepositoryDocumentKind>('readme')
 const viewerState = ref<GitHubRepositoryViewerState | null>(null)
 const isViewerStateLoading = ref(false)
 const pendingRepositoryAction = ref<RepositoryActionId | null>(null)
@@ -68,9 +65,13 @@ const owner = computed(() => props.tab.owner ?? '')
 const repository = computed(() => props.tab.repo ?? props.tab.title)
 const activeSectionTitle = computed(() => t(`repository.sections.${activeSection.value}.title`))
 const hasRepositoryIdentity = computed(() => Boolean(owner.value && repository.value))
+const overviewQuery = useRepositoryOverviewQuery(owner, repository, hasRepositoryIdentity)
+const overview = computed(() => overviewQuery.data.value ?? null)
+const isOverviewLoading = computed(() => overviewQuery.isLoading.value)
+const hasOverviewError = computed(() => Boolean(overviewQuery.error.value))
 const isStarred = computed(() => viewerState.value?.isStarred ?? false)
 const isWatching = computed(() => viewerState.value?.isWatching ?? false)
-const starCount = computed(() => viewerState.value?.starCount ?? null)
+const starCount = computed(() => viewerState.value?.starCount ?? overview.value?.counts.stars ?? null)
 const formattedStarCount = computed(() => {
   if (starCount.value === null) return '...'
 
@@ -84,52 +85,184 @@ const starButtonDisabled = computed(() =>
 const watchButtonDisabled = computed(() =>
   !hasRepositoryIdentity.value || isViewerStateLoading.value || Boolean(pendingRepositoryAction.value)
 )
+const repositoryStatusItems = computed(() => {
+  const currentOverview = overview.value
+  if (!currentOverview) return []
 
-const summaryItems = computed(() => [
-  {
-    id: 'visibility',
-    icon: Shield,
-    label: t('repository.summary.visibility'),
-    value: t('repository.values.placeholder'),
-  },
-  {
-    id: 'branches',
-    icon: GitBranch,
-    label: t('repository.summary.branches'),
-    value: t('repository.values.placeholder'),
-  },
-  {
-    id: 'stars',
-    icon: Star,
-    label: t('repository.summary.stars'),
-    value: formattedStarCount.value,
-  },
-])
+  return [
+    currentOverview.isArchived ? t('repository.status.archived') : null,
+    currentOverview.isFork ? t('repository.status.fork') : null,
+    currentOverview.isTemplate ? t('repository.status.template') : null,
+  ].filter(isString)
+})
+const overviewInfoItems = computed<RepositoryOverviewInfoItem[]>(() => {
+  const currentOverview = overview.value
+  if (!currentOverview) return []
 
-const documentItems = computed(() => [
-  {
-    id: 'readme',
-    icon: FileText,
-    title: t('repository.documents.readme.title'),
-    description: t('repository.documents.readme.description'),
-  },
-  {
-    id: 'license',
-    icon: Shield,
-    title: t('repository.documents.license.title'),
-    description: t('repository.documents.license.description'),
-  },
-  {
-    id: 'contributing',
-    icon: Users,
-    title: t('repository.documents.contributing.title'),
-    description: t('repository.documents.contributing.description'),
-  },
-])
+  const items: RepositoryOverviewInfoItem[] = [
+    {
+      id: 'visibility',
+      icon: currentOverview.visibility === 'private' ? Shield : Globe,
+      label: t('repository.summary.visibility'),
+      value: t(`repository.visibility.${currentOverview.visibility}`),
+    },
+    {
+      id: 'stars',
+      icon: Star,
+      label: t('repository.summary.stars'),
+      value: formatNumber(starCount.value ?? currentOverview.counts.stars),
+    },
+    {
+      id: 'watchers',
+      icon: Eye,
+      label: t('repository.summary.watchers'),
+      value: formatNumber(currentOverview.counts.watchers),
+    },
+    {
+      id: 'forks',
+      icon: GitFork,
+      label: t('repository.summary.forks'),
+      value: formatNumber(currentOverview.counts.forks),
+    },
+    {
+      id: 'issues',
+      icon: CircleDot,
+      label: t('repository.summary.openIssues'),
+      value: formatNumber(currentOverview.counts.openIssues),
+    },
+  ]
+
+  if (repositoryStatusItems.value.length > 0) {
+    items.push({
+      id: 'status',
+      icon: Archive,
+      label: t('repository.summary.status'),
+      value: repositoryStatusItems.value.join(', '),
+    })
+  }
+
+  if (currentOverview.license) {
+    items.push({
+      id: 'license',
+      icon: Scale,
+      label: t('repository.summary.license'),
+      value: currentOverview.license.name,
+    })
+  }
+
+  if (currentOverview.primaryLanguage) {
+    items.push({
+      id: 'language',
+      icon: Code,
+      label: t('repository.summary.language'),
+      value: currentOverview.primaryLanguage,
+    })
+  }
+
+  if (currentOverview.defaultBranch) {
+    items.push({
+      id: 'defaultBranch',
+      icon: GitBranch,
+      label: t('repository.summary.defaultBranch'),
+      value: currentOverview.defaultBranch,
+    })
+  }
+
+  if (currentOverview.counts.openPullRequests !== null) {
+    items.push({
+      id: 'pullRequests',
+      icon: GitPullRequest,
+      label: t('repository.summary.openPullRequests'),
+      value: formatNumber(currentOverview.counts.openPullRequests),
+    })
+  }
+
+  if (currentOverview.counts.releases !== null) {
+    items.push({
+      id: 'releases',
+      icon: Tags,
+      label: t('repository.summary.releases'),
+      value: formatNumber(currentOverview.counts.releases),
+    })
+  }
+
+  if (currentOverview.counts.packages !== null) {
+    items.push({
+      id: 'packages',
+      icon: Package,
+      label: t('repository.summary.packages'),
+      value: formatNumber(currentOverview.counts.packages),
+    })
+  }
+
+  if (currentOverview.counts.branches !== null) {
+    items.push({
+      id: 'branches',
+      icon: GitBranch,
+      label: t('repository.summary.branches'),
+      value: formatNumber(currentOverview.counts.branches),
+    })
+  }
+
+  if (currentOverview.counts.tags !== null) {
+    items.push({
+      id: 'tags',
+      icon: Tags,
+      label: t('repository.summary.tags'),
+      value: formatNumber(currentOverview.counts.tags),
+    })
+  }
+
+  if (currentOverview.customProperties.length > 0) {
+    items.push({
+      id: 'customProperties',
+      icon: Box,
+      label: t('repository.summary.customProperties'),
+      value: formatNumber(currentOverview.customProperties.length),
+    })
+  }
+
+  if (currentOverview.pushedAt) {
+    items.push({
+      id: 'pushedAt',
+      icon: Clock3,
+      label: t('repository.summary.lastPushed'),
+      value: formatDate(currentOverview.pushedAt),
+    })
+  }
+
+  return items
+})
+const availableDocuments = computed(() => overview.value?.documents ?? [])
+const activeDocument = computed(() => {
+  return availableDocuments.value.find((document) => document.kind === activeDocumentKind.value)
+    ?? availableDocuments.value[0]
+    ?? null
+})
+const overviewDescription = computed(() =>
+  overview.value?.description?.trim() || t('repository.overview.noDescription')
+)
+const missingScopesText = computed(() => overview.value?.missingScopes.join(', ') ?? '')
 
 function openOwner(): void {
   if (!owner.value) return
   void router.push(`/${encodeURIComponent(owner.value)}`)
+}
+
+function formatNumber(value: number): string {
+  return new Intl.NumberFormat().format(value)
+}
+
+function formatDate(value: string): string {
+  return new Intl.DateTimeFormat(undefined, {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  }).format(new Date(value))
+}
+
+function isString(value: string | null): value is string {
+  return Boolean(value)
 }
 
 async function loadRepositoryViewerState(): Promise<void> {
@@ -214,167 +347,69 @@ watch(
   },
   { immediate: true },
 )
+
+watch(
+  availableDocuments,
+  (documents) => {
+    if (documents.length === 0) {
+      activeDocumentKind.value = 'readme'
+      return
+    }
+
+    if (!documents.some((document) => document.kind === activeDocumentKind.value)) {
+      activeDocumentKind.value = documents[0].kind
+    }
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
   <section class="flex h-full min-h-[34rem] gap-3 bg-background p-3">
-    <aside class="flex h-full w-56 shrink-0 flex-col overflow-hidden rounded-xl border border-border bg-card">
-      <header class="grid grid-cols-[0.25rem_1rem_minmax(0,1fr)] gap-x-1 px-2 py-3">
-        <div class="col-start-2 col-end-4 grid min-w-0 gap-2.5">
-          <div class="flex min-w-0 items-center text-control font-medium text-foreground">
-            <button
-              v-if="owner"
-              class="min-w-0 max-w-24 truncate text-left font-normal text-muted-foreground underline-offset-4 outline-hidden hover:underline focus-visible:underline"
-              type="button"
-              @click="openOwner"
-            >
-              {{ owner }}
-            </button>
-            <span
-              v-else
-              class="truncate"
-            >
-              {{ t('repository.ownerFallback') }}
-            </span>
-            <span class="shrink-0 text-muted-foreground">/</span>
-            <span class="min-w-0 truncate px-1">{{ repository }}</span>
-          </div>
+    <RepositorySidebar
+      v-model:active-section="activeSection"
+      :formatted-star-count="formattedStarCount"
+      :is-starred="isStarred"
+      :is-watching="isWatching"
+      :owner="owner"
+      :repository="repository"
+      :sections="repositorySections"
+      :star-button-disabled="starButtonDisabled"
+      :star-label="starLabel"
+      :watch-button-disabled="watchButtonDisabled"
+      :watch-label="watchLabel"
+      @open-owner="openOwner"
+      @toggle-starred="toggleStarred"
+      @toggle-watching="toggleWatching"
+    />
 
-          <ButtonGroup class="justify-self-start">
-            <Button
-              :aria-label="starLabel"
-              :aria-pressed="isStarred"
-              :disabled="starButtonDisabled"
-              class="h-8 min-w-16 justify-start px-2"
-              size="sm"
-              type="button"
-              variant="outline"
-              @click="toggleStarred"
-            >
-              <Star
-                class="size-3.5"
-                :class="isStarred ? 'fill-warning text-warning' : 'fill-none text-muted-foreground'"
-                :stroke-width="1.75"
-              />
-              <span class="text-body font-normal tabular-nums text-muted-foreground">
-                {{ formattedStarCount }}
-              </span>
-            </Button>
-
-            <Button
-              :aria-label="t('repository.actions.fork')"
-              disabled
-              class="size-8 text-muted-foreground"
-              size="icon-sm"
-              type="button"
-              variant="outline"
-            >
-              <GitFork
-                class="size-3.5"
-                :stroke-width="1.75"
-              />
-            </Button>
-
-            <Button
-              :aria-label="watchLabel"
-              :aria-pressed="isWatching"
-              :disabled="watchButtonDisabled"
-              class="size-8"
-              size="icon-sm"
-              type="button"
-              variant="outline"
-              @click="toggleWatching"
-            >
-              <Eye
-                class="size-3.5"
-                :class="isWatching ? 'text-foreground' : 'text-muted-foreground'"
-                :stroke-width="1.75"
-              />
-            </Button>
-          </ButtonGroup>
-        </div>
-      </header>
-
-      <nav
-        class="grid gap-1 px-2 py-1.5"
-        :aria-label="t('repository.sidebar.navigation')"
-      >
-        <button
-          v-for="section in repositorySections"
-          :key="section.id"
-          :class="[
-            'grid h-9 w-full grid-cols-[0.25rem_1rem_minmax(0,1fr)] items-center gap-x-1 rounded-lg pr-2 text-left text-body font-normal outline-hidden transition-colors hover:bg-muted/70 focus-visible:bg-muted/70 focus-visible:ring-2 focus-visible:ring-ring/30',
-            activeSection === section.id ? 'text-foreground' : 'text-muted-foreground',
-          ]"
-          :aria-current="activeSection === section.id ? 'page' : undefined"
-          type="button"
-          @click="activeSection = section.id"
-        >
-          <span
-            class="h-4 w-0.5 justify-self-center rounded-full"
-            :class="activeSection === section.id ? 'bg-muted-foreground' : 'bg-transparent'"
-          />
-          <component
-            :is="section.icon"
-            class="size-3.5 justify-self-center"
-            :stroke-width="1.75"
-          />
-          <span class="ml-1 truncate">{{ t(`repository.sections.${section.id}.title`) }}</span>
-        </button>
-      </nav>
-    </aside>
-
-    <main class="min-w-0 flex-1 overflow-auto px-3 py-2">
+    <main class="min-w-0 flex-1 overflow-auto px-3">
       <div class="mx-auto grid w-full max-w-5xl gap-5 pb-8">
-        <template v-if="activeSection === 'overview'">
-          <section class="grid gap-2">
-            <h2 class="px-1 text-label font-medium text-muted-foreground">
-              {{ t('repository.overview.basicInfo') }}
-            </h2>
-            <div class="grid gap-2 sm:grid-cols-3">
-              <div
-                v-for="item in summaryItems"
-                :key="item.id"
-                class="grid gap-2 rounded-lg border border-border bg-card p-3"
-              >
-                <div class="flex min-w-0 items-center gap-2 text-body font-medium text-muted-foreground">
-                  <component
-                    :is="item.icon"
-                    class="size-4 shrink-0"
-                  />
-                  <span class="truncate">{{ item.label }}</span>
-                </div>
-                <div class="truncate text-control font-semibold text-foreground">
-                  {{ item.value }}
-                </div>
-              </div>
-            </div>
-          </section>
+        <RepositoryOverview
+          v-if="activeSection === 'overview'"
+          v-model:active-document-kind="activeDocumentKind"
+          :active-document="activeDocument"
+          :available-documents="availableDocuments"
+          :has-overview-error="hasOverviewError"
+          :is-overview-loading="isOverviewLoading"
+          :missing-scopes-text="missingScopesText"
+          :overview="overview"
+          :overview-description="overviewDescription"
+          :overview-info-items="overviewInfoItems"
+        />
 
-          <section class="grid gap-2">
-            <h2 class="px-1 text-label font-medium text-muted-foreground">
-              {{ t('repository.overview.documents') }}
-            </h2>
-            <div class="grid gap-2 lg:grid-cols-3">
-              <article
-                v-for="item in documentItems"
-                :key="item.id"
-                class="grid gap-2 rounded-lg border border-border bg-card p-3"
-              >
-                <div class="flex min-w-0 items-center gap-2 text-label font-medium text-foreground">
-                  <component
-                    :is="item.icon"
-                    class="size-4 shrink-0 text-muted-foreground"
-                  />
-                  <span class="truncate">{{ item.title }}</span>
-                </div>
-                <p class="text-body text-muted-foreground">
-                  {{ item.description }}
-                </p>
-              </article>
-            </div>
-          </section>
-        </template>
+        <FilesPanel
+          v-else-if="activeSection === 'files'"
+          :default-branch="overview?.defaultBranch ?? null"
+          :owner="owner"
+          :repo="repository"
+        />
+
+        <PullRequestsSection
+          v-else-if="activeSection === 'pullRequests'"
+          :owner="owner"
+          :repo="repository"
+        />
 
         <Empty
           v-else

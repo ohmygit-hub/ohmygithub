@@ -8,6 +8,16 @@ body,
   height: 100%;
 }
 
+* {
+  scrollbar-width: none;
+}
+
+*::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
@@ -27,66 +37,192 @@ body {
   min-width: max-content;
 }
 
-.rich-content-markdown .markstream-vue {
+.rich-content-markdown {
   contain: none;
   content-visibility: visible;
   color: var(--foreground);
-  font-size: var(--text-control);
-  line-height: 1.65;
+  font-size: var(--text-body);
+  line-height: 1.6;
   min-width: 0;
 }
 
-.rich-content-markdown .markstream-vue .node-slot,
-.rich-content-markdown .markstream-vue .node-content {
+.rich-content-markdown :where(.markstream-vue) {
+  --ms-text-body: var(--text-control);
+  --ms-leading-body: 1.6;
+  --ms-text-h1: 1.375rem;
+  --ms-text-h2: var(--text-heading);
+  --ms-text-h3: var(--text-title);
+  --ms-text-h4: var(--text-control);
+  --ms-text-h5: var(--text-control);
+  --ms-text-h6: var(--text-control);
+  --ms-leading-h1: 1.25;
+  --ms-leading-h2: 1.35;
+  --ms-leading-h3: 1.4;
+  --ms-flow-paragraph-y: 1rem;
+  --ms-flow-heading-1-mb: 0.75rem;
+  --ms-flow-heading-2-mt: 1.5rem;
+  --ms-flow-heading-2-mb: 0.625rem;
+  --ms-flow-heading-3-mt: 1.25rem;
+  --ms-flow-heading-3-mb: 0.5rem;
+  --ms-size-image-max-width: 100%;
+  --ms-size-image-min-width: 0;
+  --ms-size-image-min-height: 0;
+  contain: none;
+  content-visibility: visible;
+  color: inherit;
+  font: inherit;
+  line-height: inherit;
+  min-width: 0;
+}
+
+.rich-content-markdown .markstream-vue.markdown-renderer {
+  font-size: var(--text-control);
+  line-height: 1.6;
+}
+
+.rich-content-markdown .markstream-vue .paragraph-node,
+.rich-content-markdown .markstream-vue .html-inline-node,
+.rich-content-markdown .markstream-vue .html-block-node__raw,
+.rich-content-markdown .markstream-vue .link-node {
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.rich-content-markdown .markstream-vue .image-node-container,
+.rich-content-markdown .rich-content-image {
+  display: inline-block;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 0;
+  vertical-align: middle;
+}
+
+.rich-content-markdown .rich-content-image,
+.rich-content-markdown .markstream-vue .image-node__img {
+  max-width: 100%;
+  min-width: 0;
+  min-height: 0;
+  height: auto;
+}
+
+.rich-content-markdown .markstream-vue .image-node-container + .image-node-container,
+.rich-content-markdown .markstream-vue .image-node-container + a,
+.rich-content-markdown .markstream-vue a + .image-node-container {
+  margin-left: 0.25rem;
+}
+
+.rich-content-markdown :where(.node-slot, .node-content) {
   min-width: 0;
   opacity: 1;
   visibility: visible;
 }
 
-.rich-content-markdown .markstream-vue :where(h1, h2, h3, h4, h5, h6) {
+.rich-content-markdown :where(h1, h2, h3, h4, h5, h6) {
   color: var(--foreground);
   font-weight: 520;
   line-height: 1.25;
+  margin-block: 1.25rem 0.75rem;
 }
 
-.rich-content-markdown .markstream-vue :where(h1) {
+.rich-content-markdown :where(h1) {
   font-size: 1.25rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
 }
 
-.rich-content-markdown .markstream-vue :where(h2) {
+.rich-content-markdown :where(h2) {
   font-size: 1.125rem;
+  padding-bottom: 0.375rem;
+  border-bottom: 1px solid var(--border);
 }
 
-.rich-content-markdown .markstream-vue :where(h3, h4, h5, h6) {
+.rich-content-markdown :where(h3, h4, h5, h6) {
   font-size: 1rem;
 }
 
-.rich-content-markdown .markstream-vue :where(p, ul, ol, blockquote, pre, table) {
+.rich-content-markdown :where(p, ul, ol, blockquote, pre, table) {
   margin-block: 0.75rem;
 }
 
-.rich-content-markdown .markstream-vue :where(.heading-node, .paragraph-node) {
+.rich-content-markdown :where(ul, ol) {
+  padding-left: 1.35rem;
+}
+
+.rich-content-markdown :where(li) {
+  margin-block: 0.25rem;
+}
+
+.rich-content-markdown :where(a) {
+  color: var(--primary);
+  text-decoration-line: underline;
+  text-underline-offset: 0.2em;
+}
+
+.rich-content-markdown :where(blockquote) {
+  border-left: 3px solid var(--border);
+  color: var(--muted-foreground);
+  padding-left: 1rem;
+}
+
+.rich-content-markdown :where(:not(pre) > code) {
+  background: var(--muted);
+  border-radius: 0.375rem;
+  color: var(--foreground);
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  padding: 0.125rem 0.3rem;
+}
+
+.rich-content-markdown :where(pre) {
+  background: var(--muted);
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  padding: 1rem;
+}
+
+.rich-content-markdown :where(table) {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+}
+
+.rich-content-markdown :where(th, td) {
+  border: 1px solid var(--border);
+  padding: 0.375rem 0.625rem;
+}
+
+.rich-content-markdown :where(th) {
+  background: var(--muted);
+  font-weight: 520;
+}
+
+.rich-content-markdown :where(img) {
+  max-width: 100%;
+}
+
+.rich-content-markdown :where(.heading-node, .paragraph-node) {
   color: var(--foreground);
 }
 
-.rich-content-markdown .markstream-vue :where(.rich-content-mermaid) {
+.rich-content-markdown :where(.rich-content-mermaid) {
   background: var(--card);
   border-color: var(--border);
 }
 
-.rich-content-markdown .markstream-vue :where(._mermaid) {
+.rich-content-markdown :where(._mermaid) {
   content-visibility: visible;
 }
 
-.rich-content-markdown .markstream-vue :where(.mermaid-preview-area) {
+.rich-content-markdown :where(.mermaid-preview-area) {
   min-height: 16rem;
 }
 
-.rich-content-markdown .markstream-vue :where(*:first-child) {
+.rich-content-markdown :where(*:first-child) {
   margin-top: 0;
 }
 
-.rich-content-markdown .markstream-vue :where(*:last-child) {
+.rich-content-markdown :where(*:last-child) {
   margin-bottom: 0;
 }
 

@@ -15,6 +15,8 @@ import {
   Folder,
   PanelLeftClose,
   PanelLeftOpen,
+  PanelRightClose,
+  PanelRightOpen,
   Plus,
   X,
 } from 'lucide-vue-next'
@@ -31,8 +33,10 @@ import {
   TabsTrigger,
   useSidebar,
 } from '@oh-my-github/ui'
+import { useRightPanel } from '../../../composables/use-right-panel'
 import { getWorkspaceTabView } from '../tab-presentation'
 import WorkspacePanel from './workspace-panel.vue'
+import WorkspaceRightPanel from './workspace-right-panel.vue'
 
 const props = defineProps<{
   activeUrl: string
@@ -53,14 +57,26 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const { state, toggleSidebar } = useSidebar()
+const {
+  isOpen: isRightPanelOpen,
+  toggleRightPanel,
+} = useRightPanel()
+const RIGHT_PANEL_WIDTH_STORAGE_KEY = 'oh-my-github:workspace-right-panel-width:v1'
+const DEFAULT_RIGHT_PANEL_WIDTH = 416
+const MIN_RIGHT_PANEL_WIDTH = 320
+const MAX_RIGHT_PANEL_WIDTH = 768
 const isMac = navigator.platform.toLowerCase().includes('mac')
 const scrollHost = ref<HTMLElement>()
 const scrollMetrics = ref({ clientWidth: 0, scrollLeft: 0, scrollWidth: 0 })
 const isDraggingScrollbar = ref(false)
+const isRightPanelResizing = ref(false)
+const rightPanelWidth = ref(readStoredRightPanelWidth())
 const bookmarkMenuItemClass = 'h-7 !gap-1.5 !px-2 !py-1 !text-body'
 let resizeObserver: ResizeObserver | undefined
 let dragStartX = 0
 let dragStartScrollLeft = 0
+let rightPanelResizeStartX = 0
+let rightPanelResizeStartWidth = 0
 
 const sidebarLabel = computed(() =>
   state.value === 'expanded'
@@ -78,6 +94,9 @@ const activeBookmark = computed(() => {
 const isActiveTabBookmarked = computed(() => activeTab.value ? props.bookmarkedUrls.has(activeTab.value.url) : false)
 const activeBookmarkLabel = computed(() =>
   t(isActiveTabBookmarked.value ? 'workspace.bookmarks.removeCurrent' : 'workspace.bookmarks.addCurrent'),
+)
+const rightPanelLabel = computed(() =>
+  t(isRightPanelOpen.value ? 'workspace.rightPanel.close' : 'workspace.rightPanel.open'),
 )
 const hasTabOverflow = computed(() => scrollMetrics.value.scrollWidth > scrollMetrics.value.clientWidth + 1)
 const scrollbarThumbStyle = computed(() => {
@@ -195,6 +214,49 @@ function stopScrollbarDrag(): void {
   window.removeEventListener('pointermove', onScrollbarPointerMove)
 }
 
+function readStoredRightPanelWidth(): number {
+  const stored = Number(localStorage.getItem(RIGHT_PANEL_WIDTH_STORAGE_KEY))
+  return clampRightPanelWidth(Number.isFinite(stored) ? stored : DEFAULT_RIGHT_PANEL_WIDTH)
+}
+
+function clampRightPanelWidth(width: number): number {
+  const viewportMax = Math.floor(window.innerWidth * 0.7)
+  const maxWidth = Math.max(MIN_RIGHT_PANEL_WIDTH, Math.min(MAX_RIGHT_PANEL_WIDTH, viewportMax))
+  return Math.min(maxWidth, Math.max(MIN_RIGHT_PANEL_WIDTH, Math.round(width)))
+}
+
+function setRightPanelWidth(width: number): void {
+  rightPanelWidth.value = clampRightPanelWidth(width)
+}
+
+function startRightPanelResize(event: PointerEvent): void {
+  if (!isRightPanelOpen.value) return
+
+  event.preventDefault()
+  isRightPanelResizing.value = true
+  rightPanelResizeStartX = event.clientX
+  rightPanelResizeStartWidth = rightPanelWidth.value
+  document.body.style.cursor = 'col-resize'
+  document.body.style.userSelect = 'none'
+  window.addEventListener('pointermove', resizeRightPanel)
+  window.addEventListener('pointerup', stopRightPanelResize, { once: true })
+}
+
+function resizeRightPanel(event: PointerEvent): void {
+  if (!isRightPanelResizing.value) return
+  setRightPanelWidth(rightPanelResizeStartWidth + rightPanelResizeStartX - event.clientX)
+}
+
+function stopRightPanelResize(): void {
+  if (!isRightPanelResizing.value) return
+
+  isRightPanelResizing.value = false
+  localStorage.setItem(RIGHT_PANEL_WIDTH_STORAGE_KEY, String(rightPanelWidth.value))
+  document.body.style.cursor = ''
+  document.body.style.userSelect = ''
+  window.removeEventListener('pointermove', resizeRightPanel)
+}
+
 onMounted(() => {
   nextTick(updateScrollMetrics)
   if (scrollHost.value) {
@@ -206,6 +268,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   resizeObserver?.disconnect()
   stopScrollbarDrag()
+  stopRightPanelResize()
 })
 
 watch(
@@ -394,16 +457,46 @@ watch(
       >
         <Plus class="size-4" />
       </Button>
+
+      <Button
+        :aria-label="rightPanelLabel"
+        :aria-pressed="isRightPanelOpen"
+        class="size-7"
+        :data-state="isRightPanelOpen ? 'open' : undefined"
+        size="icon-sm"
+        type="button"
+        variant="ghost"
+        @click="toggleRightPanel()"
+      >
+        <PanelRightClose
+          v-if="isRightPanelOpen"
+          class="size-3.5"
+        />
+        <PanelRightOpen
+          v-else
+          class="size-3.5"
+        />
+      </Button>
     </div>
 
-    <TabsContent
-      v-for="tab in props.tabs"
-      :key="tab.url"
-      class="min-h-0 overflow-auto"
-      :value="tab.url"
-    >
-      <WorkspacePanel :tab="tab" />
-    </TabsContent>
+    <div class="flex min-h-0 flex-1 overflow-hidden">
+      <div class="min-w-0 flex-1 overflow-hidden">
+        <TabsContent
+          v-for="tab in props.tabs"
+          :key="tab.url"
+          class="h-full min-h-0 overflow-auto"
+          :value="tab.url"
+        >
+          <WorkspacePanel :tab="tab" />
+        </TabsContent>
+      </div>
+
+      <WorkspaceRightPanel
+        :is-resizing="isRightPanelResizing"
+        :width="rightPanelWidth"
+        @start-resize="startRightPanelResize"
+      />
+    </div>
   </Tabs>
 </template>
 

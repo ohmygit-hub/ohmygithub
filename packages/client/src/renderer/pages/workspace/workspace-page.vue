@@ -3,7 +3,7 @@ import type { WorkspaceTab } from './types'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { SidebarInset, SidebarProvider } from '@oh-my-github/ui'
 import { useWorkspaceBookmarks } from './composables/use-workspace-bookmarks'
-import { useWorkspaceOrganizations } from './composables/use-workspace-organizations'
+import { useOrganizationsQuery } from '../../composables/github/use-organizations'
 import { useWorkspaceTabs } from './composables/use-workspace-tabs'
 import WorkspaceSidebar from './components/workspace-sidebar.vue'
 import WorkspaceTabs from './components/workspace-tabs.vue'
@@ -30,7 +30,7 @@ const {
   tabs,
 } = useWorkspaceTabs()
 
-const organizationsQuery = useWorkspaceOrganizations()
+const organizationsQuery = useOrganizationsQuery()
 const organizations = computed(() => organizationsQuery.data.value ?? [])
 const organizationsLoading = computed(() => organizationsQuery.isLoading.value)
 const organizationsError = computed(() => Boolean(organizationsQuery.error.value))

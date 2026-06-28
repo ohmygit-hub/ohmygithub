@@ -45,9 +45,159 @@ type GitHubRepositoryViewerState = {
   starCount: number
 }
 
+type GitHubRepositoryVisibility = 'public' | 'private' | 'internal'
+
+type GitHubRepositoryDocumentKind =
+  | 'readme'
+  | 'contributing'
+  | 'license'
+  | 'codeOfConduct'
+  | 'security'
+  | 'citation'
+  | 'funding'
+  | 'issueTemplate'
+  | 'pullRequestTemplate'
+
+type GitHubRepositoryDocumentFormat = 'markdown' | 'text'
+
+type GitHubRepositoryLanguage = {
+  name: string
+  bytes: number
+}
+
+type GitHubRepositoryLicense = {
+  key: string
+  name: string
+  spdxId: string | null
+  url: string | null
+}
+
+type GitHubRepositoryDocument = {
+  kind: GitHubRepositoryDocumentKind
+  title: string
+  path: string
+  url: string | null
+  format: GitHubRepositoryDocumentFormat
+  content: string
+}
+
+type GitHubRepositoryCustomProperty = {
+  name: string
+  value: string
+}
+
+type GitHubRepositoryOverviewCounts = {
+  stars: number
+  watchers: number
+  forks: number
+  openIssues: number
+  openPullRequests: number | null
+  releases: number | null
+  branches: number | null
+  tags: number | null
+  packages: number | null
+}
+
+type GitHubRepositoryOverview = {
+  id: number
+  name: string
+  nameWithOwner: string
+  owner: string
+  description: string | null
+  homepageUrl: string | null
+  url: string
+  visibility: GitHubRepositoryVisibility
+  isFork: boolean
+  isArchived: boolean
+  isTemplate: boolean
+  defaultBranch: string | null
+  primaryLanguage: string | null
+  languages: GitHubRepositoryLanguage[]
+  topics: string[]
+  license: GitHubRepositoryLicense | null
+  counts: GitHubRepositoryOverviewCounts
+  pushedAt: string | null
+  updatedAt: string | null
+  documents: GitHubRepositoryDocument[]
+  customProperties: GitHubRepositoryCustomProperty[]
+  missingScopes: string[]
+  warnings: string[]
+}
+
+type GitHubRepositoryFileNodeType = 'tree' | 'file'
+
+type GitHubRepositoryFileNode = {
+  type: GitHubRepositoryFileNodeType
+  name: string
+  path: string
+  sha: string
+  size: number | null
+  downloadUrl: string | null
+  htmlUrl: string | null
+  children: GitHubRepositoryFileNode[]
+}
+
+type GitHubRepositoryFileTree = {
+  ref: string
+  truncated: boolean
+  items: GitHubRepositoryFileNode[]
+}
+
+type GitHubRepositoryFilePreview =
+  | {
+      type: 'markdown'
+      path: string
+      name: string
+      title: string
+      content: string
+      downloadUrl: string | null
+      htmlUrl: string | null
+    }
+  | {
+      type: 'code'
+      path: string
+      name: string
+      title: string
+      content: string
+      language: string
+      downloadUrl: string | null
+      htmlUrl: string | null
+    }
+  | {
+      type: 'image'
+      path: string
+      name: string
+      title: string
+      url: string
+      downloadUrl: string | null
+      htmlUrl: string | null
+    }
+  | {
+      type: 'video'
+      path: string
+      name: string
+      title: string
+      url: string
+      posterUrl: string | null
+      downloadUrl: string | null
+      htmlUrl: string | null
+    }
+  | {
+      type: 'download'
+      path: string
+      name: string
+      title: string
+      description: string | null
+      url: string
+      downloadUrl: string | null
+      htmlUrl: string | null
+    }
+
 type GitHubCiState = 'pending' | 'success' | 'failure'
 
-type GitHubPullRequestState = 'draft' | 'merged' | 'open' | 'cannot_merge'
+type GitHubPullRequestState = 'draft' | 'merged' | 'open' | 'closed'
+
+type GitHubPullRequestSearchState = 'open' | 'closed' | 'all'
 
 type GitHubIssueState = 'open' | 'completed' | 'not_planned'
 
@@ -74,6 +224,24 @@ type GitHubPullRequest = {
   labels: string[]
   url: string
   hasUpdates: boolean
+}
+
+type SearchRepositoryPullRequestsOptions = {
+  owner: string
+  repo: string
+  page?: number
+  perPage?: number
+  search?: string
+  state?: GitHubPullRequestSearchState
+}
+
+type GitHubPullRequestSearchResult = {
+  items: GitHubPullRequest[]
+  totalCount: number
+  page: number
+  perPage: number
+  hasNextPage: boolean
+  incompleteResults: boolean
 }
 
 type GitHubIssue = {
@@ -129,9 +297,20 @@ interface Window {
       listPullRequestCategory: (category: GitHubPullRequestCategory) => Promise<GitHubPullRequest[]>
       listViewerPullRequests: () => Promise<GitHubPullRequest[]>
       listRepositoryPullRequests: (owner: string, repo: string) => Promise<GitHubPullRequest[]>
+      searchRepositoryPullRequests: (
+        options: SearchRepositoryPullRequestsOptions
+      ) => Promise<GitHubPullRequestSearchResult>
     }
     repositories: {
       getViewerState: (owner: string, repo: string) => Promise<GitHubRepositoryViewerState>
+      getOverview: (owner: string, repo: string) => Promise<GitHubRepositoryOverview>
+      listFiles: (owner: string, repo: string, ref?: string | null) => Promise<GitHubRepositoryFileTree>
+      getFilePreview: (
+        owner: string,
+        repo: string,
+        path: string,
+        ref?: string | null
+      ) => Promise<GitHubRepositoryFilePreview>
       setStarred: (owner: string, repo: string, starred: boolean) => Promise<void>
       setWatching: (owner: string, repo: string, watching: boolean) => Promise<void>
     }

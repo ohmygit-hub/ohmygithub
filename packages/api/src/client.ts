@@ -11,7 +11,11 @@ import type {
   GitHubIssue,
   GitHubOrganization,
   GitHubPullRequest,
+  GitHubPullRequestSearchResult,
   GitHubRepository,
+  GitHubRepositoryFilePreview,
+  GitHubRepositoryFileTree,
+  GitHubRepositoryOverview,
   GitHubWorkspaceItem
 } from './types'
 
@@ -45,6 +49,9 @@ export function createGitHubApi(options: GitHubApiOptions): GitHubApi {
     listViewerOrganizations: () => accounts.listViewerOrganizations(),
     listOrganizationRepositories: (owner) => accounts.listOrganizationRepositories(owner),
     getRepositoryViewerState: (options) => repositories.getViewerState(options),
+    getRepositoryOverview: (options) => repositories.getOverview(options),
+    listRepositoryFiles: (options) => repositories.listFiles(options),
+    getRepositoryFilePreview: (options) => repositories.getFilePreview(options),
     setRepositoryStarred: (options) => repositories.setStarred(options),
     setRepositoryWatching: (options) => repositories.setWatching(options),
     listNotifications: () => inbox.listNotifications(),
@@ -53,10 +60,21 @@ export function createGitHubApi(options: GitHubApiOptions): GitHubApi {
     listPullRequestCategory: (options) => pulls.listPullRequestCategory(options),
     listViewerPullRequests: (options) => pulls.listViewerPullRequests(options),
     listRepositoryPullRequests: (options) => pulls.listRepositoryPullRequests(options),
+    searchRepositoryPullRequests: (options) => pulls.searchRepositoryPullRequests(options),
     listIssueCategory: (options) => issues.listIssueCategory(options),
     listViewerIssues: (options) => issues.listViewerIssues(options),
     listRepositoryIssues: (options) => issues.listRepositoryIssues(options)
   }
 }
 
-export type { GitHubIssue, GitHubOrganization, GitHubPullRequest, GitHubRepository, GitHubWorkspaceItem }
+export type {
+  GitHubIssue,
+  GitHubOrganization,
+  GitHubPullRequest,
+  GitHubPullRequestSearchResult,
+  GitHubRepository,
+  GitHubRepositoryFilePreview,
+  GitHubRepositoryFileTree,
+  GitHubRepositoryOverview,
+  GitHubWorkspaceItem
+}

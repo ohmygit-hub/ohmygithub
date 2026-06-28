@@ -75,6 +75,13 @@ Prefer Pinia stores for client state such as settings, selected account, active 
 - Store lightweight preferences and account selection in `~/.oh-my-github/config.json` through main-process IPC.
 - Store auth state in `~/.oh-my-github/auth.json` through main-process IPC; only sanitized auth metadata may cross into renderer.
 
+## GitHub OAuth Scope Policy
+
+- Prefer product capability over minimal OAuth prompts: when adding a GitHub-backed app surface, include the scopes needed for the full intended workflow in `defaultGitHubOAuthScopes`.
+- Keep OAuth scope changes synchronized with the API contract, main/preload bridge, renderer types, and `MockGitHubClient`.
+- If an existing token is missing newly required OAuth scopes, surface an explicit missing-permissions state in the UI instead of silently hiding data or showing placeholder values.
+- Renderer code may receive sanitized scope metadata, but it must never receive or inspect the raw token.
+
 ## Validation
 
 Before handing off frontend changes, run:

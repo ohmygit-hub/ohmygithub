@@ -21,11 +21,19 @@ const api = {
     listPullRequestCategory: (category: string) => ipcRenderer.invoke('pulls:list-category', category),
     listViewerPullRequests: () => ipcRenderer.invoke('pulls:list-viewer'),
     listRepositoryPullRequests: (owner: string, repo: string) =>
-      ipcRenderer.invoke('pulls:list-repository', owner, repo)
+      ipcRenderer.invoke('pulls:list-repository', owner, repo),
+    searchRepositoryPullRequests: (options: unknown) =>
+      ipcRenderer.invoke('pulls:search-repository', options)
   },
   repositories: {
     getViewerState: (owner: string, repo: string) =>
       ipcRenderer.invoke('repositories:get-viewer-state', owner, repo),
+    getOverview: (owner: string, repo: string) =>
+      ipcRenderer.invoke('repositories:get-overview', owner, repo),
+    listFiles: (owner: string, repo: string, ref?: string | null) =>
+      ipcRenderer.invoke('repositories:list-files', owner, repo, ref),
+    getFilePreview: (owner: string, repo: string, path: string, ref?: string | null) =>
+      ipcRenderer.invoke('repositories:get-file-preview', owner, repo, path, ref),
     setStarred: (owner: string, repo: string, starred: boolean) =>
       ipcRenderer.invoke('repositories:set-starred', owner, repo, starred),
     setWatching: (owner: string, repo: string, watching: boolean) =>

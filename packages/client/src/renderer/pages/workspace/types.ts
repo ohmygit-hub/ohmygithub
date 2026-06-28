@@ -82,14 +82,22 @@ export type WorkspaceSidebarWorkItem =
   | {
       type: 'pull-request'
       state: GitHubPullRequestState
+      iconTone: WorkspaceSidebarWorkItemIconTone
       ciState: GitHubCiState | null
       hasUpdates: boolean
     }
   | {
       type: 'issue'
       state: GitHubIssueState
+      iconTone: WorkspaceSidebarWorkItemIconTone
       hasUpdates: boolean
     }
+
+export type WorkspaceSidebarWorkItemIconTone =
+  | 'success'
+  | 'destructive'
+  | 'merged'
+  | 'muted'
 
 export interface WorkspaceSidebarTreeItemStateText {
   emptyKey: string
