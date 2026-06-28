@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { MermaidBlockNode } from 'markstream-vue'
 import { useSettingsStore } from '../../stores/settings'
-import type { MarkdownCodeNode, MarkstreamCodeNode } from '../markstream-node-types'
+import type { MarkdownCodeNode, MarkstreamCodeNode } from '../markdown/markstream-node-types'
 
 const props = withDefaults(defineProps<{
   node?: MarkdownCodeNode
