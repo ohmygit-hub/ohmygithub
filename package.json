@@ -8,6 +8,9 @@
     "env:setup": "pnpm install && pnpm --filter @oh-my-github/client exec install-electron",
     "dev": "pnpm --filter @oh-my-github/client dev",
     "build": "pnpm -r build",
+    "build:client": "pnpm --filter @oh-my-github/client build",
+    "package": "pnpm package:client",
+    "package:client": "pnpm --filter @oh-my-github/client build",
     "typecheck": "pnpm -r typecheck",
     "lint": "pnpm typecheck"
   },
