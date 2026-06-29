@@ -1,5 +1,9 @@
 import type { Component } from 'vue'
-import type { WorkspaceSidebarTreeItem, WorkspaceSidebarWorkItemIconTone } from './types'
+import type {
+  WorkspaceSidebarTreeItem,
+  WorkspaceSidebarWorkItemIconTone,
+  WorkspaceSidebarWorkItemReference,
+} from './types'
 import {
   AtSign,
   CircleCheck,
@@ -25,6 +29,39 @@ export const ISSUE_CATEGORIES: readonly GitHubIssueCategory[] = [
   'inbox',
   'mentioned-me',
 ]
+
+type FoundRepositoryReference = Extract<GitHubRepositoryReferenceResolution, { status: 'found' }>
+
+interface WorkItemTreeItemOptions {
+  activeItemId: string | null
+  activeUrl: string
+  fallbackLabel?: string
+  id?: string
+  scope?: string
+}
+
+type SidebarWorkItem =
+  | {
+      type: 'pull-request'
+      owner: string
+      repo: string
+      repository: string
+      number: number
+      title: string
+      state: GitHubPullRequestState
+      ciState?: GitHubCiState | null
+      hasUpdates?: boolean
+    }
+  | {
+      type: 'issue'
+      owner: string
+      repo: string
+      repository: string
+      number: number
+      title: string
+      state: GitHubIssueState
+      hasUpdates?: boolean
+    }
 
 export function pullRequestCategoryUrl(category: GitHubPullRequestCategory): string {
   return `/pull-requests/${category}`
@@ -96,23 +133,20 @@ export function pullRequestToTreeItem(
   activeItemId: string | null,
   scope?: string,
 ): WorkspaceSidebarTreeItem {
-  const url = pullRequestUrl(pullRequest)
-  const id = scopedId(scope, `pull-request:${pullRequest.repository}:${pullRequest.number}`)
-
-  return {
-    id,
-    label: `#${pullRequest.number} ${pullRequest.title}`,
-    url,
-    icon: pullRequestIcon(pullRequest.state),
-    isActive: isActiveItem(id, url, activeItemId, activeUrl),
-    workItem: {
+  return workItemToTreeItem(
+    {
       type: 'pull-request',
+      owner: pullRequest.owner,
+      repo: pullRequest.repo,
+      repository: pullRequest.repository,
+      number: pullRequest.number,
+      title: pullRequest.title,
       state: pullRequest.state,
-      iconTone: pullRequestIconTone(pullRequest.state),
       ciState: pullRequest.ciState,
       hasUpdates: pullRequest.hasUpdates,
     },
-  }
+    { activeItemId, activeUrl, scope },
+  )
 }
 
 export function issueToTreeItem(
@@ -121,21 +155,123 @@ export function issueToTreeItem(
   activeItemId: string | null,
   scope?: string,
 ): WorkspaceSidebarTreeItem {
-  const url = issueUrl(issue)
-  const id = scopedId(scope, `issue:${issue.repository}:${issue.number}`)
+  return workItemToTreeItem(
+    {
+      type: 'issue',
+      owner: issue.owner,
+      repo: issue.repo,
+      repository: issue.repository,
+      number: issue.number,
+      title: issue.title,
+      state: issue.state,
+      hasUpdates: issue.hasUpdates,
+    },
+    { activeItemId, activeUrl, scope },
+  )
+}
+
+export function workItemReferenceToTreeItem(
+  reference: WorkspaceSidebarWorkItemReference,
+  options: WorkItemTreeItemOptions,
+): WorkspaceSidebarTreeItem {
+  const repository = `${reference.owner}/${reference.repo}`
+  const item = workItemToTreeItem(
+    reference.kind === 'pull-request'
+      ? {
+          type: 'pull-request',
+          owner: reference.owner,
+          repo: reference.repo,
+          repository,
+          number: reference.number,
+          title: '',
+          state: 'open',
+          ciState: null,
+          hasUpdates: false,
+        }
+      : {
+          type: 'issue',
+          owner: reference.owner,
+          repo: reference.repo,
+          repository,
+          number: reference.number,
+          title: '',
+          state: 'open',
+          hasUpdates: false,
+        },
+    options,
+  )
+
+  return {
+    ...item,
+    label: options.fallbackLabel?.trim() || item.label,
+    workItemReference: reference,
+  }
+}
+
+export function resolvedReferenceToTreeItem(
+  reference: FoundRepositoryReference,
+  options: WorkItemTreeItemOptions,
+): WorkspaceSidebarTreeItem {
+  return workItemToTreeItem(
+    reference.kind === 'pull-request'
+      ? {
+          type: 'pull-request',
+          owner: reference.owner,
+          repo: reference.repo,
+          repository: reference.repository,
+          number: reference.number,
+          title: reference.title,
+          state: reference.state as GitHubPullRequestState,
+          ciState: null,
+          hasUpdates: false,
+        }
+      : {
+          type: 'issue',
+          owner: reference.owner,
+          repo: reference.repo,
+          repository: reference.repository,
+          number: reference.number,
+          title: reference.title,
+          state: reference.state as GitHubIssueState,
+          hasUpdates: false,
+        },
+    options,
+  )
+}
+
+function workItemToTreeItem(
+  workItem: SidebarWorkItem,
+  options: WorkItemTreeItemOptions,
+): WorkspaceSidebarTreeItem {
+  const url = workItem.type === 'pull-request'
+    ? pullRequestUrl(workItem)
+    : issueUrl(workItem)
+  const id = options.id ?? scopedId(options.scope, `${workItem.type}:${workItem.repository}:${workItem.number}`)
+  const title = workItem.title.trim()
+  const label = title ? `#${workItem.number} ${title}` : `#${workItem.number}`
 
   return {
     id,
-    label: `#${issue.number} ${issue.title}`,
+    label,
     url,
-    icon: issueIcon(issue.state),
-    isActive: isActiveItem(id, url, activeItemId, activeUrl),
-    workItem: {
-      type: 'issue',
-      state: issue.state,
-      iconTone: issueIconTone(issue.state),
-      hasUpdates: issue.hasUpdates,
-    },
+    icon: workItem.type === 'pull-request'
+      ? pullRequestIcon(workItem.state)
+      : issueIcon(workItem.state),
+    isActive: isActiveItem(id, url, options.activeItemId, options.activeUrl),
+    workItem: workItem.type === 'pull-request'
+      ? {
+          type: 'pull-request',
+          state: workItem.state,
+          iconTone: pullRequestIconTone(workItem.state),
+          ciState: workItem.ciState ?? null,
+          hasUpdates: workItem.hasUpdates ?? false,
+        }
+      : {
+          type: 'issue',
+          state: workItem.state,
+          iconTone: issueIconTone(workItem.state),
+          hasUpdates: workItem.hasUpdates ?? false,
+        },
   }
 }
 

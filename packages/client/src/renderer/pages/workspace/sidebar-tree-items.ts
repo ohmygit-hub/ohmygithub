@@ -5,6 +5,7 @@ import {
   CircleDot,
   GitPullRequest,
 } from 'lucide-vue-next'
+import { workItemReferenceToTreeItem } from './sidebar-work-items'
 import { getWorkspaceTabView } from './tab-presentation'
 import { createRepositoryWorkspaceUrl } from './workspace-url'
 
@@ -104,6 +105,22 @@ export function bookmarkToTreeItem(
     )
   }
 
+  if (isBookmarkWorkItem(bookmark)) {
+    return workItemReferenceToTreeItem(
+      {
+        kind: bookmark.type === 'pull-request' ? 'pull-request' : 'issue',
+        owner: bookmark.owner,
+        repo: bookmark.repo,
+        number: bookmark.number,
+      },
+      {
+        ...context,
+        id: bookmarkItemId(bookmark),
+        fallbackLabel: bookmark.title,
+      },
+    )
+  }
+
   const view = getWorkspaceTabView(bookmark)
 
   return {
@@ -190,6 +207,24 @@ function createRepositoryChildren(options: {
 
 function bookmarkItemId(bookmark: WorkspaceBookmark): string {
   return `bookmark:${bookmark.id}`
+}
+
+function isBookmarkWorkItem(
+  bookmark: WorkspaceBookmark,
+): bookmark is WorkspaceBookmark & {
+  owner: string
+  repo: string
+  number: number
+  type: 'issue' | 'pull-request'
+} {
+  const number = bookmark.number
+
+  return (bookmark.type === 'issue' || bookmark.type === 'pull-request')
+    && Boolean(bookmark.owner)
+    && Boolean(bookmark.repo)
+    && typeof number === 'number'
+    && Number.isInteger(number)
+    && number > 0
 }
 
 function repositoryUrl(owner: string, repo: string): string {

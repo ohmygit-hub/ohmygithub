@@ -2,6 +2,7 @@
 import type { WorkspaceSidebarTreeItem } from '../types'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useQuery } from '@pinia/colada'
 import {
   Check,
   ChevronDown,
@@ -27,7 +28,7 @@ import {
   useRepositoryPullRequestsQuery,
 } from '../../../composables/github/use-pull-requests'
 import { repositoryToTreeItem } from '../sidebar-tree-items'
-import { issueToTreeItem, pullRequestToTreeItem } from '../sidebar-work-items'
+import { issueToTreeItem, pullRequestToTreeItem, resolvedReferenceToTreeItem } from '../sidebar-work-items'
 
 defineOptions({
   name: 'WorkspaceSidebarTreeItem',
@@ -64,10 +65,65 @@ const issueCategory = computed<GitHubIssueCategory>(() =>
   props.item.childrenLoader?.issueCategory ?? 'inbox'
 )
 const loaderScope = computed(() => props.item.childrenLoader?.scope ?? props.item.id)
+const workItemReference = computed(() => props.item.workItemReference)
 const treeLabels = computed(() => ({
   issues: t('workspace.sidebar.groups.issues'),
   pullRequests: t('workspace.sidebar.groups.pullRequests'),
 }))
+
+const referenceQuery = useQuery<GitHubRepositoryReferenceResolution>({
+  key: () => [
+    'github',
+    'repository-reference',
+    workItemReference.value?.owner ?? '',
+    workItemReference.value?.repo ?? '',
+    workItemReference.value?.number ?? 0,
+    workItemReference.value?.kind ?? '',
+  ],
+  enabled: () => Boolean(workItemReference.value) && Boolean(window.ohMyGithub?.search),
+  staleTime: 1000 * 60 * 10,
+  gcTime: 1000 * 60 * 30,
+  refetchOnMount: false,
+  refetchOnReconnect: false,
+  refetchOnWindowFocus: false,
+  query: async () => {
+    const reference = workItemReference.value
+    if (!reference || !window.ohMyGithub?.search) {
+      throw new Error('GitHub search bridge is unavailable')
+    }
+
+    return window.ohMyGithub.search.resolveRepositoryReference({
+      owner: reference.owner,
+      repo: reference.repo,
+      number: reference.number,
+      kindHint: reference.kind,
+    })
+  },
+})
+
+const resolvedReference = computed(() => {
+  const result = referenceQuery.data.value
+
+  return result?.status === 'found' ? result : null
+})
+const displayItem = computed<WorkspaceSidebarTreeItem>(() => {
+  if (!resolvedReference.value) return props.item
+
+  const resolvedItem = resolvedReferenceToTreeItem(resolvedReference.value, {
+    activeItemId: props.activeItemId,
+    activeUrl: props.activeUrl,
+    id: props.item.id,
+  })
+
+  return {
+    ...props.item,
+    icon: resolvedItem.icon,
+    isActive: resolvedItem.isActive,
+    label: resolvedItem.label,
+    url: resolvedItem.url,
+    workItem: resolvedItem.workItem,
+  }
+})
 
 const repositoriesQuery = useOrganizationRepositoriesQuery(
   repositoryOwner,
@@ -192,8 +248,8 @@ function workItemIconClass(item: WorkspaceSidebarTreeItem): string {
 }
 
 function selectItem(): void {
-  if (props.item.url) {
-    emit('select', props.item.url, props.item.id)
+  if (displayItem.value.url) {
+    emit('select', displayItem.value.url, displayItem.value.id)
   }
 }
 
@@ -218,58 +274,58 @@ function showMoreItems(): void {
     <SidebarMenuButton
       as="div"
       class="relative gap-1 pr-1 before:hidden"
-      :class="item.url ? 'cursor-pointer' : 'cursor-default'"
+      :class="displayItem.url ? 'cursor-pointer' : 'cursor-default'"
       role="button"
       size="sm"
       tabindex="0"
-      :is-active="item.isActive"
-      :tooltip="item.label"
+      :is-active="displayItem.isActive"
+      :tooltip="displayItem.label"
       @click="selectItem"
       @keydown.enter.prevent="selectItem"
       @keydown.space.prevent="selectItem"
     >
       <span
-        v-if="item.workItem?.hasUpdates"
+        v-if="displayItem.workItem?.hasUpdates"
         class="absolute left-1 top-1/2 size-1.5 -translate-y-1/2 rounded-full bg-info"
       />
       <span class="flex min-w-0 flex-1 items-center gap-2 text-left text-inherit">
         <Avatar
-          v-if="item.avatarUrl"
+          v-if="displayItem.avatarUrl"
           class="size-4"
         >
           <AvatarImage
-            :alt="item.label"
-            :src="item.avatarUrl"
+            :alt="displayItem.label"
+            :src="displayItem.avatarUrl"
           />
           <AvatarFallback class="text-[10px]">
-            {{ item.avatarFallback }}
+            {{ displayItem.avatarFallback }}
           </AvatarFallback>
         </Avatar>
         <component
-          :is="item.icon"
-          v-else-if="item.icon"
+          :is="displayItem.icon"
+          v-else-if="displayItem.icon"
           class="size-3.5 shrink-0"
-          :class="workItemIconClass(item)"
+          :class="workItemIconClass(displayItem)"
         />
         <span
-          v-if="item.workItem?.type === 'pull-request' && item.workItem.ciState"
+          v-if="displayItem.workItem?.type === 'pull-request' && displayItem.workItem.ciState"
           class="-ml-3 mt-2 flex size-2.5 shrink-0 items-center justify-center rounded-full border border-sidebar bg-background"
           :class="{
-            'bg-warning text-warning-solid-foreground': item.workItem.ciState === 'pending',
-            'bg-success text-success-solid-foreground': item.workItem.ciState === 'success',
-            'bg-destructive text-destructive-foreground': item.workItem.ciState === 'failure',
+            'bg-warning text-warning-solid-foreground': displayItem.workItem.ciState === 'pending',
+            'bg-success text-success-solid-foreground': displayItem.workItem.ciState === 'success',
+            'bg-destructive text-destructive-foreground': displayItem.workItem.ciState === 'failure',
           }"
         >
           <Check
-            v-if="item.workItem.ciState === 'success'"
+            v-if="displayItem.workItem.ciState === 'success'"
             class="size-2"
           />
           <X
-            v-else-if="item.workItem.ciState === 'failure'"
+            v-else-if="displayItem.workItem.ciState === 'failure'"
             class="size-2"
           />
         </span>
-        <span class="truncate">{{ item.label }}</span>
+        <span class="truncate">{{ displayItem.label }}</span>
       </span>
 
       <button
@@ -342,45 +398,45 @@ function showMoreItems(): void {
     <SidebarMenuSubButton
       as="div"
       class="relative gap-1 pr-1"
-      :class="item.url ? 'cursor-pointer' : 'cursor-default'"
+      :class="displayItem.url ? 'cursor-pointer' : 'cursor-default'"
       role="button"
       size="sm"
       tabindex="0"
-      :is-active="item.isActive"
+      :is-active="displayItem.isActive"
       @click="selectItem"
       @keydown.enter.prevent="selectItem"
       @keydown.space.prevent="selectItem"
     >
       <span
-        v-if="item.workItem?.hasUpdates"
+        v-if="displayItem.workItem?.hasUpdates"
         class="absolute left-1 top-1/2 size-1.5 -translate-y-1/2 rounded-full bg-info"
       />
       <span class="flex min-w-0 flex-1 items-center gap-2 text-left text-inherit">
         <component
-          :is="item.icon"
-          v-if="item.icon"
+          :is="displayItem.icon"
+          v-if="displayItem.icon"
           class="size-3.5 shrink-0"
-          :class="workItemIconClass(item)"
+          :class="workItemIconClass(displayItem)"
         />
         <span
-          v-if="item.workItem?.type === 'pull-request' && item.workItem.ciState"
+          v-if="displayItem.workItem?.type === 'pull-request' && displayItem.workItem.ciState"
           class="-ml-3 mt-2 flex size-2.5 shrink-0 items-center justify-center rounded-full border border-sidebar bg-background"
           :class="{
-            'bg-warning text-warning-solid-foreground': item.workItem.ciState === 'pending',
-            'bg-success text-success-solid-foreground': item.workItem.ciState === 'success',
-            'bg-destructive text-destructive-foreground': item.workItem.ciState === 'failure',
+            'bg-warning text-warning-solid-foreground': displayItem.workItem.ciState === 'pending',
+            'bg-success text-success-solid-foreground': displayItem.workItem.ciState === 'success',
+            'bg-destructive text-destructive-foreground': displayItem.workItem.ciState === 'failure',
           }"
         >
           <Check
-            v-if="item.workItem.ciState === 'success'"
+            v-if="displayItem.workItem.ciState === 'success'"
             class="size-2"
           />
           <X
-            v-else-if="item.workItem.ciState === 'failure'"
+            v-else-if="displayItem.workItem.ciState === 'failure'"
             class="size-2"
           />
         </span>
-        <span class="truncate">{{ item.label }}</span>
+        <span class="truncate">{{ displayItem.label }}</span>
       </span>
 
       <button

@@ -117,6 +117,13 @@ export type WorkspaceSidebarWorkItemIconTone =
   | 'merged'
   | 'muted'
 
+export interface WorkspaceSidebarWorkItemReference {
+  kind: GitHubRepositoryReferenceKind
+  owner: string
+  repo: string
+  number: number
+}
+
 export interface WorkspaceSidebarTreeItemStateText {
   emptyKey: string
   errorKey: string
@@ -132,6 +139,7 @@ export interface WorkspaceSidebarTreeItem {
   isActive?: boolean
   canExpand?: boolean
   workItem?: WorkspaceSidebarWorkItem
+  workItemReference?: WorkspaceSidebarWorkItemReference
   children?: WorkspaceSidebarTreeItem[]
   childrenLoader?: WorkspaceSidebarTreeItemLoader
 }
