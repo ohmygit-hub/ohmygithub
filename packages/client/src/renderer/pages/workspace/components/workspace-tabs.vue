@@ -12,6 +12,7 @@ import {
   ArrowRight,
   Bookmark,
   Check,
+  Copy,
   Folder,
   PanelLeftClose,
   PanelLeftOpen,
@@ -39,6 +40,7 @@ import WorkspacePanel from './workspace-panel.vue'
 import WorkspaceRightPanel from './workspace-right-panel.vue'
 
 const props = defineProps<{
+  activeGithubUrl: string | null
   activeUrl: string
   bookmarkFolders: WorkspaceBookmarkFolder[]
   bookmarks: WorkspaceBookmark[]
@@ -47,12 +49,14 @@ const props = defineProps<{
   canGoForward: boolean
   isFullscreen: boolean
   tabs: WorkspaceTab[]
+  viewer: AuthViewer | null
 }>()
 
 const emit = defineEmits<{
   back: []
   bookmark: [input: { folderId: string | null; tab: WorkspaceTab; title: string }]
   close: [url: string]
+  copyGitHubUrl: []
   create: []
   forward: []
   replaceActiveUrl: [url: string]
@@ -194,6 +198,32 @@ function updateScrollMetrics(): void {
   }
 }
 
+function scrollActiveTabIntoView(): void {
+  const element = scrollHost.value
+  if (!element) {
+    return
+  }
+
+  const activeElement = element.querySelector<HTMLElement>('.workspace-tab-chip[data-active="true"]')
+  if (!activeElement) {
+    updateScrollMetrics()
+    return
+  }
+
+  const hostRect = element.getBoundingClientRect()
+  const activeRect = activeElement.getBoundingClientRect()
+  const leftOverflow = activeRect.left - hostRect.left
+  const rightOverflow = activeRect.right - hostRect.right
+
+  if (leftOverflow < 0) {
+    element.scrollLeft += leftOverflow
+  } else if (rightOverflow > 0) {
+    element.scrollLeft += rightOverflow
+  }
+
+  updateScrollMetrics()
+}
+
 function onScrollbarPointerDown(event: PointerEvent): void {
   const element = scrollHost.value
   if (!element || !hasTabOverflow.value) return
@@ -272,9 +302,9 @@ function stopRightPanelResize(): void {
 }
 
 onMounted(() => {
-  nextTick(updateScrollMetrics)
+  void nextTick(scrollActiveTabIntoView)
   if (scrollHost.value) {
-    resizeObserver = new ResizeObserver(updateScrollMetrics)
+    resizeObserver = new ResizeObserver(scrollActiveTabIntoView)
     resizeObserver.observe(scrollHost.value)
   }
 })
@@ -286,8 +316,11 @@ onBeforeUnmount(() => {
 })
 
 watch(
-  () => [props.tabs.length, props.activeUrl],
-  () => nextTick(updateScrollMetrics),
+  () => ({
+    activeUrl: props.activeUrl,
+    tabCount: props.tabs.length,
+  }),
+  () => nextTick(scrollActiveTabIntoView),
 )
 </script>
 
@@ -413,6 +446,18 @@ watch(
         </DropdownMenuContent>
       </DropdownMenu>
 
+      <Button
+        :aria-label="t('workspace.toolbar.copyGitHubLink')"
+        class="size-7"
+        :disabled="!props.activeGithubUrl"
+        size="icon-sm"
+        type="button"
+        variant="ghost"
+        @click="emit('copyGitHubUrl')"
+      >
+        <Copy class="size-3.5" />
+      </Button>
+
       <div class="mx-1 h-4 w-px shrink-0 bg-border" />
 
       <div class="workspace-tabs-scroll-frame min-w-0 flex-1">
@@ -506,6 +551,7 @@ watch(
           <WorkspacePanel
             :is-active="tab.url === activeUrl"
             :tab="tab"
+            :viewer="viewer"
             @replace-active-url="emit('replaceActiveUrl', $event)"
             @search="emit('search')"
           />

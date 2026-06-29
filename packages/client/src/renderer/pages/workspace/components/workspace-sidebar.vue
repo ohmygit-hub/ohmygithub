@@ -3,8 +3,10 @@ import type {
   WorkspaceBookmark,
   WorkspaceBookmarkFolder,
   WorkspaceSidebarTreeItem,
+  WorkspaceSidebarTreeMenuAction,
+  WorkspaceSidebarTreeSortInput,
 } from '../types'
-import type { CreateBookmarkFolderResult } from '../composables/use-workspace-bookmarks'
+import type { BookmarkMutationResult, CreateBookmarkFolderResult } from '../composables/use-workspace-bookmarks'
 import { computed, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ChevronDown, ChevronRight, Folder, Inbox, Plus, Search } from 'lucide-vue-next'
@@ -30,7 +32,9 @@ import {
   SidebarMenuSkeleton,
   useSidebar,
 } from '@oh-my-github/ui'
+import { BOOKMARK_ROOT_LIST_ID } from '../composables/use-workspace-bookmarks'
 import {
+  accountToTreeItem,
   bookmarkToTreeItem,
   organizationToTreeItem,
 } from '../sidebar-tree-items'
@@ -43,23 +47,38 @@ import {
 import WorkspaceSidebarTree from './workspace-sidebar-tree.vue'
 import WorkspaceUserPanel from './workspace-user-panel.vue'
 
+type BookmarkRenameTarget =
+  | { kind: 'bookmark'; id: string; title: string }
+  | { kind: 'folder'; id: string; title: string }
+
 const props = defineProps<{
   activeUrl: string
   bookmarkFolders: WorkspaceBookmarkFolder[]
   bookmarks: WorkspaceBookmark[]
   createBookmarkFolder: (title: string) => CreateBookmarkFolderResult
+  deleteBookmark: (bookmarkId: string) => void
+  deleteBookmarkFolder: (folderId: string) => void
   isFullscreen: boolean
+  moveBookmarkToFolder: (bookmarkId: string, folderId: string | null) => void
   organizations: GitHubOrganization[]
   organizationsError: boolean
   organizationsLoading: boolean
+  renameBookmark: (bookmarkId: string, title: string) => BookmarkMutationResult
+  renameBookmarkFolder: (folderId: string, title: string) => BookmarkMutationResult
+  reorderBookmarkList: (input: WorkspaceSidebarTreeSortInput) => void
   viewer: AuthViewer | null
   width: number
 }>()
 
 type WorkspaceSidebarSectionId = 'bookmarks' | 'pull-requests' | 'issues' | 'organizations'
 const INBOX_ITEM_ID = 'workspace-sidebar:inbox'
+const PINNED_ORGANIZATIONS_STORAGE_KEY = 'oh-my-github:workspace-pinned-organizations:v1'
 
 const emit = defineEmits<{
+  copyGitHubUrl: [url: string]
+  openBookmarkFolder: [urls: string[]]
+  openGitHubUrl: [url: string]
+  openNewTab: [url: string]
   search: []
   select: [url: string]
   startResize: [event: PointerEvent]
@@ -76,7 +95,11 @@ const pendingSelectedUrl = ref<string | null>(null)
 const isBookmarkFolderDialogOpen = ref(false)
 const bookmarkFolderTitle = ref('')
 const bookmarkFolderError = ref<'duplicate' | 'empty' | null>(null)
-const hasOrganizations = computed(() => props.organizations.length > 0)
+const bookmarkRenameTarget = ref<BookmarkRenameTarget | null>(null)
+const bookmarkRenameTitle = ref('')
+const bookmarkRenameError = ref<'duplicate' | 'empty' | 'not-found' | null>(null)
+const pinnedOrganizationLogins = ref(readPinnedOrganizationLogins())
+const hasOrganizations = computed(() => Boolean(props.viewer) || props.organizations.length > 0)
 const showOrganizationsLoading = computed(() => props.organizationsLoading && !hasOrganizations.value)
 const showOrganizationsError = computed(() => props.organizationsError && !hasOrganizations.value)
 const showOrganizationsEmpty = computed(() =>
@@ -96,6 +119,19 @@ const sidebarStyle = computed<Record<string, string>>(() => ({
   '--color-sidebar-ring': 'var(--border)',
 }))
 const rootBookmarks = computed(() => props.bookmarks.filter((bookmark) => bookmark.folderId === null))
+const pinnedOrganizationLoginSet = computed(() => new Set(pinnedOrganizationLogins.value))
+const sortedOrganizations = computed(() => {
+  const organizationsByLogin = new Map(props.organizations.map((organization) => [organization.login, organization]))
+  const pinnedOrganizations = pinnedOrganizationLogins.value
+    .map((login) => organizationsByLogin.get(login))
+    .filter((organization): organization is GitHubOrganization => Boolean(organization))
+  const pinnedLogins = new Set(pinnedOrganizations.map((organization) => organization.login))
+
+  return [
+    ...pinnedOrganizations,
+    ...props.organizations.filter((organization) => !pinnedLogins.has(organization.login)),
+  ]
+})
 const bookmarkItems = computed<WorkspaceSidebarTreeItem[]>(() => {
   const folderItems = props.bookmarkFolders.map((folder) => {
     const children = props.bookmarks
@@ -109,6 +145,10 @@ const bookmarkItems = computed<WorkspaceSidebarTreeItem[]>(() => {
     return {
       id: `bookmark-folder:${folder.id}`,
       label: folder.title,
+      actionContext: {
+        kind: 'bookmark-folder' as const,
+        folderId: folder.id,
+      },
       icon: Folder,
       canExpand: children.length > 0,
       children,
@@ -128,6 +168,15 @@ const showBookmarksEmpty = computed(() => props.bookmarkFolders.length === 0 && 
 const bookmarkFolderErrorMessage = computed(() => {
   if (!bookmarkFolderError.value) return ''
   return t(`workspace.bookmarks.folderErrors.${bookmarkFolderError.value}`)
+})
+const bookmarkRenameErrorMessage = computed(() => {
+  if (!bookmarkRenameError.value) return ''
+  return t(`workspace.bookmarks.renameErrors.${bookmarkRenameError.value}`)
+})
+const bookmarkRenameTitleLabel = computed(() => {
+  if (bookmarkRenameTarget.value?.kind === 'folder') return t('workspace.bookmarks.renameFolder')
+
+  return t('workspace.bookmarks.renameBookmark')
 })
 const pullRequestItems = computed<WorkspaceSidebarTreeItem[]>(() => {
   return PULL_REQUEST_CATEGORIES.map((category) =>
@@ -151,14 +200,26 @@ const issueItems = computed<WorkspaceSidebarTreeItem[]>(() => {
 })
 
 const organizationItems = computed<WorkspaceSidebarTreeItem[]>(() => {
-  return props.organizations.map((organization) =>
-    organizationToTreeItem(organization, {
+  const accountItem = props.viewer
+    ? [accountToTreeItem(props.viewer, {
       activeItemId: activeItemId.value,
       activeUrl: props.activeUrl,
       labels: treeLabels.value,
       scope: 'organizations',
-    })
-  )
+    })]
+    : []
+
+  return [
+    ...accountItem,
+    ...sortedOrganizations.value.map((organization) =>
+      organizationToTreeItem(organization, {
+        activeItemId: activeItemId.value,
+        activeUrl: props.activeUrl,
+        labels: treeLabels.value,
+        scope: 'organizations',
+      })
+    ),
+  ]
 })
 
 function toggleExpanded(id: string): void {
@@ -261,6 +322,104 @@ function resetBookmarkFolderDialog(): void {
   bookmarkFolderError.value = null
 }
 
+function handleTreeAction(action: WorkspaceSidebarTreeMenuAction): void {
+  if (action.type === 'open-new-tab' && action.item.url) {
+    emit('openNewTab', action.item.url)
+    return
+  }
+
+  if (action.type === 'copy-github-url') {
+    emit('copyGitHubUrl', action.url)
+    return
+  }
+
+  if (action.type === 'open-github-url') {
+    emit('openGitHubUrl', action.url)
+    return
+  }
+
+  if (action.type === 'rename-bookmark') {
+    openBookmarkRenameDialog({ kind: 'bookmark', id: action.bookmarkId, title: action.item.label })
+    return
+  }
+
+  if (action.type === 'delete-bookmark') {
+    props.deleteBookmark(action.bookmarkId)
+    return
+  }
+
+  if (action.type === 'move-bookmark') {
+    props.moveBookmarkToFolder(action.bookmarkId, action.folderId)
+    return
+  }
+
+  if (action.type === 'open-bookmark-folder') {
+    const urls = props.bookmarks
+      .filter((bookmark) => bookmark.folderId === action.folderId)
+      .map((bookmark) => bookmark.url)
+
+    if (urls.length > 0) {
+      emit('openBookmarkFolder', urls)
+    }
+    return
+  }
+
+  if (action.type === 'rename-bookmark-folder') {
+    openBookmarkRenameDialog({ kind: 'folder', id: action.folderId, title: action.item.label })
+    return
+  }
+
+  if (action.type === 'delete-bookmark-folder') {
+    props.deleteBookmarkFolder(action.folderId)
+    return
+  }
+
+  if (action.type === 'toggle-organization-pin') {
+    toggleOrganizationPin(action.login)
+  }
+}
+
+function openBookmarkRenameDialog(target: BookmarkRenameTarget): void {
+  bookmarkRenameTarget.value = target
+  bookmarkRenameTitle.value = target.title
+  bookmarkRenameError.value = null
+}
+
+function submitBookmarkRename(): void {
+  const target = bookmarkRenameTarget.value
+  if (!target) return
+
+  const result = target.kind === 'bookmark'
+    ? props.renameBookmark(target.id, bookmarkRenameTitle.value)
+    : props.renameBookmarkFolder(target.id, bookmarkRenameTitle.value)
+
+  if (!result.ok) {
+    bookmarkRenameError.value = result.reason
+    return
+  }
+
+  closeBookmarkRenameDialog()
+}
+
+function closeBookmarkRenameDialog(): void {
+  bookmarkRenameTarget.value = null
+  bookmarkRenameTitle.value = ''
+  bookmarkRenameError.value = null
+}
+
+function toggleOrganizationPin(login: string): void {
+  const isPinned = pinnedOrganizationLogins.value.includes(login)
+  pinnedOrganizationLogins.value = isPinned
+    ? pinnedOrganizationLogins.value.filter((item) => item !== login)
+    : [login, ...pinnedOrganizationLogins.value.filter((item) => item !== login)]
+
+  persistPinnedOrganizationLogins(pinnedOrganizationLogins.value)
+}
+
+function reorderBookmarkList(input: WorkspaceSidebarTreeSortInput): void {
+  props.reorderBookmarkList(input)
+}
+
 watch(isBookmarkFolderDialogOpen, (isOpen) => {
   if (!isOpen) {
     resetBookmarkFolderDialog()
@@ -271,6 +430,10 @@ watch(bookmarkFolderTitle, () => {
   bookmarkFolderError.value = null
 })
 
+watch(bookmarkRenameTitle, () => {
+  bookmarkRenameError.value = null
+})
+
 watch(
   () => [props.activeUrl, bookmarkItems.value, pullRequestItems.value, issueItems.value, organizationItems.value],
   () => {
@@ -278,6 +441,21 @@ watch(
   },
   { immediate: true },
 )
+
+function readPinnedOrganizationLogins(): string[] {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(PINNED_ORGANIZATIONS_STORAGE_KEY) ?? '[]') as unknown
+    if (!Array.isArray(parsed)) return []
+
+    return parsed.filter((login): login is string => typeof login === 'string' && login.trim().length > 0)
+  } catch {
+    return []
+  }
+}
+
+function persistPinnedOrganizationLogins(logins: string[]): void {
+  localStorage.setItem(PINNED_ORGANIZATIONS_STORAGE_KEY, JSON.stringify(logins))
+}
 </script>
 
 <template>
@@ -368,12 +546,18 @@ watch(
             v-else
             :active-item-id="activeItemId"
             :active-url="activeUrl"
+            :bookmark-folders="bookmarkFolders"
             :expanded-ids="expandedIds"
             :items="bookmarkItems"
             list-id="bookmarks"
+            :pinned-organization-logins="pinnedOrganizationLoginSet"
+            sortable
+            :sortable-list-id="BOOKMARK_ROOT_LIST_ID"
             :visible-counts="visibleCounts"
+            @action="handleTreeAction"
             @select="selectSidebarItem"
             @show-more="setVisibleCount"
+            @sort="reorderBookmarkList"
             @toggle="toggleExpanded"
           />
         </SidebarGroupContent>
@@ -405,10 +589,13 @@ watch(
           <WorkspaceSidebarTree
             :active-item-id="activeItemId"
             :active-url="activeUrl"
+            :bookmark-folders="bookmarkFolders"
             :expanded-ids="expandedIds"
             :items="pullRequestItems"
             list-id="viewer-pull-requests"
+            :pinned-organization-logins="pinnedOrganizationLoginSet"
             :visible-counts="visibleCounts"
+            @action="handleTreeAction"
             @select="selectSidebarItem"
             @show-more="setVisibleCount"
             @toggle="toggleExpanded"
@@ -442,10 +629,13 @@ watch(
           <WorkspaceSidebarTree
             :active-item-id="activeItemId"
             :active-url="activeUrl"
+            :bookmark-folders="bookmarkFolders"
             :expanded-ids="expandedIds"
             :items="issueItems"
             list-id="viewer-issues"
+            :pinned-organization-logins="pinnedOrganizationLoginSet"
             :visible-counts="visibleCounts"
+            @action="handleTreeAction"
             @select="selectSidebarItem"
             @show-more="setVisibleCount"
             @toggle="toggleExpanded"
@@ -502,10 +692,13 @@ watch(
             v-else
             :active-item-id="activeItemId"
             :active-url="activeUrl"
+            :bookmark-folders="bookmarkFolders"
             :expanded-ids="expandedIds"
             :items="organizationItems"
             list-id="organizations"
+            :pinned-organization-logins="pinnedOrganizationLoginSet"
             :visible-counts="visibleCounts"
+            @action="handleTreeAction"
             @select="selectSidebarItem"
             @show-more="setVisibleCount"
             @toggle="toggleExpanded"
@@ -573,6 +766,55 @@ watch(
           </Button>
           <Button type="submit">
             {{ t('workspace.bookmarks.createFolder') }}
+          </Button>
+        </DialogFooter>
+      </form>
+    </DialogContent>
+  </Dialog>
+
+  <Dialog
+    :open="Boolean(bookmarkRenameTarget)"
+    @update:open="(isOpen) => { if (!isOpen) closeBookmarkRenameDialog() }"
+  >
+    <DialogContent class="sm:max-w-sm">
+      <DialogHeader>
+        <DialogTitle>{{ bookmarkRenameTitleLabel }}</DialogTitle>
+        <DialogDescription class="sr-only">
+          {{ t('workspace.bookmarks.renameDescription') }}
+        </DialogDescription>
+      </DialogHeader>
+
+      <form
+        class="space-y-4"
+        @submit.prevent="submitBookmarkRename"
+      >
+        <div class="space-y-2">
+          <Label for="workspace-bookmark-rename-title">
+            {{ t('workspace.bookmarks.name') }}
+          </Label>
+          <Input
+            id="workspace-bookmark-rename-title"
+            v-model="bookmarkRenameTitle"
+            autocomplete="off"
+          />
+          <p
+            v-if="bookmarkRenameErrorMessage"
+            class="text-caption text-destructive"
+          >
+            {{ bookmarkRenameErrorMessage }}
+          </p>
+        </div>
+
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="ghost"
+            @click="closeBookmarkRenameDialog"
+          >
+            {{ t('workspace.bookmarks.cancel') }}
+          </Button>
+          <Button type="submit">
+            {{ t('workspace.bookmarks.save') }}
           </Button>
         </DialogFooter>
       </form>

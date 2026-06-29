@@ -33,6 +33,7 @@ export const ISSUE_CATEGORIES: readonly GitHubIssueCategory[] = [
 type FoundRepositoryReference = Extract<GitHubRepositoryReferenceResolution, { status: 'found' }>
 
 interface WorkItemTreeItemOptions {
+  actionContext?: WorkspaceSidebarTreeItem['actionContext']
   activeItemId: string | null
   activeUrl: string
   fallbackLabel?: string
@@ -84,6 +85,10 @@ export function pullRequestCategoryToTreeItem(
     id,
     label,
     url,
+    actionContext: {
+      kind: 'group',
+      githubUrl: null,
+    },
     icon: pullRequestCategoryIcon(category),
     isActive: isActiveItem(id, url, activeItemId, activeUrl),
     canExpand: true,
@@ -108,6 +113,10 @@ export function issueCategoryToTreeItem(
     id,
     label,
     url,
+    actionContext: {
+      kind: 'group',
+      githubUrl: null,
+    },
     icon: issueCategoryIcon(category),
     isActive: isActiveItem(id, url, activeItemId, activeUrl),
     canExpand: true,
@@ -254,6 +263,7 @@ function workItemToTreeItem(
     id,
     label,
     url,
+    actionContext: options.actionContext ?? workItemActionContext(workItem),
     icon: workItem.type === 'pull-request'
       ? pullRequestIcon(workItem.state)
       : issueIcon(workItem.state),
@@ -309,6 +319,28 @@ function pullRequestIconTone(state: GitHubPullRequestState): WorkspaceSidebarWor
 
 function scopedId(scope: string | undefined, id: string): string {
   return scope ? `${scope}:${id}` : id
+}
+
+function workItemActionContext(workItem: SidebarWorkItem): WorkspaceSidebarTreeItem['actionContext'] {
+  const githubUrl = workItem.type === 'pull-request'
+    ? `https://github.com/${encodeURIComponent(workItem.owner)}/${encodeURIComponent(workItem.repo)}/pull/${workItem.number}`
+    : `https://github.com/${encodeURIComponent(workItem.owner)}/${encodeURIComponent(workItem.repo)}/issues/${workItem.number}`
+
+  return workItem.type === 'pull-request'
+    ? {
+        kind: 'pull-request',
+        owner: workItem.owner,
+        repo: workItem.repo,
+        number: workItem.number,
+        githubUrl,
+      }
+    : {
+        kind: 'issue',
+        owner: workItem.owner,
+        repo: workItem.repo,
+        number: workItem.number,
+        githubUrl,
+      }
 }
 
 function isActiveItem(

@@ -7,9 +7,11 @@ import { SidebarInset, SidebarProvider } from '@oh-my-github/ui'
 import { useWorkspaceBookmarks } from './composables/use-workspace-bookmarks'
 import { useOrganizationsQuery } from '../../composables/github/use-organizations'
 import { useRightPanel } from '../../composables/use-right-panel'
+import { useToast } from '../../composables/use-toast'
 import { registerKeyboardShortcutHandler } from '../../keyboard/shortcut-runtime'
 import { useWorkspaceTabs } from './composables/use-workspace-tabs'
 import { getWorkspaceTabView } from './tab-presentation'
+import { workspaceTabToGitHubUrl } from './workspace-github-url'
 import WorkspaceSidebar from './components/workspace-sidebar.vue'
 import WorkspaceSearchDialog from './components/workspace-search-dialog.vue'
 import WorkspaceTabs from './components/workspace-tabs.vue'
@@ -33,6 +35,7 @@ let resizeStartWidth = 0
 const route = useRoute()
 const { t } = useI18n()
 const { toggleRightPanel } = useRightPanel()
+const toast = useToast()
 const {
   activeTab,
   activeUrl,
@@ -42,12 +45,14 @@ const {
   createTab,
   goBack,
   goForward,
+  openWorkspaceTab,
   replaceActiveTabUrl,
   selectTab,
   tabs,
 } = useWorkspaceTabs()
 
 const organizationsQuery = useOrganizationsQuery()
+const activeGithubUrl = computed(() => activeTab.value ? workspaceTabToGitHubUrl(activeTab.value) : null)
 const organizations = computed(() => organizationsQuery.data.value ?? [])
 const organizationsLoading = computed(() => organizationsQuery.isLoading.value)
 const organizationsError = computed(() => Boolean(organizationsQuery.error.value))
@@ -60,7 +65,13 @@ const {
   bookmarks,
   createFolder: createBookmarkFolder,
   folders: bookmarkFolders,
+  moveBookmarkToFolder,
   removeBookmark,
+  removeBookmarkById,
+  removeFolder: deleteBookmarkFolder,
+  renameBookmark,
+  renameFolder: renameBookmarkFolder,
+  reorderBookmarkList,
   addBookmark,
 } = useWorkspaceBookmarks()
 const canUseWorkspaceShortcuts = computed(() => route.name !== 'settings' && !isSearchDialogOpen.value)
@@ -195,7 +206,49 @@ function registerWorkspaceShortcuts(): void {
     registerKeyboardShortcutHandler('workspace.toggleBookmark', () => toggleActiveBookmark(), {
       enabled: () => canUseWorkspaceShortcuts.value,
     }),
+    registerKeyboardShortcutHandler('workspace.copyGitHubUrl', () => {
+      if (!activeGithubUrl.value) return false
+
+      void copyActiveGitHubUrl()
+      return true
+    }, { enabled: () => canUseWorkspaceShortcuts.value }),
   )
+}
+
+async function copyActiveGitHubUrl(): Promise<void> {
+  const url = activeGithubUrl.value
+  if (!url) return
+
+  await copyGitHubUrl(url)
+}
+
+async function copyGitHubUrl(url: string): Promise<void> {
+  try {
+    await writeClipboardText(url)
+    toast.success(t('workspace.copy.success'))
+  } catch {
+    toast.error(t('workspace.copy.error'))
+  }
+}
+
+async function openGitHubUrl(url: string): Promise<void> {
+  try {
+    await window.ohMyGithub?.links?.openGitHubUrl?.(url)
+  } catch {
+    toast.error(t('workspace.openGitHub.error'))
+  }
+}
+
+async function openNewWorkspaceTab(url: string): Promise<void> {
+  await openWorkspaceTab(url)
+}
+
+async function openBookmarkFolder(urls: string[]): Promise<void> {
+  if (urls.length === 0) return
+
+  for (const [index, url] of urls.entries()) {
+    await openWorkspaceTab(url, { activate: index === 0 })
+  }
 }
 
 function toggleActiveBookmark(): boolean {
@@ -224,6 +277,29 @@ function tabTitle(tab: WorkspaceTab): string {
 
   return view.title
 }
+
+async function writeClipboardText(value: string): Promise<void> {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(value)
+    return
+  }
+
+  const textarea = document.createElement('textarea')
+  textarea.value = value
+  textarea.setAttribute('readonly', '')
+  textarea.style.position = 'fixed'
+  textarea.style.left = '-9999px'
+  document.body.append(textarea)
+  textarea.select()
+
+  try {
+    if (!document.execCommand('copy')) {
+      throw new Error('Clipboard copy failed')
+    }
+  } finally {
+    textarea.remove()
+  }
+}
 </script>
 
 <template>
@@ -237,12 +313,22 @@ function tabTitle(tab: WorkspaceTab): string {
       :bookmark-folders="bookmarkFolders"
       :bookmarks="bookmarks"
       :create-bookmark-folder="createBookmarkFolder"
+      :delete-bookmark="removeBookmarkById"
+      :delete-bookmark-folder="deleteBookmarkFolder"
       :is-fullscreen="isWindowFullscreen"
+      :move-bookmark-to-folder="moveBookmarkToFolder"
       :organizations="organizations"
       :organizations-error="organizationsError"
       :organizations-loading="organizationsLoading"
+      :rename-bookmark="renameBookmark"
+      :rename-bookmark-folder="renameBookmarkFolder"
+      :reorder-bookmark-list="reorderBookmarkList"
       :viewer="viewer"
       :width="sidebarWidth"
+      @copy-git-hub-url="copyGitHubUrl"
+      @open-bookmark-folder="openBookmarkFolder"
+      @open-git-hub-url="openGitHubUrl"
+      @open-new-tab="openNewWorkspaceTab"
       @search="openSearchDialog"
       @select="selectTab"
       @start-resize="startSidebarResize"
@@ -251,6 +337,7 @@ function tabTitle(tab: WorkspaceTab): string {
     <SidebarInset class="min-w-0 overflow-hidden">
       <div class="flex h-full min-h-0 flex-col bg-background">
         <WorkspaceTabs
+          :active-github-url="activeGithubUrl"
           :active-url="activeUrl"
           :bookmark-folders="bookmarkFolders"
           :bookmarks="bookmarks"
@@ -259,9 +346,11 @@ function tabTitle(tab: WorkspaceTab): string {
           :can-go-forward="canGoForward"
           :is-fullscreen="isWindowFullscreen"
           :tabs="tabs"
+          :viewer="viewer"
           @back="goBack"
           @bookmark="addTabBookmark"
           @close="closeTab"
+          @copy-git-hub-url="copyActiveGitHubUrl"
           @create="createTab"
           @forward="goForward"
           @replace-active-url="replaceActiveTabUrl"

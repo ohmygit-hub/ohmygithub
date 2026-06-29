@@ -53,6 +53,18 @@ export function useWorkspaceTabs() {
     await pushWorkspaceUrl(url)
   }
 
+  async function openWorkspaceTab(url: string, options: { activate?: boolean } = {}): Promise<void> {
+    const tab = createWorkspaceTabFromUrl(url)
+
+    if (options.activate === false) {
+      upsertTab(tab)
+      persistTabs(tabs.value, activeUrl.value)
+      return
+    }
+
+    await pushWorkspaceUrl(tab.url)
+  }
+
   async function goBack(): Promise<void> {
     const targetSnapshot = backStack.value.at(-1)
     if (!targetSnapshot) return
@@ -269,6 +281,7 @@ export function useWorkspaceTabs() {
     createTab,
     goBack,
     goForward,
+    openWorkspaceTab,
     replaceActiveTabUrl,
     selectTab,
     tabs,

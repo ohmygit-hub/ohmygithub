@@ -8,6 +8,7 @@ export type KeyboardShortcutCommandId =
   | 'workspace.toggleSidebar'
   | 'workspace.toggleRightPanel'
   | 'workspace.toggleBookmark'
+  | 'workspace.copyGitHubUrl'
   | 'repository.section.overview'
   | 'repository.section.files'
   | 'repository.section.pullRequests'
@@ -99,6 +100,13 @@ export const KEYBOARD_SHORTCUT_DEFINITIONS: readonly KeyboardShortcutDefinition[
     labelKey: 'settings.keyboard.commands.workspaceToggleBookmark.label',
     descriptionKey: 'settings.keyboard.commands.workspaceToggleBookmark.description',
     defaultAccelerator: 'Primary+D',
+  },
+  {
+    id: 'workspace.copyGitHubUrl',
+    group: 'workspace',
+    labelKey: 'settings.keyboard.commands.workspaceCopyGitHubUrl.label',
+    descriptionKey: 'settings.keyboard.commands.workspaceCopyGitHubUrl.description',
+    defaultAccelerator: 'Primary+Shift+C',
   },
   {
     id: 'repository.section.overview',

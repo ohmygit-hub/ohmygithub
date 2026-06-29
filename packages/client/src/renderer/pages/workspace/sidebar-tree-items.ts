@@ -7,6 +7,7 @@ import {
 } from 'lucide-vue-next'
 import { workItemReferenceToTreeItem } from './sidebar-work-items'
 import { getWorkspaceTabView } from './tab-presentation'
+import { workspaceTabToGitHubUrl } from './workspace-github-url'
 import { createRepositoryWorkspaceUrl } from './workspace-url'
 
 export interface WorkspaceSidebarTreeLabels {
@@ -28,6 +29,7 @@ interface RepositoryLike {
 }
 
 interface RepositoryTreeItemOptions extends TreeItemContext {
+  actionContext?: WorkspaceSidebarTreeItem['actionContext']
   id?: string
   label?: string
   url?: string
@@ -41,6 +43,35 @@ export function organizationFallback(login: string): string {
   return login.slice(0, 1).toUpperCase()
 }
 
+export function accountToTreeItem(
+  viewer: AuthViewer,
+  context: TreeItemContext,
+): WorkspaceSidebarTreeItem {
+  const url = accountUrl(viewer.login)
+  const itemId = scopedId(context.scope, `account:${viewer.login}`)
+
+  return {
+    id: itemId,
+    label: viewer.login,
+    url,
+    actionContext: {
+      kind: 'account',
+      login: viewer.login,
+      githubUrl: githubAccountUrl(viewer.login),
+    },
+    avatarUrl: viewer.avatarUrl,
+    avatarFallback: viewer.login.slice(0, 2).toUpperCase(),
+    avatarShape: 'circle',
+    isActive: isActiveItem(itemId, url, context),
+    canExpand: true,
+    childrenLoader: {
+      type: 'account-repositories',
+      owner: viewer.login,
+      scope: itemId,
+    },
+  }
+}
+
 export function organizationToTreeItem(
   organization: GitHubOrganization,
   context: TreeItemContext,
@@ -52,8 +83,14 @@ export function organizationToTreeItem(
     id: itemId,
     label: organization.login,
     url,
+    actionContext: {
+      kind: 'organization',
+      login: organization.login,
+      githubUrl: githubAccountUrl(organization.login),
+    },
     avatarUrl: organization.avatarUrl,
     avatarFallback: organizationFallback(organization.login),
+    avatarShape: 'square',
     isActive: isActiveItem(itemId, url, context),
     canExpand: true,
     childrenLoader: {
@@ -75,9 +112,11 @@ export function bookmarkToTreeItem(
       id: itemId,
       label: bookmark.title,
       url: bookmark.url,
+      actionContext: bookmarkActionContext(bookmark),
       icon: bookmark.avatarUrl ? undefined : Building2,
       avatarUrl: bookmark.avatarUrl,
       avatarFallback: bookmark.avatarFallback ?? organizationFallback(bookmark.owner),
+      avatarShape: 'square',
       isActive: isActiveItem(itemId, bookmark.url, context),
       canExpand: true,
       childrenLoader: {
@@ -101,6 +140,7 @@ export function bookmarkToTreeItem(
         label: bookmark.title,
         scope: bookmarkItemId(bookmark),
         url: bookmark.url,
+        actionContext: bookmarkActionContext(bookmark),
       },
     )
   }
@@ -117,6 +157,7 @@ export function bookmarkToTreeItem(
         ...context,
         id: bookmarkItemId(bookmark),
         fallbackLabel: bookmark.title,
+        actionContext: bookmarkActionContext(bookmark),
       },
     )
   }
@@ -127,6 +168,7 @@ export function bookmarkToTreeItem(
     id: bookmarkItemId(bookmark),
     label: bookmark.title,
     url: bookmark.url,
+    actionContext: bookmarkActionContext(bookmark),
     icon: bookmark.avatarUrl ? undefined : view.icon,
     avatarUrl: bookmark.avatarUrl,
     avatarFallback: bookmark.avatarFallback,
@@ -145,6 +187,12 @@ export function repositoryToTreeItem(
     id: itemId,
     label: options.label ?? repository.name,
     url,
+    actionContext: options.actionContext ?? {
+      kind: 'repository',
+      owner: repository.owner,
+      repo: repository.name,
+      githubUrl: githubRepositoryUrl(repository.owner, repository.name),
+    },
     icon: Book,
     isActive: isActiveItem(itemId, url, options),
     children: createRepositoryChildren({
@@ -178,6 +226,10 @@ function createRepositoryChildren(options: {
       id: pullRequestsItemId,
       label: options.labels.pullRequests,
       url: pullRequestsUrl,
+      actionContext: {
+        kind: 'group',
+        githubUrl: `${githubRepositoryUrl(options.owner, options.repo)}/pulls`,
+      },
       icon: GitPullRequest,
       isActive: isActiveItem(pullRequestsItemId, pullRequestsUrl, options),
       canExpand: true,
@@ -192,6 +244,10 @@ function createRepositoryChildren(options: {
       id: issuesItemId,
       label: options.labels.issues,
       url: issuesUrl,
+      actionContext: {
+        kind: 'group',
+        githubUrl: `${githubRepositoryUrl(options.owner, options.repo)}/issues`,
+      },
       icon: CircleDot,
       isActive: isActiveItem(issuesItemId, issuesUrl, options),
       canExpand: true,
@@ -207,6 +263,15 @@ function createRepositoryChildren(options: {
 
 function bookmarkItemId(bookmark: WorkspaceBookmark): string {
   return `bookmark:${bookmark.id}`
+}
+
+function bookmarkActionContext(bookmark: WorkspaceBookmark): WorkspaceSidebarTreeItem['actionContext'] {
+  return {
+    kind: 'bookmark',
+    bookmarkId: bookmark.id,
+    bookmarkFolderId: bookmark.folderId,
+    githubUrl: workspaceTabToGitHubUrl(bookmark),
+  }
 }
 
 function isBookmarkWorkItem(
@@ -229,6 +294,18 @@ function isBookmarkWorkItem(
 
 function repositoryUrl(owner: string, repo: string): string {
   return `/${owner}/${repo}`
+}
+
+function accountUrl(login: string): string {
+  return `/${login}`
+}
+
+function githubAccountUrl(login: string): string {
+  return `https://github.com/${encodeURIComponent(login)}`
+}
+
+function githubRepositoryUrl(owner: string, repo: string): string {
+  return `${githubAccountUrl(owner)}/${encodeURIComponent(repo)}`
 }
 
 function scopedId(scope: string, id: string): string {

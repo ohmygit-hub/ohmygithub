@@ -51,6 +51,12 @@ function openSettings(): void {
     },
   })
 }
+
+function openProfile(): void {
+  if (!username.value) return
+
+  void router.push(`/${encodeURIComponent(username.value)}`)
+}
 </script>
 
 <template>
@@ -91,7 +97,10 @@ function openSettings(): void {
       side="top"
       :side-offset="8"
     >
-      <DropdownMenuItem>
+      <DropdownMenuItem
+        :disabled="!username"
+        @select="openProfile"
+      >
         <UserCircle />
         <span>{{ t('workspace.userMenu.profile') }}</span>
       </DropdownMenuItem>
@@ -99,7 +108,7 @@ function openSettings(): void {
         <Settings />
         <span>{{ t('workspace.userMenu.settings') }}</span>
       </DropdownMenuItem>
-      <DropdownMenuItem>
+      <DropdownMenuItem @select="openSettings">
         <Palette />
         <span>{{ t('workspace.userMenu.appearance') }}</span>
       </DropdownMenuItem>
