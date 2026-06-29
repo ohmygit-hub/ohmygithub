@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useQuery } from '@pinia/colada'
 import WorkItemStateIcon from '../work-item/work-item-state-icon.vue'
+import { createReferenceWorkspaceUrl } from './github-reference'
 
 defineOptions({
   inheritAttrs: false,
@@ -91,8 +92,14 @@ const label = computed(() => {
   return normalizedTitle ? `${prefix.value} ${normalizedTitle}` : prefix.value
 })
 const workspaceUrl = computed(() =>
-  resolved.value?.workspaceUrl ?? null
+  resolved.value?.workspaceUrl ?? fallbackWorkspaceUrl.value
 )
+const fallbackWorkspaceUrl = computed(() => {
+  const fallbackKind = props.initialKind ?? props.kindHint
+  if (!fallbackKind || !hasIdentity.value) return null
+
+  return createReferenceWorkspaceUrl(props.owner, props.repo, fallbackKind, props.number)
+})
 const canOpenInternally = computed(() => props.interactive && Boolean(workspaceUrl.value))
 const canOpenFallback = computed(() => props.interactive && !canOpenInternally.value && Boolean(props.fallbackHref))
 const tone = computed(() => {

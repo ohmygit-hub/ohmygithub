@@ -1,14 +1,19 @@
 export { default as MonacoCodeEditor } from "./editor/monaco-code-editor.vue";
 export { default as GitHubActorLink } from "./github/github-actor-link.vue";
 export { default as GitHubMarkdownRenderer } from "./github/github-markdown-renderer.vue";
+export { default as GitHubOrganizationAvatar } from "./github/github-organization-avatar.vue";
 export { default as GitHubReferenceLink } from "./github/github-reference-link.vue";
+export { default as RepositoryCard } from "./github/repository-card.vue";
 export { default as MarkdownRenderer } from "./markdown/markdown-renderer.vue";
 export { default as MermaidRenderer } from "./mermaid/mermaid-renderer.vue";
+export { default as AppPagination } from "./navigation/app-pagination.vue";
+export { default as SectionSidebar } from "./navigation/section-sidebar.vue";
 export { default as ShikiCode } from "./code/shiki-code.vue";
 export { default as ShikiDiff } from "./code/shiki-diff.vue";
 export { default as ConversationActorLine } from "./conversation/conversation-actor-line.vue";
 export { default as ConversationBodyCard } from "./conversation/conversation-body-card.vue";
 export { default as ConversationCommentCard } from "./conversation/conversation-comment-card.vue";
+export { default as ConversationCommentComposer } from "./conversation/conversation-comment-composer.vue";
 export { default as ConversationEventRow } from "./conversation/conversation-event-row.vue";
 export { default as ConversationReactionBar } from "./conversation/conversation-reaction-bar.vue";
 export { default as ConversationTimeline } from "./conversation/conversation-timeline.vue";
@@ -35,6 +40,7 @@ export type {
 export {
   createAccountWorkspaceUrl,
   createGitHubAvatarUrl,
+  createOrganizationWorkspaceUrl,
   createReferenceWorkspaceUrl,
   parseGitHubReferenceUrl,
   trimUrlCandidate,

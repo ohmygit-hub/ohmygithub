@@ -27,6 +27,21 @@
       "title": "富内容组件"
     }
   },
+  "toast": {
+    "label": "通知",
+    "headings": {
+      "error": "错误",
+      "info": "信息",
+      "message": "提示",
+      "success": "成功",
+      "warning": "警告"
+    }
+  },
+  "pagination": {
+    "next": "下一页",
+    "pageInput": "跳转到页码",
+    "previous": "上一页"
+  },
   "auth": {
     "browserOpened": "复制这个代码，然后打开 GitHub 授权应用。",
     "copyCodeAndOpenGitHub": "复制代码并打开 GitHub",
@@ -155,6 +170,10 @@
           "label": "切换书签",
           "description": "为当前标签页添加或移除书签。"
         },
+        "workspaceCopyGitHubUrl": {
+          "label": "复制 GitHub 链接",
+          "description": "复制当前工作区标签页对应的 GitHub 链接。"
+        },
         "repositorySectionOverview": {
           "label": "仓库概览",
           "description": "将当前仓库标签页切换到概览。"
@@ -206,6 +225,27 @@
     }
   },
   "account": {
+    "actions": {
+      "follow": "关注",
+      "missingFollowScope": "关注功能需要 GitHub OAuth scope：{scopes}。重新授权账号后即可启用。",
+      "unfollow": "取消关注"
+    },
+    "contributions": {
+      "dayTitle": "{date} 有 {count} 次贡献",
+      "description": "包含公开动态，以及当前账号可见的私有贡献。",
+      "error": "无法加载贡献动态。",
+      "heading": "贡献动态",
+      "less": "少",
+      "more": "多",
+      "privateNotice": "这一年包含 {count} 次私有或受限贡献。",
+      "stats": {
+        "commits": "Commits",
+        "issues": "Issues",
+        "pullRequests": "Pull requests",
+        "reviews": "Code review"
+      },
+      "title": "{year} 年 {count} 次贡献"
+    },
     "empty": {
       "description": "打开带有 GitHub login 的账号 tab 后，才会加载个人资料。",
       "title": "账号不可用"
@@ -216,16 +256,83 @@
       "title": "无法加载账号"
     },
     "eyebrow": "账号",
+    "overview": {
+      "pinned": "置顶仓库",
+      "readme": "个人 README"
+    },
+    "pagination": {
+      "summary": "第 {page} / {pageCount} 页 · 共 {totalCount} 个仓库"
+    },
     "profile": {
       "blog": "网站",
       "company": "公司",
       "followers": "关注者",
+      "followersValue": "{count} 个关注者",
       "following": "正在关注",
+      "followingValue": "正在关注 {count} 个账号",
       "githubProfile": "在 GitHub 打开",
+      "hireable": "可接受雇佣",
+      "joinedAt": "{date} 加入",
       "location": "位置",
+      "organizations": "组织",
+      "publicGistsValue": "{count} 个公开 Gist",
       "publicRepos": "公开仓库",
+      "publicReposValue": "{count} 个公开仓库",
       "type": "{type}"
+    },
+    "repositories": {
+      "empty": {
+        "description": "当前账号没有可见仓库。",
+        "title": "没有仓库"
+      },
+      "error": {
+        "description": "无法加载 GitHub 仓库数据。",
+        "title": "无法加载仓库"
+      },
+      "search": {
+        "empty": {
+          "description": "没有可见仓库匹配当前搜索。",
+          "title": "没有匹配的仓库"
+        },
+        "placeholder": "搜索仓库"
+      }
+    },
+    "sections": {
+      "overview": "概览",
+      "repositories": "仓库",
+      "stars": "Stars"
+    },
+    "sidebar": {
+      "navigation": "账号导航"
+    },
+    "stars": {
+      "empty": {
+        "description": "当前账号没有可见的 Star 仓库。",
+        "title": "没有 Star 仓库"
+      },
+      "error": {
+        "description": "无法加载 GitHub Star 仓库数据。",
+        "title": "无法加载 Star 仓库"
+      },
+      "search": {
+        "empty": {
+          "description": "没有 Star 仓库匹配当前搜索。",
+          "title": "没有匹配的 Star"
+        },
+        "placeholder": "搜索 Star 仓库"
+      }
     }
+  },
+  "repositoryCard": {
+    "badges": {
+      "archived": "已归档",
+      "fork": "Fork",
+      "private": "私有",
+      "template": "模板"
+    },
+    "noDescription": "没有描述。",
+    "openOnGitHub": "在 GitHub 打开 {name}",
+    "unknownDate": "未知"
   },
   "repository": {
     "description": "{repository} 的仓库导航已经准备好。真实仓库数据会在这里继续接入。",
@@ -442,9 +549,9 @@
       "template": "Template"
     },
     "visibility": {
-      "internal": "Internal",
-      "private": "Private",
-      "public": "Public"
+      "internal": "内部",
+      "private": "私有",
+      "public": "公开"
     },
     "empty": {
       "description": "这个页面现在先保持为空，后续可以直接在这里继续微调。",
@@ -455,25 +562,175 @@
     }
   },
   "pullRequest": {
-    "description": "{repository} {number} 已作为 Pull Request 工作页打开。Review、检查和讨论数据会在这里继续接入。",
-    "eyebrow": "Pull Request",
-    "sections": {
-      "activity": {
-        "description": "后续可以把评论、review 请求和时间线事件收束到这里。",
-        "title": "动态"
+    "actions": {
+      "copyUrl": "复制链接",
+      "more": "更多 Pull Request 操作",
+      "openOnGitHub": "在 GitHub 打开"
+    },
+    "activity": {
+      "empty": "这个 Pull Request 还没有加载到动态。"
+    },
+    "checks": {
+      "failure": "未通过",
+      "pending": "等待中",
+      "success": "已通过"
+    },
+    "comment": {
+      "emptyPreview": "没有可预览的内容。",
+      "error": "无法发表评论。请检查权限后重试。",
+      "inputLabel": "Pull Request 评论",
+      "placeholder": "留下评论",
+      "preview": "预览",
+      "submit": "评论",
+      "write": "编辑"
+    },
+    "empty": {
+      "body": "没有填写描述。",
+      "missingIdentity": {
+        "description": "打开带有 owner、仓库名和 Pull Request 编号的 tab 后，才会加载讨论。",
+        "title": "Pull Request 不可用"
       },
-      "overview": {
-        "description": "这里会成为 PR 概览，后续补上状态、reviewers 和合并准备情况。",
-        "title": "概览"
+      "unavailable": {
+        "description": "GitHub 没有为这个 tab 返回 Pull Request。它可能已移动、删除，或需要更多权限。",
+        "title": "找不到 Pull Request"
       }
     },
-    "summary": {
-      "checks": "检查",
-      "repository": "仓库",
-      "status": "状态"
+    "error": {
+      "description": "无法从 GitHub 加载 Pull Request 详情。请检查连接后重试。",
+      "retry": "重试",
+      "title": "无法加载 Pull Request"
+    },
+    "loading": "正在加载 Pull Request...",
+    "meta": {
+      "createdByDate": "于 {date} 打开",
+      "createdByPrefix": "由",
+      "updated": "更新于 {date}"
+    },
+    "reviewDecision": {
+      "approved": "已批准",
+      "changes_requested": "需要修改",
+      "none": "暂无结论",
+      "review_required": "需要 Review"
+    },
+    "reviewStates": {
+      "approved": "批准了",
+      "changes_requested": "请求修改了",
+      "commented": "评论了",
+      "dismissed": "已驳回",
+      "pending": "等待提交"
+    },
+    "sidebar": {
+      "branches": {
+        "base": "目标分支",
+        "head": "来源分支"
+      },
+      "dates": {
+        "closed": "关闭时间",
+        "created": "创建时间",
+        "due": "截止 {date}",
+        "merged": "合并时间",
+        "updated": "更新时间"
+      },
+      "diff": {
+        "additions": "新增",
+        "deletions": "删除",
+        "files": "文件"
+      },
+      "empty": {
+        "assignees": "没有负责人",
+        "labels": "没有标签",
+        "linkedIssues": "没有关联 Issue",
+        "milestone": "没有里程碑",
+        "participants": "没有参与者",
+        "reviewers": "没有 Reviewers"
+      },
+      "sections": {
+        "assignees": "负责人",
+        "branches": "分支",
+        "dates": "日期",
+        "diff": "Diff 统计",
+        "labels": "标签",
+        "latestReviews": "最近 Review",
+        "linkedIssues": "关联 Issue",
+        "milestone": "里程碑",
+        "participants": "参与者",
+        "reviewers": "Reviewers",
+        "status": "状态"
+      },
+      "status": {
+        "checks": "检查",
+        "merge": "合并",
+        "review": "Review"
+      }
+    },
+    "states": {
+      "closed": "已关闭",
+      "draft": "Draft",
+      "merged": "已合并",
+      "open": "Open",
+      "unknown": "未知"
+    },
+    "tabs": {
+      "checks": "Checks",
+      "commits": "Commits",
+      "conversations": "Conversations",
+      "label": "Pull Request 分区",
+      "review": "Review"
+    },
+    "timeline": {
+      "assigned": "指派给 {target}",
+      "addedCommit": "添加了 1 个提交",
+      "addedCommits": "添加了 {count} 个提交",
+      "addedToMergeQueue": "将这个 Pull Request 加入合并队列",
+      "autoMergeDisabled": "关闭了 auto-merge",
+      "autoMergeDisabledWithReason": "关闭了 auto-merge：{reason}",
+      "autoMergeEnabled": "开启了 auto-merge",
+      "autoRebaseEnabled": "开启了 auto-rebase",
+      "autoSquashEnabled": "开启了 auto-squash",
+      "automaticBaseChangeFailed": "未能自动将目标分支从 {from} 改为 {to}",
+      "automaticBaseChangeSucceeded": "自动将目标分支从 {from} 改为 {to}",
+      "baseRefChanged": "将目标分支从 {from} 改为 {to}",
+      "baseRefDeleted": "删除了目标分支 {ref}",
+      "baseRefForcePushed": "将目标分支 {ref} 从 {from} force-push 到 {to}",
+      "closed": "关闭了这个 Pull Request",
+      "commentDeleted": "删除了一条评论",
+      "committed": "添加了一个提交",
+      "committedCommit": "添加了提交 {commit}",
+      "connected": "关联了 {source}",
+      "connectedAction": "关联了",
+      "convertToDraft": "把这个 Pull Request 转为 Draft",
+      "crossReferenced": "引用了 {source}",
+      "crossReferencedAction": "引用了",
+      "demilestoned": "移除了里程碑 {milestone}",
+      "disconnected": "取消关联 {source}",
+      "disconnectedAction": "取消关联",
+      "generic": "更新了时间线",
+      "headRefDeleted": "删除了来源分支 {ref}",
+      "headRefForcePushed": "将来源分支 {ref} 从 {from} force-push 到 {to}",
+      "headRefRestored": "恢复了来源分支",
+      "labeled": "添加了 {label}",
+      "mentioned": "提及了这个 Pull Request",
+      "merged": "合并了这个 Pull Request",
+      "mergedWithCommit": "合并了提交 {commit}",
+      "milestoned": "添加了里程碑 {milestone}",
+      "readyForReview": "标记为 Ready for review",
+      "referenced": "引用了这个 Pull Request",
+      "referencedCommit": "引用了提交 {commit}",
+      "renamed": "从“{from}”重命名为“{to}”",
+      "removedFromMergeQueue": "将这个 Pull Request 移出合并队列",
+      "removedFromMergeQueueWithReason": "将这个 Pull Request 移出合并队列：{reason}",
+      "reopened": "重新打开了这个 Pull Request",
+      "reviewDismissed": "驳回了一个 {state} 的 Review",
+      "reviewRequestRemoved": "移除了 {target} 的 Review 请求",
+      "reviewRequested": "请求 {target} Review",
+      "reviewed": "{state}这个 Pull Request",
+      "unassigned": "移除了 {target} 的指派",
+      "unlabeled": "移除了 {label}"
     },
     "values": {
-      "placeholder": "未接入"
+      "notAvailable": "暂不可用",
+      "placeholder": "未接入",
+      "unknown": "未知"
     }
   },
   "pullRequestList": {
@@ -643,6 +900,13 @@
   },
   "workspace": {
     "title": "Workspace",
+    "copy": {
+      "error": "无法复制 GitHub 链接。",
+      "success": "已复制 GitHub 链接。"
+    },
+    "openGitHub": {
+      "error": "无法打开这个 GitHub 链接。"
+    },
     "bookmarks": {
       "addToFolder": "添加到 {title}",
       "addToRoot": "添加到书签",
@@ -658,10 +922,20 @@
       "folderNamePlaceholder": "工作、稍后阅读、参考...",
       "moveToFolder": "移动到 {title}",
       "moveToRoot": "移动到书签",
+      "name": "名称",
       "newFolder": "新建书签分类",
       "newFolderDescription": "创建一个一级书签分类。",
       "remove": "移除书签",
       "removeCurrent": "取消收藏当前页面",
+      "renameBookmark": "重命名书签",
+      "renameDescription": "更新已保存书签的名称。",
+      "renameErrors": {
+        "duplicate": "已经有同名分类。",
+        "empty": "请输入名称。",
+        "not-found": "这个书签已经不存在。"
+      },
+      "renameFolder": "重命名分类",
+      "save": "保存",
       "title": "书签"
     },
     "userMenu": {
@@ -672,11 +946,24 @@
     },
     "sidebar": {
       "collapseGroup": "收起{title}",
+      "context": {
+        "copyGitHubLink": "复制 GitHub 链接",
+        "deleteBookmark": "删除书签",
+        "deleteBookmarkFolder": "删除分类",
+        "moveBookmark": "移动到分类",
+        "openBookmarkFolder": "全部打开",
+        "openInGitHub": "在 GitHub 打开",
+        "openInNewTab": "在工作区打开",
+        "pinOrganization": "置顶组织",
+        "renameBookmark": "重命名",
+        "renameBookmarkFolder": "重命名",
+        "unpinOrganization": "取消置顶组织"
+      },
       "expandGroup": "展开{title}",
       "groups": {
         "issues": "Issues",
         "pullRequests": "Pull Requests",
-        "organizations": "Organizations"
+        "organizations": "组织"
       },
       "items": {
         "inbox": "收件箱"
@@ -716,8 +1003,8 @@
     },
     "search": {
       "actions": {
-        "all": "搜索 \"{query}\"",
-        "goto": "Goto \"{query}\"",
+        "all": "搜索 GitHub \"{query}\"",
+        "goto": "打开 \"{query}\"",
         "orgs": "搜索组织 \"{query}\"",
         "repos": "搜索仓库 \"{query}\"",
         "users": "搜索用户 \"{query}\""
@@ -740,6 +1027,7 @@
     "toolbar": {
       "back": "后退",
       "collapseSidebar": "收起侧边栏",
+      "copyGitHubLink": "复制 GitHub 链接",
       "expandSidebar": "展开侧边栏",
       "forward": "前进"
     },
@@ -830,13 +1118,13 @@
         "draft": "Draft",
         "issue": "Issue",
         "issueList": "Issue 列表",
-        "notFound": "Not Found",
-        "org": "Organization",
+        "notFound": "未找到",
+        "org": "组织",
         "pullRequest": "Pull Request",
         "pullRequestList": "Pull Request 列表",
-        "repo": "Repository",
+        "repo": "仓库",
         "review": "Review",
-        "searchResult": "Search",
+        "searchResult": "搜索",
         "triage": "Triage"
       },
       "headings": {
@@ -882,7 +1170,7 @@
         "assigned": "0",
         "createdByMe": "我创建的",
         "drafts": "1",
-        "githubSearch": "GitHub Search",
+        "githubSearch": "GitHub 搜索",
         "inbox": "收件箱",
         "mentionedMe": "提及我的",
         "needsReview": "需要 Review",
@@ -923,7 +1211,7 @@
       "retry": "重试",
       "title": "搜索失败"
     },
-    "eyebrow": "GitHub Search",
+    "eyebrow": "GitHub 搜索",
     "groups": {
       "orgs": "组织",
       "repos": "仓库",
@@ -936,11 +1224,7 @@
       "user": "用户"
     },
     "noDescription": "没有描述",
-    "pagination": {
-      "next": "下一页",
-      "previous": "上一页"
-    },
-    "private": "Private",
+    "private": "私有",
     "summary": "{count} 个结果 · 第 {page} 页",
     "title": "搜索 \"{query}\""
   },
@@ -950,7 +1234,7 @@
       "searchGitHub": "搜索 GitHub"
     },
     "description": "检查拼写、粘贴 GitHub URL，或改为搜索 GitHub 结果。",
-    "eyebrow": "Not Found",
+    "eyebrow": "未找到",
     "title": "找不到 \"{input}\""
   }
 }

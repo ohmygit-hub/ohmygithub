@@ -23,10 +23,12 @@ export interface ToasterProps {
    *  i18n-agnostic, so the app passes these (e.g. from vue-i18n); when absent we
    *  fall back to the English `title` baked on the record. */
   headings?: Partial<Record<ToastVariant, string>>
+  label?: string
   class?: string
 }
 
 const props = withDefaults(defineProps<ToasterProps>(), {
+  label: 'Notifications',
   position: 'top-right',
 })
 
@@ -68,7 +70,7 @@ onBeforeUnmount(() => document.removeEventListener('visibilitychange', onVisibil
     <ol
       :class="cn('memoh-toaster', `memoh-toaster--${props.position}`, props.class)"
       role="region"
-      aria-label="Notifications"
+      :aria-label="props.label"
       tabindex="-1"
     >
       <TransitionGroup name="memoh-toast">

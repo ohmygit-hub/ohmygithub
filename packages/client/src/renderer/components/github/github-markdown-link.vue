@@ -2,8 +2,9 @@
 import { computed, inject } from 'vue'
 import MarkdownRender from 'markstream-vue'
 import GitHubReferenceLink from './github-reference-link.vue'
+import GitHubWorkspaceLink from './github-workspace-link.vue'
 import { GITHUB_MARKDOWN_CONTEXT_KEY } from './github-markdown-context'
-import { parseGitHubReferenceUrl } from './github-reference'
+import { parseGitHubReferenceUrl, parseGitHubWorkspaceUrl } from './github-reference'
 
 interface LinkChildNode {
   type: string
@@ -25,6 +26,7 @@ const props = defineProps<{
 const context = inject(GITHUB_MARKDOWN_CONTEXT_KEY, null)
 const href = computed(() => props.node.href ?? '')
 const reference = computed(() => parseGitHubReferenceUrl(href.value))
+const workspaceUrl = computed(() => parseGitHubWorkspaceUrl(href.value))
 const isExternal = computed(() => /^https?:\/\//i.test(href.value))
 const label = computed(() => props.node.text?.trim() || href.value)
 const hasChildren = computed(() => (props.node.children?.length ?? 0) > 0)
@@ -41,6 +43,27 @@ const hasChildren = computed(() => (props.node.children?.length ?? 0) > 0)
     :owner="reference.owner"
     :repo="reference.repo"
   />
+
+  <GitHubWorkspaceLink
+    v-else-if="workspaceUrl"
+    :title="node.title ?? undefined"
+    :workspace-url="workspaceUrl"
+  >
+    <MarkdownRender
+      v-if="hasChildren"
+      :batch-rendering="false"
+      :defer-nodes-until-visible="false"
+      :fade="false"
+      :final="true"
+      :node-virtual="false"
+      :nodes="node.children"
+      render-as-fragment
+      :typewriter="false"
+    />
+    <template v-else>
+      {{ label }}
+    </template>
+  </GitHubWorkspaceLink>
 
   <a
     v-else

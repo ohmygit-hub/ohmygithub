@@ -9,7 +9,7 @@ import {
   EmptyTitle,
   Skeleton,
 } from '@oh-my-github/ui'
-import PullRequestPagination from './pagination.vue'
+import AppPagination from '../../../../components/navigation/app-pagination.vue'
 import PullRequestRow from './row.vue'
 
 const props = defineProps<{
@@ -148,10 +148,11 @@ function updatePage(page: number): void {
       >
         {{ t('repository.pullRequests.pagination.incomplete') }}
       </p>
-      <PullRequestPagination
+      <AppPagination
         :disabled="disabled || isLoading || hasError || !hasIdentity"
         :page="page"
         :per-page="perPage"
+        summary-key="repository.pullRequests.pagination.summary"
         :total-count="totalCount"
         @update:page="updatePage"
       />

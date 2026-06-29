@@ -47,6 +47,7 @@ export interface ConversationTimelineEvent {
   text: string
   actor?: ConversationActor | null
   createdAt?: string | null
+  url?: string | null
   reference?: ConversationReference | null
 }
 

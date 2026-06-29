@@ -6,7 +6,6 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import {
   Building2,
-  ChevronLeft,
   ChevronRight,
   Book,
   Search,
@@ -24,6 +23,7 @@ import {
   EmptyTitle,
   Skeleton,
 } from '@oh-my-github/ui'
+import AppPagination from '../../components/navigation/app-pagination.vue'
 import { useWorkspaceSearchQuery } from '../../composables/github/use-workspace-search'
 
 const props = defineProps<{
@@ -99,20 +99,6 @@ function itemFallback(item: GitHubWorkspaceSearchItem): string {
 
 function openItem(item: GitHubWorkspaceSearchItem): void {
   void router.push(item.workspaceUrl)
-}
-
-function formatCount(value: number): string {
-  return new Intl.NumberFormat().format(value)
-}
-
-function nextPage(): void {
-  if (!result.value?.hasNextPage || isLoading.value) return
-  page.value += 1
-}
-
-function previousPage(): void {
-  if (page.value <= 1 || isLoading.value) return
-  page.value -= 1
 }
 
 function refetch(): void {
@@ -297,33 +283,17 @@ function refetch(): void {
 
         <footer
           v-if="hasQuery && !hasError && !showEmpty"
-          class="flex items-center justify-between gap-3 border-t border-border px-4 py-3"
+          class="border-t border-border px-4 py-3"
         >
-          <p class="min-w-0 truncate text-body text-muted-foreground">
-            {{ t('searchResult.summary', { count: formatCount(totalCount), page }) }}
-          </p>
-          <div class="flex shrink-0 items-center gap-1">
-            <Button
-              :aria-label="t('searchResult.pagination.previous')"
-              :disabled="page <= 1 || isLoading"
-              size="icon-sm"
-              type="button"
-              variant="ghost"
-              @click="previousPage"
-            >
-              <ChevronLeft class="size-3.5" />
-            </Button>
-            <Button
-              :aria-label="t('searchResult.pagination.next')"
-              :disabled="!result?.hasNextPage || isLoading"
-              size="icon-sm"
-              type="button"
-              variant="ghost"
-              @click="nextPage"
-            >
-              <ChevronRight class="size-3.5" />
-            </Button>
-          </div>
+          <AppPagination
+            v-model:page="page"
+            :disabled="isLoading"
+            :has-next-page="result?.hasNextPage ?? false"
+            :per-page="PER_PAGE"
+            summary-key="searchResult.summary"
+            :total-count="totalCount"
+            variant="compact"
+          />
         </footer>
 
         <p

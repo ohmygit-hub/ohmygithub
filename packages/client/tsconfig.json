@@ -6,6 +6,7 @@
     "types": ["node"],
     "noEmit": true,
     "paths": {
+      "@/*": ["packages/client/src/renderer"],
       "#/*": ["packages/ui/src/*"],
       "@oh-my-github/api": ["packages/api/src/index.ts"],
       "@oh-my-github/ui": ["packages/ui/src/index.ts"],

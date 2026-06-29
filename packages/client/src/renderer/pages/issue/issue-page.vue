@@ -16,12 +16,12 @@ import { AlertCircle, CircleDot } from 'lucide-vue-next'
 import {
   ConversationBodyCard,
   ConversationCommentCard,
+  ConversationCommentComposer,
   ConversationEventRow,
   ConversationTimeline,
   GitHubActorLink,
 } from '../../components'
 import { createIssueComment, useIssueDetailQuery } from '../../composables/github/use-issues'
-import IssueCommentComposer from './components/issue-comment-composer.vue'
 import IssueHeader from './components/issue-header.vue'
 import IssueSidebar from './components/issue-sidebar.vue'
 import { useIssueTimelineItems } from './composables/use-issue-timeline-items'
@@ -240,7 +240,7 @@ async function submitIssueComment(): Promise<void> {
                   class="absolute bottom-full left-7 h-3 w-px bg-border"
                   aria-hidden="true"
                 />
-                <IssueCommentComposer
+                <ConversationCommentComposer
                   v-model="commentBody"
                   :error="commentError"
                   :is-submitting="isSubmittingComment"

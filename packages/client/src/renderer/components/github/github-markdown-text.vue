@@ -2,8 +2,9 @@
 import { computed, inject } from 'vue'
 import GitHubActorLink from './github-actor-link.vue'
 import GitHubReferenceLink from './github-reference-link.vue'
+import GitHubWorkspaceLink from './github-workspace-link.vue'
 import { GITHUB_MARKDOWN_CONTEXT_KEY } from './github-markdown-context'
-import { parseGitHubReferenceUrl, trimUrlCandidate } from './github-reference'
+import { parseGitHubReferenceUrl, parseGitHubWorkspaceUrl, trimUrlCandidate } from './github-reference'
 
 interface TextNode {
   content?: string
@@ -20,6 +21,11 @@ type TextSegment =
       number: number
       kindHint?: GitHubRepositoryReferenceKind
       fallbackHref?: string
+    }
+  | {
+      type: 'github-link'
+      label: string
+      workspaceUrl: string
     }
 
 const props = defineProps<{
@@ -58,7 +64,18 @@ function tokenizeText(value: string): TextSegment[] {
         })
         pushText(segments, trimmed.trailing)
       } else {
-        pushText(segments, matchedValue)
+        const workspaceUrl = parseGitHubWorkspaceUrl(trimmed.value)
+
+        if (workspaceUrl) {
+          segments.push({
+            type: 'github-link',
+            label: trimmed.value,
+            workspaceUrl,
+          })
+          pushText(segments, trimmed.trailing)
+        } else {
+          pushText(segments, matchedValue)
+        }
       }
 
       lastIndex = pattern.lastIndex
@@ -120,7 +137,7 @@ function pushText(segments: TextSegment[], value: string | undefined): void {
       variant="pill"
     />
     <GitHubReferenceLink
-      v-else
+      v-else-if="segment.type === 'reference'"
       :current-owner="context?.owner"
       :current-repo="context?.repo"
       :fallback-href="segment.fallbackHref"
@@ -129,5 +146,11 @@ function pushText(segments: TextSegment[], value: string | undefined): void {
       :owner="segment.owner"
       :repo="segment.repo"
     />
+    <GitHubWorkspaceLink
+      v-else
+      :workspace-url="segment.workspaceUrl"
+    >
+      {{ segment.label }}
+    </GitHubWorkspaceLink>
   </template>
 </template>

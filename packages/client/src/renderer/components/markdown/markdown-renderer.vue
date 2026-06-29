@@ -2,6 +2,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import MarkdownRender, { enableKatex, enableMermaid, setCustomComponents } from 'markstream-vue'
 import { useSettingsStore } from '../../stores/settings'
+import GitHubMarkdownLink from '../github/github-markdown-link.vue'
 import MermaidRenderer from '../mermaid/mermaid-renderer.vue'
 import MarkdownCodeBlock from './markdown-code-block.vue'
 import MarkdownImage from './markdown-image.vue'
@@ -13,6 +14,7 @@ enableMermaid()
 setCustomComponents(RICH_CONTENT_MARKDOWN_ID, {
   code_block: MarkdownCodeBlock,
   image: MarkdownImage,
+  link: GitHubMarkdownLink,
   mermaid: MermaidRenderer
 })
 

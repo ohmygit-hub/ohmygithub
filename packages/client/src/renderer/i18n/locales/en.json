@@ -27,6 +27,21 @@
       "title": "Rich content components"
     }
   },
+  "toast": {
+    "label": "Notifications",
+    "headings": {
+      "error": "Error",
+      "info": "Info",
+      "message": "Notice",
+      "success": "Success",
+      "warning": "Warning"
+    }
+  },
+  "pagination": {
+    "next": "Next page",
+    "pageInput": "Go to page",
+    "previous": "Previous page"
+  },
   "auth": {
     "browserOpened": "Copy this code, then open GitHub to authorize the app.",
     "copyCodeAndOpenGitHub": "Copy code and open GitHub",
@@ -155,6 +170,10 @@
           "label": "Toggle bookmark",
           "description": "Add or remove a bookmark for the active tab."
         },
+        "workspaceCopyGitHubUrl": {
+          "label": "Copy GitHub link",
+          "description": "Copy the GitHub link for the active workspace tab."
+        },
         "repositorySectionOverview": {
           "label": "Repository overview",
           "description": "Switch the active repository tab to Overview."
@@ -206,6 +225,27 @@
     }
   },
   "account": {
+    "actions": {
+      "follow": "Follow",
+      "missingFollowScope": "Follow requires GitHub OAuth scope: {scopes}. Re-authorize the account to enable it.",
+      "unfollow": "Unfollow"
+    },
+    "contributions": {
+      "dayTitle": "{count} contributions on {date}",
+      "description": "Includes public activity and any private contributions visible to this account.",
+      "error": "Could not load contribution activity.",
+      "heading": "Contribution activity",
+      "less": "Less",
+      "more": "More",
+      "privateNotice": "{count} private or restricted contributions are included in this year.",
+      "stats": {
+        "commits": "Commits",
+        "issues": "Issues",
+        "pullRequests": "Pull requests",
+        "reviews": "Code review"
+      },
+      "title": "{count} contributions in {year}"
+    },
     "empty": {
       "description": "Open an account tab with a GitHub login to load the profile.",
       "title": "Account is not available"
@@ -216,16 +256,83 @@
       "title": "Could not load account"
     },
     "eyebrow": "Account",
+    "overview": {
+      "pinned": "Pinned repositories",
+      "readme": "Profile README"
+    },
+    "pagination": {
+      "summary": "Page {page} of {pageCount} · {totalCount} repositories"
+    },
     "profile": {
       "blog": "Website",
       "company": "Company",
       "followers": "Followers",
+      "followersValue": "{count} followers",
       "following": "Following",
+      "followingValue": "{count} following",
       "githubProfile": "Open on GitHub",
+      "hireable": "Available for hire",
+      "joinedAt": "Joined {date}",
       "location": "Location",
+      "organizations": "Organizations",
+      "publicGistsValue": "{count} public gists",
       "publicRepos": "Public repositories",
+      "publicReposValue": "{count} public repositories",
       "type": "{type}"
+    },
+    "repositories": {
+      "empty": {
+        "description": "No repositories are visible for this account.",
+        "title": "No repositories"
+      },
+      "error": {
+        "description": "GitHub repository data could not be loaded.",
+        "title": "Could not load repositories"
+      },
+      "search": {
+        "empty": {
+          "description": "No visible repositories match this search.",
+          "title": "No matching repositories"
+        },
+        "placeholder": "Search repositories"
+      }
+    },
+    "sections": {
+      "overview": "Overview",
+      "repositories": "Repositories",
+      "stars": "Stars"
+    },
+    "sidebar": {
+      "navigation": "Account navigation"
+    },
+    "stars": {
+      "empty": {
+        "description": "No starred repositories are visible for this account.",
+        "title": "No starred repositories"
+      },
+      "error": {
+        "description": "GitHub starred repository data could not be loaded.",
+        "title": "Could not load starred repositories"
+      },
+      "search": {
+        "empty": {
+          "description": "No starred repositories match this search.",
+          "title": "No matching stars"
+        },
+        "placeholder": "Search starred repositories"
+      }
     }
+  },
+  "repositoryCard": {
+    "badges": {
+      "archived": "Archived",
+      "fork": "Fork",
+      "private": "Private",
+      "template": "Template"
+    },
+    "noDescription": "No description provided.",
+    "openOnGitHub": "Open {name} on GitHub",
+    "unknownDate": "Unknown"
   },
   "repository": {
     "description": "{repository} is ready for repository navigation. Real repository data will be connected here later.",
@@ -455,25 +562,175 @@
     }
   },
   "pullRequest": {
-    "description": "{repository} {number} is open as a pull request workspace. Review, check, and conversation data will be connected here later.",
-    "eyebrow": "Pull Request",
-    "sections": {
-      "activity": {
-        "description": "A future activity area can collect comments, review requests, and timeline events.",
-        "title": "Activity"
+    "actions": {
+      "copyUrl": "Copy URL",
+      "more": "More pull request actions",
+      "openOnGitHub": "Open on GitHub"
+    },
+    "activity": {
+      "empty": "No activity has been loaded for this pull request yet."
+    },
+    "checks": {
+      "failure": "Failing",
+      "pending": "Pending",
+      "success": "Passing"
+    },
+    "comment": {
+      "emptyPreview": "Nothing to preview.",
+      "error": "Comment could not be posted. Check your permissions and try again.",
+      "inputLabel": "Pull request comment",
+      "placeholder": "Leave a comment",
+      "preview": "Preview",
+      "submit": "Comment",
+      "write": "Write"
+    },
+    "empty": {
+      "body": "No description provided.",
+      "missingIdentity": {
+        "description": "Open a pull request tab with an owner, repository, and pull request number to load the discussion.",
+        "title": "Pull request is not available"
       },
-      "overview": {
-        "description": "This placeholder will become the pull request overview with status, reviewers, and merge readiness.",
-        "title": "Overview"
+      "unavailable": {
+        "description": "GitHub did not return a pull request for this tab. It may have moved, been deleted, or require more permissions.",
+        "title": "Pull request could not be found"
       }
     },
-    "summary": {
+    "error": {
+      "description": "GitHub pull request details could not be loaded. Check the connection and try again.",
+      "retry": "Retry",
+      "title": "Could not load pull request"
+    },
+    "loading": "Loading pull request...",
+    "meta": {
+      "createdByDate": "on {date}",
+      "createdByPrefix": "Opened by",
+      "updated": "Updated {date}"
+    },
+    "reviewDecision": {
+      "approved": "Approved",
+      "changes_requested": "Changes requested",
+      "none": "No decision",
+      "review_required": "Review required"
+    },
+    "reviewStates": {
+      "approved": "approved",
+      "changes_requested": "changes requested",
+      "commented": "commented",
+      "dismissed": "dismissed",
+      "pending": "pending"
+    },
+    "sidebar": {
+      "branches": {
+        "base": "Base",
+        "head": "Head"
+      },
+      "dates": {
+        "closed": "Closed",
+        "created": "Created",
+        "due": "Due {date}",
+        "merged": "Merged",
+        "updated": "Updated"
+      },
+      "diff": {
+        "additions": "Additions",
+        "deletions": "Deletions",
+        "files": "Files"
+      },
+      "empty": {
+        "assignees": "No assignees",
+        "labels": "No labels",
+        "linkedIssues": "No linked issues",
+        "milestone": "No milestone",
+        "participants": "No participants",
+        "reviewers": "No reviewers"
+      },
+      "sections": {
+        "assignees": "Assignees",
+        "branches": "Branches",
+        "dates": "Dates",
+        "diff": "Diff stats",
+        "labels": "Labels",
+        "latestReviews": "Latest reviews",
+        "linkedIssues": "Linked issues",
+        "milestone": "Milestone",
+        "participants": "Participants",
+        "reviewers": "Reviewers",
+        "status": "Status"
+      },
+      "status": {
+        "checks": "Checks",
+        "merge": "Merge",
+        "review": "Review"
+      }
+    },
+    "states": {
+      "closed": "Closed",
+      "draft": "Draft",
+      "merged": "Merged",
+      "open": "Open",
+      "unknown": "Unknown"
+    },
+    "tabs": {
       "checks": "Checks",
-      "repository": "Repository",
-      "status": "Status"
+      "commits": "Commits",
+      "conversations": "Conversations",
+      "label": "Pull request sections",
+      "review": "Review"
+    },
+    "timeline": {
+      "assigned": "assigned {target}",
+      "addedCommit": "added 1 commit",
+      "addedCommits": "added {count} commits",
+      "addedToMergeQueue": "added this pull request to the merge queue",
+      "autoMergeDisabled": "disabled auto-merge",
+      "autoMergeDisabledWithReason": "disabled auto-merge: {reason}",
+      "autoMergeEnabled": "enabled auto-merge",
+      "autoRebaseEnabled": "enabled auto-rebase",
+      "autoSquashEnabled": "enabled auto-squash",
+      "automaticBaseChangeFailed": "could not automatically change the base branch from {from} to {to}",
+      "automaticBaseChangeSucceeded": "automatically changed the base branch from {from} to {to}",
+      "baseRefChanged": "changed the base branch from {from} to {to}",
+      "baseRefDeleted": "deleted base branch {ref}",
+      "baseRefForcePushed": "force-pushed base branch {ref} from {from} to {to}",
+      "closed": "closed this pull request",
+      "commentDeleted": "deleted a comment",
+      "committed": "added a commit",
+      "committedCommit": "added commit {commit}",
+      "connected": "linked {source}",
+      "connectedAction": "linked",
+      "convertToDraft": "converted this pull request to draft",
+      "crossReferenced": "referenced {source}",
+      "crossReferencedAction": "referenced",
+      "demilestoned": "removed milestone {milestone}",
+      "disconnected": "unlinked {source}",
+      "disconnectedAction": "unlinked",
+      "generic": "updated the timeline",
+      "headRefDeleted": "deleted head branch {ref}",
+      "headRefForcePushed": "force-pushed head branch {ref} from {from} to {to}",
+      "headRefRestored": "restored the head branch",
+      "labeled": "added {label}",
+      "mentioned": "mentioned this pull request",
+      "merged": "merged this pull request",
+      "mergedWithCommit": "merged commit {commit}",
+      "milestoned": "added milestone {milestone}",
+      "readyForReview": "marked this pull request ready for review",
+      "referenced": "referenced this pull request",
+      "referencedCommit": "referenced commit {commit}",
+      "renamed": "renamed from \"{from}\" to \"{to}\"",
+      "removedFromMergeQueue": "removed this pull request from the merge queue",
+      "removedFromMergeQueueWithReason": "removed this pull request from the merge queue: {reason}",
+      "reopened": "reopened this pull request",
+      "reviewDismissed": "dismissed a {state} review",
+      "reviewRequestRemoved": "removed review request from {target}",
+      "reviewRequested": "requested review from {target}",
+      "reviewed": "{state} this pull request",
+      "unassigned": "removed {target} from assignees",
+      "unlabeled": "removed {label}"
     },
     "values": {
-      "placeholder": "Not connected"
+      "notAvailable": "Not available",
+      "placeholder": "Not connected",
+      "unknown": "Unknown"
     }
   },
   "pullRequestList": {
@@ -643,6 +900,13 @@
   },
   "workspace": {
     "title": "Workspace",
+    "copy": {
+      "error": "Could not copy GitHub link.",
+      "success": "GitHub link copied."
+    },
+    "openGitHub": {
+      "error": "Could not open this GitHub link."
+    },
     "bookmarks": {
       "addToFolder": "Add to {title}",
       "addToRoot": "Add to Bookmarks",
@@ -658,10 +922,20 @@
       "folderNamePlaceholder": "Work, Later, Reference...",
       "moveToFolder": "Move to {title}",
       "moveToRoot": "Move to Bookmarks",
+      "name": "Name",
       "newFolder": "New bookmark folder",
       "newFolderDescription": "Create a top-level bookmark folder.",
       "remove": "Remove Bookmark",
       "removeCurrent": "Remove current bookmark",
+      "renameBookmark": "Rename bookmark",
+      "renameDescription": "Update the saved bookmark name.",
+      "renameErrors": {
+        "duplicate": "A folder with this name already exists.",
+        "empty": "Enter a name.",
+        "not-found": "This bookmark no longer exists."
+      },
+      "renameFolder": "Rename folder",
+      "save": "Save",
       "title": "Bookmarks"
     },
     "userMenu": {
@@ -672,6 +946,19 @@
     },
     "sidebar": {
       "collapseGroup": "Collapse {title}",
+      "context": {
+        "copyGitHubLink": "Copy GitHub link",
+        "deleteBookmark": "Delete bookmark",
+        "deleteBookmarkFolder": "Delete folder",
+        "moveBookmark": "Move to folder",
+        "openBookmarkFolder": "Open all",
+        "openInGitHub": "Open in GitHub",
+        "openInNewTab": "Open in Workspace",
+        "pinOrganization": "Pin organization",
+        "renameBookmark": "Rename",
+        "renameBookmarkFolder": "Rename",
+        "unpinOrganization": "Unpin organization"
+      },
       "expandGroup": "Expand {title}",
       "groups": {
         "issues": "Issues",
@@ -716,11 +1003,11 @@
     },
     "search": {
       "actions": {
-        "all": "Search \"{query}\"",
-        "goto": "Goto \"{query}\"",
-        "orgs": "Search org with \"{query}\"",
-        "repos": "Search repo with \"{query}\"",
-        "users": "Search user with \"{query}\""
+        "all": "Search GitHub for \"{query}\"",
+        "goto": "Go to \"{query}\"",
+        "orgs": "Search organizations for \"{query}\"",
+        "repos": "Search repositories for \"{query}\"",
+        "users": "Search users for \"{query}\""
       },
       "description": "Search for GitHub accounts, organizations, and repositories.",
       "placeholder": "Search GitHub or paste a URL",
@@ -740,6 +1027,7 @@
     "toolbar": {
       "back": "Back",
       "collapseSidebar": "Collapse sidebar",
+      "copyGitHubLink": "Copy GitHub link",
       "expandSidebar": "Expand sidebar",
       "forward": "Forward"
     },
@@ -931,15 +1219,11 @@
     },
     "incomplete": "GitHub returned incomplete search results. Try narrowing the search.",
     "kinds": {
-      "org": "Org",
-      "repo": "Repo",
+      "org": "Organization",
+      "repo": "Repository",
       "user": "User"
     },
     "noDescription": "No description",
-    "pagination": {
-      "next": "Next page",
-      "previous": "Previous page"
-    },
     "private": "Private",
     "summary": "{count} results · Page {page}",
     "title": "Search \"{query}\""

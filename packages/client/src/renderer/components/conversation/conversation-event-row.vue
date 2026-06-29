@@ -19,6 +19,7 @@ interface ConversationEventRowEventLike {
   type?: string | null
   actor?: ConversationActor | null
   createdAt?: string | null
+  url?: string | null
   reference?: ConversationTimelineEvent['reference']
 }
 
@@ -44,10 +45,12 @@ const eventText = computed(() => {
 })
 const createdLabel = computed(() => formatConversationDate(props.event.createdAt))
 const createdDateTime = computed(() => toConversationDateTime(props.event.createdAt))
+const eventUrl = computed(() => props.event.url?.trim() || null)
+const hasInlineContent = computed(() => Boolean(props.event.actor || eventText.value || props.event.reference))
 </script>
 
 <template>
-  <div class="grid min-w-0 grid-cols-[2rem_minmax(0,1fr)] items-center gap-3">
+  <div class="grid min-w-0 grid-cols-[2rem_minmax(0,1fr)] items-start gap-3">
     <div class="flex h-8 items-center justify-center">
       <span class="flex size-8 items-center justify-center rounded-full border border-border bg-background">
         <component
@@ -60,28 +63,25 @@ const createdDateTime = computed(() => toConversationDateTime(props.event.create
 
     <div
       v-if="event.reference"
-      class="flex min-h-8 min-w-0 items-center gap-2 text-body"
+      class="min-h-8 min-w-0 py-1 text-body leading-6"
     >
-      <span
+      <GitHubActorLink
         v-if="event.actor"
-        class="inline-flex min-w-0 shrink-0 items-center text-label"
-      >
-        <GitHubActorLink
-          avatar-size="sm"
-          :avatar-url="event.actor.avatarUrl"
-          :login="event.actor.login"
-        />
-      </span>
+        class="mr-2 text-label align-middle"
+        avatar-size="sm"
+        :avatar-url="event.actor.avatarUrl"
+        :login="event.actor.login"
+      />
 
       <span
         v-if="eventText"
-        class="shrink-0 text-muted-foreground"
+        class="break-words text-muted-foreground"
       >
         {{ eventText }}
       </span>
 
       <GitHubReferenceLink
-        class="min-w-0 flex-1 overflow-hidden"
+        class="mx-1 max-w-full align-middle"
         :fallback-href="event.reference.url"
         :initial-kind="event.reference.kind"
         :initial-state="event.reference.state"
@@ -90,12 +90,13 @@ const createdDateTime = computed(() => toConversationDateTime(props.event.create
         :number="event.reference.number"
         :owner="event.reference.owner"
         :repo="event.reference.repo"
-        variant="hover"
+        variant="inline"
       />
 
       <time
         v-if="createdLabel"
-        class="shrink-0 text-body text-muted-foreground"
+        class="whitespace-nowrap text-body text-muted-foreground align-baseline"
+        :class="hasInlineContent ? 'ml-2' : ''"
         :datetime="createdDateTime"
       >
         {{ createdLabel }}
@@ -104,37 +105,41 @@ const createdDateTime = computed(() => toConversationDateTime(props.event.create
 
     <div
       v-else
-      class="flex min-h-8 min-w-0 items-center"
+      class="min-h-8 min-w-0 py-1 text-body leading-6"
     >
-      <div
-        class="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-body"
+      <GitHubActorLink
+        v-if="event.actor"
+        class="mr-2 text-label align-middle"
+        avatar-size="sm"
+        :avatar-url="event.actor.avatarUrl"
+        :login="event.actor.login"
+      />
+
+      <a
+        v-if="eventText && eventUrl"
+        class="break-words text-muted-foreground underline-offset-4 outline-hidden hover:text-foreground hover:underline focus-visible:text-foreground focus-visible:underline focus-visible:ring-2 focus-visible:ring-ring/30"
+        :href="eventUrl"
+        rel="noreferrer"
+        target="_blank"
       >
-        <span
-          v-if="event.actor"
-          class="inline-flex min-w-0 items-center text-label"
-        >
-          <GitHubActorLink
-            avatar-size="sm"
-            :avatar-url="event.actor.avatarUrl"
-            :login="event.actor.login"
-          />
-        </span>
+        {{ eventText }}
+      </a>
 
-        <span
-          v-if="eventText"
-          class="min-w-0 break-words text-muted-foreground"
-        >
-          {{ eventText }}
-        </span>
+      <span
+        v-else-if="eventText"
+        class="break-words text-muted-foreground"
+      >
+        {{ eventText }}
+      </span>
 
-        <time
-          v-if="createdLabel"
-          class="shrink-0 text-body text-muted-foreground"
-          :datetime="createdDateTime"
-        >
-          {{ createdLabel }}
-        </time>
-      </div>
+      <time
+        v-if="createdLabel"
+        class="whitespace-nowrap text-body text-muted-foreground align-baseline"
+        :class="hasInlineContent ? 'ml-2' : ''"
+        :datetime="createdDateTime"
+      >
+        {{ createdLabel }}
+      </time>
     </div>
   </div>
 </template>

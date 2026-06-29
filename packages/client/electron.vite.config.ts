@@ -37,7 +37,7 @@ export default defineConfig(({ mode }) => {
     renderer: {
       resolve: {
         alias: {
-          '@renderer': resolve(__dirname, 'src/renderer'),
+          '@': resolve(__dirname, 'src/renderer'),
           '#': resolve(__dirname, '../ui/src'),
           '@oh-my-github/api': resolve(__dirname, '../api/src/index.ts'),
           '@oh-my-github/ui/style.css': resolve(__dirname, '../ui/src/style.css'),

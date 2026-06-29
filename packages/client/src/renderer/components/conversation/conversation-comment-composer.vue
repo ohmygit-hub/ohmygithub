@@ -6,7 +6,8 @@ import {
   Textarea,
 } from '@oh-my-github/ui'
 import { Send } from 'lucide-vue-next'
-import { GitHubMarkdownRenderer, MarkdownRenderer } from '../../../components'
+import GitHubMarkdownRenderer from '../github/github-markdown-renderer.vue'
+import MarkdownRenderer from '../markdown/markdown-renderer.vue'
 
 const props = withDefaults(defineProps<{
   modelValue: string
@@ -14,10 +15,12 @@ const props = withDefaults(defineProps<{
   error?: string | null
   owner?: string | null
   repo?: string | null
+  i18nScope?: string
 }>(), {
   error: null,
   owner: null,
   repo: null,
+  i18nScope: 'issue.comment',
 })
 
 const emit = defineEmits<{
@@ -34,6 +37,10 @@ const body = computed({
 const hasBody = computed(() => body.value.trim().length > 0)
 const canSubmit = computed(() => hasBody.value && !props.isSubmitting)
 
+function message(key: string): string {
+  return t(`${props.i18nScope}.${key}`)
+}
+
 function submitComment(): void {
   if (!canSubmit.value) return
 
@@ -49,21 +56,21 @@ function submitComment(): void {
     <div class="grid min-w-0 gap-3 md:grid-cols-2">
       <div class="grid min-w-0 gap-1.5">
         <div class="select-none text-label font-medium text-foreground">
-          {{ t('issue.comment.write') }}
+          {{ message('write') }}
         </div>
         <Textarea
           v-model="body"
           class="min-h-32"
-          :aria-label="t('issue.comment.inputLabel')"
+          :aria-label="message('inputLabel')"
           :disabled="isSubmitting"
-          :placeholder="t('issue.comment.placeholder')"
+          :placeholder="message('placeholder')"
           size="lg"
         />
       </div>
 
       <div class="grid min-w-0 gap-1.5">
         <div class="select-none text-label font-medium text-foreground">
-          {{ t('issue.comment.preview') }}
+          {{ message('preview') }}
         </div>
         <div class="min-h-32 min-w-0 overflow-auto rounded-md border border-border bg-background/60 p-3">
           <MarkdownRenderer
@@ -82,7 +89,7 @@ function submitComment(): void {
             v-else
             class="text-body text-muted-foreground"
           >
-            {{ t('issue.comment.emptyPreview') }}
+            {{ message('emptyPreview') }}
           </p>
         </div>
       </div>
@@ -110,7 +117,7 @@ function submitComment(): void {
         type="submit"
       >
         <Send class="size-3.5" />
-        <span>{{ t('issue.comment.submit') }}</span>
+        <span>{{ message('submit') }}</span>
       </Button>
     </div>
   </form>

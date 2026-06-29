@@ -9,7 +9,7 @@ import {
   EmptyTitle,
   Skeleton,
 } from '@oh-my-github/ui'
-import IssuePagination from './pagination.vue'
+import AppPagination from '../../../../components/navigation/app-pagination.vue'
 import IssueRow from './row.vue'
 
 const props = defineProps<{
@@ -147,10 +147,11 @@ function updatePage(page: number): void {
       >
         {{ t('repository.issues.pagination.incomplete') }}
       </p>
-      <IssuePagination
+      <AppPagination
         :disabled="disabled || isLoading || hasError || !hasIdentity"
         :page="page"
         :per-page="perPage"
+        summary-key="repository.issues.pagination.summary"
         :total-count="totalCount"
         @update:page="updatePage"
       />
