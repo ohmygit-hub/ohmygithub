@@ -47,6 +47,7 @@ export function useIssueTimelineItems(
       updatedAt: comment.updatedAt,
       badges: [],
       reactions: toConversationReactions(comment.reactions),
+      viewerCanUpdate: Boolean(comment.viewerCanUpdate),
     }))
 
     const events = (currentIssue.timelineEvents ?? []).map<IssueTimelineItem>((event) => ({

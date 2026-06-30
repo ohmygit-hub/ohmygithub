@@ -47,7 +47,25 @@ const api = {
     getIssueDetail: (owner: string, repo: string, number: number) =>
       ipcRenderer.invoke('issues:get-detail', owner, repo, number),
     createIssueComment: (owner: string, repo: string, number: number, body: string) =>
-      ipcRenderer.invoke('issues:create-comment', owner, repo, number, body)
+      ipcRenderer.invoke('issues:create-comment', owner, repo, number, body),
+    listRepositoryLabels: (owner: string, repo: string) =>
+      ipcRenderer.invoke('issues:list-repository-labels', owner, repo),
+    listRepositoryMilestones: (owner: string, repo: string) =>
+      ipcRenderer.invoke('issues:list-repository-milestones', owner, repo),
+    listAssignableUsers: (owner: string, repo: string) =>
+      ipcRenderer.invoke('issues:list-assignable-users', owner, repo),
+    updateIssue: (owner: string, repo: string, number: number, changes: unknown) =>
+      ipcRenderer.invoke('issues:update', owner, repo, number, changes),
+    updateIssueComment: (owner: string, repo: string, commentId: string | number, body: string) =>
+      ipcRenderer.invoke('issues:update-comment', owner, repo, commentId, body),
+    setIssueSubscription: (subscribableId: string, subscribed: boolean) =>
+      ipcRenderer.invoke('issues:set-subscription', subscribableId, subscribed),
+    setIssueLock: (owner: string, repo: string, number: number, locked: boolean) =>
+      ipcRenderer.invoke('issues:set-lock', owner, repo, number, locked),
+    setIssuePinned: (issueId: string, pinned: boolean) =>
+      ipcRenderer.invoke('issues:set-pinned', issueId, pinned),
+    deleteIssue: (issueId: string) =>
+      ipcRenderer.invoke('issues:delete', issueId)
   },
   pulls: {
     listPullRequestCategory: (category: string) => ipcRenderer.invoke('pulls:list-category', category),

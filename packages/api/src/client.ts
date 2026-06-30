@@ -112,12 +112,27 @@ export function createGitHubApi(options: GitHubApiOptions): GitHubApi {
     searchRepositoryPullRequests: (options) => pulls.searchRepositoryPullRequests(options),
     getPullRequestDetail: (options) => pulls.getPullRequestDetail(options),
     createPullRequestComment: (options) => pulls.createPullRequestComment(options),
+    updatePullRequest: (options) => pulls.updatePullRequest(options),
+    closePullRequest: (options) => pulls.closePullRequest(options),
+    requestPullRequestReviewers: (options) => pulls.requestPullRequestReviewers(options),
+    markPullRequestReadyForReview: (options) => pulls.markPullRequestReadyForReview(options),
+    mergePullRequest: (options) => pulls.mergePullRequest(options),
+    updatePullRequestComment: (options) => pulls.updatePullRequestComment(options),
     listIssueCategory: (options) => issues.listIssueCategory(options),
     listViewerIssues: (options) => issues.listViewerIssues(options),
     listRepositoryIssues: (options) => issues.listRepositoryIssues(options),
     searchRepositoryIssues: (options) => issues.searchRepositoryIssues(options),
     getIssueDetail: (options) => issues.getIssueDetail(options),
-    createIssueComment: (options) => issues.createIssueComment(options)
+    createIssueComment: (options) => issues.createIssueComment(options),
+    listRepositoryLabels: (options) => issues.listRepositoryLabels(options),
+    listRepositoryMilestones: (options) => issues.listRepositoryMilestones(options),
+    listAssignableUsers: (options) => issues.listAssignableUsers(options),
+    updateIssue: (options) => issues.updateIssue(options),
+    updateIssueComment: (options) => issues.updateIssueComment(options),
+    setIssueSubscription: (options) => issues.setIssueSubscription(options),
+    setIssueLock: (options) => issues.setIssueLock(options),
+    setIssuePinned: (options) => issues.setIssuePinned(options),
+    deleteIssue: (options) => issues.deleteIssue(options)
   }
 }
 

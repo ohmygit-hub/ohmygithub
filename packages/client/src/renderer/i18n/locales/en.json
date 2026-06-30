@@ -941,9 +941,23 @@
     "description": "{repository} {number} is open as an issue workspace. Conversation, labels, and project data will be connected here later.",
     "eyebrow": "Issue",
     "actions": {
+      "closeCompleted": "Close as completed",
+      "closeNotPlanned": "Close as not planned",
       "copyUrl": "Copy URL",
+      "editBody": "Edit issue description",
+      "editComment": "Edit comment",
       "more": "More issue actions",
-      "openOnGitHub": "Open on GitHub"
+      "reopen": "Reopen issue",
+      "cancel": "Cancel",
+      "delete": "Delete issue",
+      "deleteConfirmDescription": "This permanently deletes the issue. This cannot be undone.",
+      "deleteConfirmTitle": "Delete this issue?",
+      "lock": "Lock conversation",
+      "pin": "Pin issue",
+      "subscribe": "Subscribe",
+      "unlock": "Unlock conversation",
+      "unpin": "Unpin issue",
+      "unsubscribe": "Unsubscribe"
     },
     "activity": {
       "empty": "No activity has been loaded for this issue yet."
@@ -972,6 +986,15 @@
       "description": "GitHub issue details could not be loaded. Check the connection and try again.",
       "retry": "Retry",
       "title": "Could not load issue"
+    },
+    "edit": {
+      "bodyError": "Issue description could not be updated. Check your permissions and try again.",
+      "cancelTitle": "Cancel title edit",
+      "commentError": "Comment could not be updated. Check your permissions and try again.",
+      "editTitle": "Edit title",
+      "saveTitle": "Save title",
+      "titleError": "Issue title could not be updated. Check your permissions and try again.",
+      "titleInput": "Issue title"
     },
     "loading": "Loading issue...",
     "meta": {
@@ -1002,19 +1025,43 @@
         "commits": "Commits",
         "pullRequests": "Pull requests"
       },
+      "edit": "Edit",
+      "loading": "Loading…",
+      "noMatches": "No matches",
+      "searchAssignees": "Search users…",
+      "searchLabels": "Search labels…",
+      "searchMilestones": "Search milestones…",
       "empty": {
         "assignees": "No assignees",
         "labels": "No labels",
         "milestone": "No milestone",
-        "participants": "No participants"
+        "participants": "No participants",
+        "projects": "No projects",
+        "relationships": "None yet",
+        "type": "No type"
+      },
+      "relationships": {
+        "parent": "Parent",
+        "subIssues": "Sub-issues",
+        "tracked": "Tracked"
       },
       "sections": {
+        "actions": "Actions",
         "assignees": "Assignees",
         "dates": "Dates",
         "development": "Development",
         "labels": "Labels",
         "milestone": "Milestone",
-        "participants": "Participants"
+        "notifications": "Notifications",
+        "participants": "Participants",
+        "projects": "Projects",
+        "relationships": "Relationships",
+        "status": "Status",
+        "type": "Type"
+      },
+      "status": {
+        "current": "Current state",
+        "noActions": "No state actions available"
       }
     },
     "states": {

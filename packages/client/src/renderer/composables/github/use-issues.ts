@@ -137,3 +137,123 @@ export async function createIssueComment(
 
   return window.ohMyGithub.issues.createIssueComment(owner, repo, issueNumber, body)
 }
+
+export function useRepositoryLabelsQuery(
+  owner: MaybeRefOrGetter<string>,
+  repo: MaybeRefOrGetter<string>,
+  enabled: MaybeRefOrGetter<boolean>,
+) {
+  return useQuery<GitHubLabel[]>({
+    key: () => ['github', 'repo-labels', toValue(owner), toValue(repo)],
+    enabled: () => Boolean(toValue(owner)) && Boolean(toValue(repo)) && toValue(enabled),
+    query: async () => {
+      if (!window.ohMyGithub?.issues) {
+        throw new Error('GitHub issues bridge is unavailable')
+      }
+
+      return window.ohMyGithub.issues.listRepositoryLabels(toValue(owner), toValue(repo))
+    },
+  })
+}
+
+export function useRepositoryMilestonesQuery(
+  owner: MaybeRefOrGetter<string>,
+  repo: MaybeRefOrGetter<string>,
+  enabled: MaybeRefOrGetter<boolean>,
+) {
+  return useQuery<GitHubIssueMilestone[]>({
+    key: () => ['github', 'repo-milestones', toValue(owner), toValue(repo)],
+    enabled: () => Boolean(toValue(owner)) && Boolean(toValue(repo)) && toValue(enabled),
+    query: async () => {
+      if (!window.ohMyGithub?.issues) {
+        throw new Error('GitHub issues bridge is unavailable')
+      }
+
+      return window.ohMyGithub.issues.listRepositoryMilestones(toValue(owner), toValue(repo))
+    },
+  })
+}
+
+export function useAssignableUsersQuery(
+  owner: MaybeRefOrGetter<string>,
+  repo: MaybeRefOrGetter<string>,
+  enabled: MaybeRefOrGetter<boolean>,
+) {
+  return useQuery<GitHubActor[]>({
+    key: () => ['github', 'assignable-users', toValue(owner), toValue(repo)],
+    enabled: () => Boolean(toValue(owner)) && Boolean(toValue(repo)) && toValue(enabled),
+    query: async () => {
+      if (!window.ohMyGithub?.issues) {
+        throw new Error('GitHub issues bridge is unavailable')
+      }
+
+      return window.ohMyGithub.issues.listAssignableUsers(toValue(owner), toValue(repo))
+    },
+  })
+}
+
+export async function updateIssue(
+  owner: string,
+  repo: string,
+  issueNumber: number,
+  changes: {
+    title?: string
+    body?: string
+    state?: 'open' | 'closed'
+    stateReason?: 'completed' | 'not_planned'
+    assignees?: string[]
+    labels?: string[]
+    milestone?: number | null
+  },
+): Promise<void> {
+  if (!window.ohMyGithub?.issues) {
+    throw new Error('GitHub issues bridge is unavailable')
+  }
+
+  return window.ohMyGithub.issues.updateIssue(owner, repo, issueNumber, changes)
+}
+
+export async function updateIssueComment(
+  owner: string,
+  repo: string,
+  commentId: string | number,
+  body: string,
+): Promise<void> {
+  if (!window.ohMyGithub?.issues) {
+    throw new Error('GitHub issues bridge is unavailable')
+  }
+
+  return window.ohMyGithub.issues.updateIssueComment(owner, repo, commentId, body)
+}
+
+export async function setIssueSubscription(subscribableId: string, subscribed: boolean): Promise<void> {
+  if (!window.ohMyGithub?.issues) {
+    throw new Error('GitHub issues bridge is unavailable')
+  }
+
+  return window.ohMyGithub.issues.setIssueSubscription(subscribableId, subscribed)
+}
+
+export async function setIssueLock(owner: string, repo: string, issueNumber: number, locked: boolean): Promise<void> {
+  if (!window.ohMyGithub?.issues) {
+    throw new Error('GitHub issues bridge is unavailable')
+  }
+
+  return window.ohMyGithub.issues.setIssueLock(owner, repo, issueNumber, locked)
+}
+
+export async function setIssuePinned(issueId: string, pinned: boolean): Promise<void> {
+  if (!window.ohMyGithub?.issues) {
+    throw new Error('GitHub issues bridge is unavailable')
+  }
+
+  return window.ohMyGithub.issues.setIssuePinned(issueId, pinned)
+}
+
+export async function deleteIssue(issueId: string): Promise<void> {
+  if (!window.ohMyGithub?.issues) {
+    throw new Error('GitHub issues bridge is unavailable')
+  }
+
+  return window.ohMyGithub.issues.deleteIssue(issueId)
+}

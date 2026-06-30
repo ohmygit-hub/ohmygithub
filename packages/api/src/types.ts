@@ -611,7 +611,7 @@ export interface GitHubIssue {
   state: GitHubIssueState
   author: GitHubActor
   updatedAt: string
-  labels: string[]
+  labels: GitHubLabel[]
   url: string
   hasUpdates: boolean
 }
@@ -650,6 +650,7 @@ export interface GitHubIssueComment {
   authorAssociation: string
   reactions: GitHubIssueReaction[]
   url: string
+  viewerCanUpdate: boolean
 }
 
 export type GitHubIssueTimelineEventType =
@@ -687,6 +688,46 @@ export interface GitHubIssueTimelineEvent {
   source?: GitHubIssueTimelineReference
 }
 
+export interface GitHubIssueType {
+  name: string
+  color: string | null
+  description: string | null
+}
+
+export interface GitHubIssueLinkedRef {
+  id: string
+  number: number
+  title: string | null
+  state: string | null
+  url: string | null
+}
+
+export interface GitHubIssueDevelopment {
+  branches: number | null
+  commits: number | null
+  pullRequests: GitHubIssueLinkedRef[]
+}
+
+export interface GitHubIssueRelationships {
+  parent: GitHubIssueLinkedRef | null
+  subIssues: GitHubIssueLinkedRef[]
+  tracked: GitHubIssueLinkedRef[]
+}
+
+export interface GitHubIssueProjectField {
+  name: string
+  value: string
+}
+
+export interface GitHubIssueProjectItem {
+  id: string
+  title: string
+  url: string | null
+  fields: GitHubIssueProjectField[]
+}
+
+export type GitHubIssueSubscription = 'SUBSCRIBED' | 'UNSUBSCRIBED' | 'IGNORED'
+
 export interface GitHubIssueDetail {
   id: string
   owner: string
@@ -700,15 +741,26 @@ export interface GitHubIssueDetail {
   updatedAt: string
   closedAt: string | null
   body: string
-  labels: string[]
+  labels: GitHubLabel[]
+  issueType: GitHubIssueType | null
+  relationships: GitHubIssueRelationships
+  projects: GitHubIssueProjectItem[]
   assignees: GitHubActor[]
   milestone: GitHubIssueMilestone | null
   participants: GitHubActor[]
   comments: GitHubIssueComment[]
   timelineEvents: GitHubIssueTimelineEvent[]
   reactions: GitHubIssueReaction[]
+  development: GitHubIssueDevelopment | null
   url: string
   hasUpdates: boolean
+  viewerCanUpdate: boolean
+  viewerCanClose: boolean
+  viewerCanReopen: boolean
+  nodeId: string
+  locked: boolean
+  isPinned: boolean
+  viewerSubscription: GitHubIssueSubscription | null
 }
 
 export type GitHubPullRequestTimelineEventType =
@@ -884,12 +936,27 @@ export interface GitHubClient {
   searchRepositoryPullRequests(options: SearchRepositoryPullRequestsOptions): Promise<GitHubPullRequestSearchResult>
   getPullRequestDetail(options: GetPullRequestDetailOptions): Promise<GitHubPullRequestDetail>
   createPullRequestComment(options: CreatePullRequestCommentOptions): Promise<GitHubPullRequestComment>
+  updatePullRequest(options: UpdatePullRequestOptions): Promise<void>
+  closePullRequest(options: ClosePullRequestOptions): Promise<void>
+  requestPullRequestReviewers(options: RequestPullRequestReviewersOptions): Promise<void>
+  markPullRequestReadyForReview(options: MarkPullRequestReadyForReviewOptions): Promise<void>
+  mergePullRequest(options: MergePullRequestOptions): Promise<void>
+  updatePullRequestComment(options: UpdatePullRequestCommentOptions): Promise<void>
   listIssueCategory(options: ListIssueCategoryOptions): Promise<GitHubIssue[]>
   listViewerIssues(options?: ListWorkspaceItemsOptions): Promise<GitHubIssue[]>
   listRepositoryIssues(options: ListRepositoryWorkspaceItemsOptions): Promise<GitHubIssue[]>
   searchRepositoryIssues(options: SearchRepositoryIssuesOptions): Promise<GitHubIssueSearchResult>
   getIssueDetail(options: GetIssueDetailOptions): Promise<GitHubIssueDetail>
   createIssueComment(options: CreateIssueCommentOptions): Promise<GitHubIssueComment>
+  listRepositoryLabels(options: RepositoryOptions): Promise<GitHubLabel[]>
+  listRepositoryMilestones(options: RepositoryOptions): Promise<GitHubIssueMilestone[]>
+  listAssignableUsers(options: RepositoryOptions): Promise<GitHubActor[]>
+  updateIssue(options: UpdateIssueOptions): Promise<void>
+  updateIssueComment(options: UpdateIssueCommentOptions): Promise<void>
+  setIssueSubscription(options: SetIssueSubscriptionOptions): Promise<void>
+  setIssueLock(options: SetIssueLockOptions): Promise<void>
+  setIssuePinned(options: SetIssuePinnedOptions): Promise<void>
+  deleteIssue(options: DeleteIssueOptions): Promise<void>
   getAccountProfile(login: string): Promise<GitHubAccountProfile>
   getAccountOverview(login: string): Promise<GitHubAccountOverview>
   getAccountContributions(options: AccountContributionsOptions): Promise<GitHubAccountContributionYear>
@@ -961,6 +1028,39 @@ export interface GetIssueDetailOptions extends RepositoryOptions {
 
 export interface CreateIssueCommentOptions extends GetIssueDetailOptions {
   body: string
+}
+
+export interface UpdateIssueOptions extends GetIssueDetailOptions {
+  title?: string
+  body?: string
+  state?: GitHubIssueUpdateState
+  stateReason?: GitHubIssueStateReason
+  assignees?: string[]
+  labels?: string[]
+  milestone?: number | null
+}
+
+export interface UpdateIssueCommentOptions extends RepositoryOptions {
+  commentId: string | number
+  body: string
+}
+
+export interface SetIssueSubscriptionOptions {
+  subscribableId: string
+  subscribed: boolean
+}
+
+export interface SetIssueLockOptions extends GetIssueDetailOptions {
+  locked: boolean
+}
+
+export interface SetIssuePinnedOptions {
+  issueId: string
+  pinned: boolean
+}
+
+export interface DeleteIssueOptions {
+  issueId: string
 }
 
 export interface GetPullRequestDetailOptions extends RepositoryOptions {

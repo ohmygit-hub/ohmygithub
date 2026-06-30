@@ -941,9 +941,23 @@
     "description": "{repository} {number} 已作为 Issue 工作页打开。讨论、标签和项目数据会在这里继续接入。",
     "eyebrow": "Issue",
     "actions": {
+      "closeCompleted": "关闭为已完成",
+      "closeNotPlanned": "关闭为不计划",
       "copyUrl": "复制链接",
+      "editBody": "编辑 Issue 描述",
+      "editComment": "编辑评论",
       "more": "更多 Issue 操作",
-      "openOnGitHub": "在 GitHub 打开"
+      "reopen": "重新打开 Issue",
+      "cancel": "取消",
+      "delete": "删除 Issue",
+      "deleteConfirmDescription": "这会永久删除该 Issue，且无法撤销。",
+      "deleteConfirmTitle": "确认删除这个 Issue？",
+      "lock": "锁定对话",
+      "pin": "置顶 Issue",
+      "subscribe": "订阅",
+      "unlock": "解锁对话",
+      "unpin": "取消置顶",
+      "unsubscribe": "取消订阅"
     },
     "activity": {
       "empty": "这个 Issue 还没有加载到动态。"
@@ -972,6 +986,15 @@
       "description": "无法从 GitHub 加载 Issue 详情。请检查连接后重试。",
       "retry": "重试",
       "title": "无法加载 Issue"
+    },
+    "edit": {
+      "bodyError": "无法更新 Issue 描述。请检查权限后重试。",
+      "cancelTitle": "取消标题编辑",
+      "commentError": "无法更新评论。请检查权限后重试。",
+      "editTitle": "编辑标题",
+      "saveTitle": "保存标题",
+      "titleError": "无法更新 Issue 标题。请检查权限后重试。",
+      "titleInput": "Issue 标题"
     },
     "loading": "正在加载 Issue...",
     "meta": {
@@ -1002,19 +1025,43 @@
         "commits": "提交",
         "pullRequests": "Pull Requests"
       },
+      "edit": "编辑",
+      "loading": "加载中…",
+      "noMatches": "无匹配",
+      "searchAssignees": "搜索用户…",
+      "searchLabels": "搜索标签…",
+      "searchMilestones": "搜索里程碑…",
       "empty": {
         "assignees": "没有负责人",
         "labels": "没有标签",
         "milestone": "没有里程碑",
-        "participants": "没有参与者"
+        "participants": "没有参与者",
+        "projects": "没有项目",
+        "relationships": "暂无",
+        "type": "没有类型"
+      },
+      "relationships": {
+        "parent": "父 Issue",
+        "subIssues": "子 Issue",
+        "tracked": "跟踪"
       },
       "sections": {
+        "actions": "操作",
         "assignees": "负责人",
         "dates": "日期",
         "development": "Development",
         "labels": "标签",
         "milestone": "里程碑",
-        "participants": "参与者"
+        "notifications": "通知",
+        "participants": "参与者",
+        "projects": "项目",
+        "relationships": "关联",
+        "status": "状态",
+        "type": "类型"
+      },
+      "status": {
+        "current": "当前状态",
+        "noActions": "没有可用状态操作"
       }
     },
     "states": {

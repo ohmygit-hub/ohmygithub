@@ -12,16 +12,22 @@ import {
   EmptyTitle,
   Skeleton,
 } from '@oh-my-github/ui'
-import { AlertCircle, CircleDot } from 'lucide-vue-next'
+import { AlertCircle, CircleDot, Pencil } from 'lucide-vue-next'
 import {
   ConversationBodyCard,
   ConversationCommentCard,
   ConversationCommentComposer,
   ConversationEventRow,
+  ConversationMarkdownEditor,
   ConversationTimeline,
   GitHubActorLink,
 } from '../../components'
-import { createIssueComment, useIssueDetailQuery } from '../../composables/github/use-issues'
+import {
+  createIssueComment,
+  updateIssue,
+  updateIssueComment,
+  useIssueDetailQuery,
+} from '../../composables/github/use-issues'
 import IssueHeader from './components/issue-header.vue'
 import IssueSidebar from './components/issue-sidebar.vue'
 import { useIssueTimelineItems } from './composables/use-issue-timeline-items'
@@ -50,6 +56,14 @@ const timelineItems = useIssueTimelineItems(issue)
 const commentBody = ref('')
 const commentError = ref<string | null>(null)
 const isSubmittingComment = ref(false)
+const isEditingBody = ref(false)
+const bodyDraft = ref('')
+const bodyError = ref<string | null>(null)
+const isSavingBody = ref(false)
+const editingCommentId = ref<string | null>(null)
+const commentDraft = ref('')
+const commentEditError = ref<string | null>(null)
+const savingCommentId = ref<string | null>(null)
 const isLoading = computed(() => hasIdentity.value && issueQuery.isLoading.value && !issue.value)
 const hasError = computed(() => Boolean(issueQuery.error.value))
 const showUnavailable = computed(() =>
@@ -78,6 +92,70 @@ async function submitIssueComment(): Promise<void> {
     commentError.value = t('issue.comment.error')
   } finally {
     isSubmittingComment.value = false
+  }
+}
+
+function startBodyEdit(): void {
+  if (!issue.value?.viewerCanUpdate) return
+
+  bodyDraft.value = issue.value.body ?? ''
+  bodyError.value = null
+  isEditingBody.value = true
+}
+
+function cancelBodyEdit(): void {
+  isEditingBody.value = false
+  bodyDraft.value = ''
+  bodyError.value = null
+}
+
+async function saveIssueBody(): Promise<void> {
+  if (!issue.value || isSavingBody.value) return
+
+  isSavingBody.value = true
+  bodyError.value = null
+
+  try {
+    await updateIssue(owner.value, repo.value, number.value, {
+      body: bodyDraft.value,
+    })
+    isEditingBody.value = false
+    bodyDraft.value = ''
+    await issueQuery.refetch()
+  } catch {
+    bodyError.value = t('issue.edit.bodyError')
+  } finally {
+    isSavingBody.value = false
+  }
+}
+
+function startCommentEdit(commentId: string, body: string): void {
+  editingCommentId.value = commentId
+  commentDraft.value = body
+  commentEditError.value = null
+}
+
+function cancelCommentEdit(): void {
+  editingCommentId.value = null
+  commentDraft.value = ''
+  commentEditError.value = null
+}
+
+async function saveIssueCommentEdit(): Promise<void> {
+  if (!editingCommentId.value || savingCommentId.value) return
+
+  const commentId = editingCommentId.value
+  savingCommentId.value = commentId
+  commentEditError.value = null
+
+  try {
+    await updateIssueComment(owner.value, repo.value, commentId, commentDraft.value)
+    cancelCommentEdit()
+    await issueQuery.refetch()
+  } catch {
+    commentEditError.value = t('issue.edit.commentError')
+  } finally {
+    savingCommentId.value = null
   }
 }
 </script>
@@ -177,6 +255,7 @@ async function submitIssueComment(): Promise<void> {
         <IssueHeader
           :issue="issue"
           :repository="repository"
+          @refetch="issueQuery.refetch()"
         />
 
         <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_18rem]">
@@ -185,12 +264,42 @@ async function submitIssueComment(): Promise<void> {
               :actor="issue.author"
               :body="issue.body ?? ''"
               :created-at="issue.createdAt"
+              :editing="isEditingBody"
               :empty-label="t('issue.empty.body')"
               :owner="owner"
               :repo="repo"
               :reactions="issue.reactions ?? []"
               :updated-at="issue.updatedAt"
-            />
+            >
+              <template
+                v-if="issue.viewerCanUpdate && !isEditingBody"
+                #actions
+              >
+                <Button
+                  :aria-label="t('issue.actions.editBody')"
+                  class="size-7 text-muted-foreground"
+                  size="icon-sm"
+                  type="button"
+                  variant="ghost"
+                  @click="startBodyEdit"
+                >
+                  <Pencil class="size-3.5" />
+                </Button>
+              </template>
+
+              <template #editor>
+                <ConversationMarkdownEditor
+                  v-model="bodyDraft"
+                  allow-empty
+                  :error="bodyError"
+                  :is-submitting="isSavingBody"
+                  :owner="owner"
+                  :repo="repo"
+                  @cancel="cancelBodyEdit"
+                  @submit="saveIssueBody"
+                />
+              </template>
+            </ConversationBodyCard>
 
             <section class="min-w-0">
               <ConversationTimeline
@@ -220,12 +329,41 @@ async function submitIssueComment(): Promise<void> {
                         :body="item.body"
                         :comment-id="item.commentId"
                         :created-at="item.createdAt"
+                        :editing="editingCommentId === item.commentId"
                         :owner="owner"
                         :repo="repo"
                         :reactions="item.reactions"
                         :show-avatar="false"
                         :updated-at="item.updatedAt"
-                      />
+                      >
+                        <template
+                          v-if="item.viewerCanUpdate && editingCommentId !== item.commentId"
+                          #actions
+                        >
+                          <Button
+                            :aria-label="t('issue.actions.editComment')"
+                            class="size-7 text-muted-foreground"
+                            size="icon-sm"
+                            type="button"
+                            variant="ghost"
+                            @click="startCommentEdit(item.commentId, item.body)"
+                          >
+                            <Pencil class="size-3.5" />
+                          </Button>
+                        </template>
+
+                        <template #editor>
+                          <ConversationMarkdownEditor
+                            v-model="commentDraft"
+                            :error="commentEditError"
+                            :is-submitting="savingCommentId === item.commentId"
+                            :owner="owner"
+                            :repo="repo"
+                            @cancel="cancelCommentEdit"
+                            @submit="saveIssueCommentEdit"
+                          />
+                        </template>
+                      </ConversationCommentCard>
                     </div>
                     <ConversationEventRow
                       v-else
@@ -255,6 +393,7 @@ async function submitIssueComment(): Promise<void> {
           <IssueSidebar
             class="min-w-0 xl:sticky xl:top-4 xl:self-start"
             :issue="issue"
+            @refetch="issueQuery.refetch()"
           />
         </div>
       </template>

@@ -6,7 +6,13 @@ import type {
   GitHubIssue,
   GitHubIssueComment,
   GitHubIssueDetail,
+  GitHubIssueDevelopment,
+  GitHubIssueLinkedRef,
   GitHubIssueMilestone,
+  GitHubIssueProjectItem,
+  GitHubIssueRelationships,
+  GitHubIssueSubscription,
+  GitHubLabel,
   GitHubIssueReaction,
   GitHubIssueSearchResult,
   GitHubIssueSearchState,
@@ -16,7 +22,14 @@ import type {
   ListIssueCategoryOptions,
   ListRepositoryWorkspaceItemsOptions,
   ListWorkspaceItemsOptions,
-  SearchRepositoryIssuesOptions
+  RepositoryOptions,
+  SearchRepositoryIssuesOptions,
+  DeleteIssueOptions,
+  SetIssueLockOptions,
+  SetIssuePinnedOptions,
+  SetIssueSubscriptionOptions,
+  UpdateIssueCommentOptions,
+  UpdateIssueOptions
 } from '../types'
 import {
   createWorkItemKey,
@@ -58,6 +71,7 @@ interface GraphQLMilestoneNode {
 
 interface GraphQLIssueCommentNode {
   id: string
+  databaseId?: number | null
   body: string
   createdAt: string
   updatedAt: string
@@ -65,6 +79,7 @@ interface GraphQLIssueCommentNode {
   url: string
   author: GraphQLActorNode | null
   reactionGroups?: GraphQLReactionGroup[] | null
+  viewerCanUpdate?: boolean | null
 }
 
 interface RestIssueCommentNode {
@@ -106,6 +121,7 @@ interface GraphQLIssueTimelineNode {
 }
 
 interface GraphQLIssueDetailNode extends GraphQLIssueNode {
+  issueType?: { name: string, color?: string | null, description?: string | null } | null
   createdAt: string
   closedAt?: string | null
   body: string
@@ -123,6 +139,42 @@ interface GraphQLIssueDetailNode extends GraphQLIssueNode {
     nodes?: Array<GraphQLIssueTimelineNode | null> | null
   } | null
   reactionGroups?: GraphQLReactionGroup[] | null
+  linkedBranches?: { nodes?: Array<{ id: string, ref?: { name: string } | null } | null> | null } | null
+  closedByPullRequestsReferences?: {
+    nodes?: Array<GraphQLLinkedRefNode | null> | null
+  } | null
+  parent?: GraphQLLinkedRefNode | null
+  subIssues?: { nodes?: Array<GraphQLLinkedRefNode | null> | null } | null
+  trackedIssues?: { nodes?: Array<GraphQLLinkedRefNode | null> | null } | null
+  projectItems?: {
+    nodes?: Array<{
+      id: string
+      project?: { title: string, url?: string | null } | null
+      fieldValues?: {
+        nodes?: Array<{
+          __typename?: string
+          name?: string | null
+          text?: string | null
+          number?: number | null
+          field?: { name?: string | null } | null
+        } | null> | null
+      } | null
+    } | null> | null
+  } | null
+  viewerCanUpdate?: boolean | null
+  viewerCanClose?: boolean | null
+  viewerCanReopen?: boolean | null
+  locked?: boolean | null
+  isPinned?: boolean | null
+  viewerSubscription?: string | null
+}
+
+interface GraphQLLinkedRefNode {
+  id: string
+  number: number
+  title?: string | null
+  state?: string | null
+  url?: string | null
 }
 
 interface ViewerIssuesResponse {
@@ -184,6 +236,8 @@ const issueFields = `
     labels(first: 8) {
       nodes {
         name
+        color
+        description
       }
     }
   }
@@ -242,6 +296,11 @@ const issueDetailQuery = `
     repository(owner: $owner, name: $repo) {
       issue(number: $number) {
         ...IssueFields
+        issueType {
+          name
+          color
+          description
+        }
         createdAt
         closedAt
         body
@@ -269,11 +328,13 @@ const issueDetailQuery = `
         comments(last: 100) {
           nodes {
             id
+            databaseId
             body
             createdAt
             updatedAt
             authorAssociation
             url
+            viewerCanUpdate
             author {
               login
               avatarUrl
@@ -447,6 +508,92 @@ const issueDetailQuery = `
           }
           viewerHasReacted
         }
+        linkedBranches(first: 10) {
+          nodes {
+            id
+            ref {
+              name
+            }
+          }
+        }
+        closedByPullRequestsReferences(first: 10, includeClosedPrs: true) {
+          nodes {
+            id
+            number
+            title
+            state
+            url
+          }
+        }
+        parent {
+          id
+          number
+          title
+          state
+          url
+        }
+        subIssues(first: 20) {
+          nodes {
+            id
+            number
+            title
+            state
+            url
+          }
+        }
+        trackedIssues(first: 20) {
+          nodes {
+            id
+            number
+            title
+            state
+            url
+          }
+        }
+        projectItems(first: 10) {
+          nodes {
+            id
+            project {
+              title
+              url
+            }
+            fieldValues(first: 20) {
+              nodes {
+                __typename
+                ... on ProjectV2ItemFieldSingleSelectValue {
+                  name
+                  field {
+                    ... on ProjectV2SingleSelectField {
+                      name
+                    }
+                  }
+                }
+                ... on ProjectV2ItemFieldTextValue {
+                  text
+                  field {
+                    ... on ProjectV2FieldCommon {
+                      name
+                    }
+                  }
+                }
+                ... on ProjectV2ItemFieldNumberValue {
+                  number
+                  field {
+                    ... on ProjectV2FieldCommon {
+                      name
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+        viewerCanUpdate
+        viewerCanClose
+        viewerCanReopen
+        locked
+        isPinned
+        viewerSubscription
       }
     }
   }
@@ -563,6 +710,105 @@ export class IssuesApi {
     })
 
     return mapRestIssueComment(response.data)
+  }
+
+  async listRepositoryLabels(options: RepositoryOptions): Promise<GitHubLabel[]> {
+    const response = await this.octokit.rest.issues.listLabelsForRepo({
+      owner: options.owner,
+      repo: options.repo,
+      per_page: 100
+    })
+
+    return response.data.map((label) => ({
+      name: label.name,
+      color: label.color ?? '',
+      description: label.description ?? null
+    }))
+  }
+
+  async listRepositoryMilestones(options: RepositoryOptions): Promise<GitHubIssueMilestone[]> {
+    const response = await this.octokit.rest.issues.listMilestones({
+      owner: options.owner,
+      repo: options.repo,
+      state: 'open',
+      per_page: 100
+    })
+
+    return response.data.map((milestone) => ({
+      id: String(milestone.id),
+      number: milestone.number,
+      title: milestone.title,
+      description: milestone.description ?? null,
+      dueOn: milestone.due_on ?? null,
+      state: milestone.state === 'closed' ? 'closed' : 'open',
+      url: milestone.html_url
+    }))
+  }
+
+  async listAssignableUsers(options: RepositoryOptions): Promise<GitHubActor[]> {
+    const response = await this.octokit.rest.issues.listAssignees({
+      owner: options.owner,
+      repo: options.repo,
+      per_page: 100
+    })
+
+    return response.data.map((user) => ({
+      login: user.login,
+      avatarUrl: user.avatar_url
+    }))
+  }
+
+  async updateIssue(options: UpdateIssueOptions): Promise<void> {
+    await this.octokit.rest.issues.update({
+      owner: options.owner,
+      repo: options.repo,
+      issue_number: options.number,
+      ...(options.title !== undefined ? { title: options.title } : {}),
+      ...(options.body !== undefined ? { body: options.body } : {}),
+      ...(options.state !== undefined ? { state: options.state } : {}),
+      ...(options.stateReason !== undefined ? { state_reason: issueStateReasonToRest(options.stateReason) } : {}),
+      ...(options.assignees !== undefined ? { assignees: options.assignees } : {}),
+      ...(options.labels !== undefined ? { labels: options.labels } : {}),
+      ...(options.milestone !== undefined ? { milestone: options.milestone } : {})
+    })
+  }
+
+  async updateIssueComment(options: UpdateIssueCommentOptions): Promise<void> {
+    await this.octokit.rest.issues.updateComment({
+      owner: options.owner,
+      repo: options.repo,
+      comment_id: normalizeIssueCommentId(options.commentId),
+      body: options.body
+    })
+  }
+
+  async setIssueSubscription(options: SetIssueSubscriptionOptions): Promise<void> {
+    await this.octokit.graphql(
+      'mutation($id: ID!, $state: SubscriptionState!) { updateSubscription(input: { subscribableId: $id, state: $state }) { clientMutationId } }',
+      { id: options.subscribableId, state: options.subscribed ? 'SUBSCRIBED' : 'UNSUBSCRIBED' }
+    )
+  }
+
+  async setIssueLock(options: SetIssueLockOptions): Promise<void> {
+    if (options.locked) {
+      await this.octokit.rest.issues.lock({ owner: options.owner, repo: options.repo, issue_number: options.number })
+    } else {
+      await this.octokit.rest.issues.unlock({ owner: options.owner, repo: options.repo, issue_number: options.number })
+    }
+  }
+
+  async setIssuePinned(options: SetIssuePinnedOptions): Promise<void> {
+    const mutation = options.pinned
+      ? 'mutation($id: ID!) { pinIssue(input: { issueId: $id }) { clientMutationId } }'
+      : 'mutation($id: ID!) { unpinIssue(input: { issueId: $id }) { clientMutationId } }'
+    await this.octokit.graphql(mutation, { id: options.issueId })
+  }
+
+  async deleteIssue(options: DeleteIssueOptions): Promise<void> {
+    await this.octokit.graphql(
+      'mutation($id: ID!) { deleteIssue(input: { issueId: $id }) { clientMutationId } }',
+      { id: options.issueId }
+    )
   }
 
   private async searchIssues(searchQuery: string, limit: number): Promise<GitHubIssue[]> {
@@ -689,6 +935,79 @@ function mapIssueNodes(
   })
 }
 
+function mapLinkedRef(node: GraphQLLinkedRefNode | null | undefined): GitHubIssueLinkedRef | null {
+  if (!node) return null
+  return { id: node.id, number: node.number, title: node.title ?? null, state: node.state ?? null, url: node.url ?? null }
+}
+
+function mapLinkedRefs(nodes: Array<GraphQLLinkedRefNode | null> | null | undefined): GitHubIssueLinkedRef[] {
+  return (nodes ?? []).flatMap((node) => {
+    const ref = mapLinkedRef(node)
+    return ref ? [ref] : []
+  })
+}
+
+export function mapIssueRelationships(
+  node: Pick<GraphQLIssueDetailNode, 'parent' | 'subIssues' | 'trackedIssues'>
+): GitHubIssueRelationships {
+  return {
+    parent: mapLinkedRef(node.parent),
+    subIssues: mapLinkedRefs(node.subIssues?.nodes),
+    tracked: mapLinkedRefs(node.trackedIssues?.nodes)
+  }
+}
+
+export function mapIssueProjects(
+  node: Pick<GraphQLIssueDetailNode, 'projectItems'>
+): GitHubIssueProjectItem[] {
+  const itemNodes = (node.projectItems?.nodes ?? []).filter(
+    (item): item is NonNullable<typeof item> => Boolean(item?.project)
+  )
+  return itemNodes.map((item) => {
+    const fieldNodes = (item.fieldValues?.nodes ?? []).filter((f): f is NonNullable<typeof f> => Boolean(f))
+    const fields = fieldNodes.flatMap((field) => {
+      const name = field.field?.name
+      const value = field.name ?? field.text ?? (typeof field.number === 'number' ? String(field.number) : null)
+      return name && value ? [{ name, value }] : []
+    })
+    return {
+      id: item.id,
+      title: item.project?.title ?? '',
+      url: item.project?.url ?? null,
+      fields
+    }
+  })
+}
+
+export function mapIssueDevelopment(
+  node: Pick<GraphQLIssueDetailNode, 'linkedBranches' | 'closedByPullRequestsReferences'>
+): GitHubIssueDevelopment | null {
+  const branchNodes = (node.linkedBranches?.nodes ?? []).filter((b): b is NonNullable<typeof b> => Boolean(b))
+  const prNodes = (node.closedByPullRequestsReferences?.nodes ?? []).filter(
+    (p): p is NonNullable<typeof p> => Boolean(p)
+  )
+  const pullRequests = prNodes.map((pr) => ({
+    id: pr.id,
+    number: pr.number,
+    title: pr.title ?? null,
+    state: pr.state ?? null,
+    url: pr.url ?? null
+  }))
+
+  if (branchNodes.length === 0 && pullRequests.length === 0) return null
+
+  return {
+    branches: branchNodes.length > 0 ? branchNodes.length : null,
+    commits: null,
+    pullRequests
+  }
+}
+
+function normalizeIssueSubscription(value: string | null | undefined): GitHubIssueSubscription | null {
+  if (value === 'SUBSCRIBED' || value === 'UNSUBSCRIBED' || value === 'IGNORED') return value
+  return null
+}
+
 function mapIssueDetailNode(
   node: GraphQLIssueDetailNode,
   unreadKeys: Set<string>
@@ -709,14 +1028,27 @@ function mapIssueDetailNode(
     closedAt: node.closedAt ?? null,
     body: node.body,
     labels: mapLabels(node.labels),
+    issueType: node.issueType
+      ? { name: node.issueType.name, color: node.issueType.color ?? null, description: node.issueType.description ?? null }
+      : null,
+    relationships: mapIssueRelationships(node),
+    projects: mapIssueProjects(node),
     assignees: mapActorNodes(node.assignees?.nodes),
     milestone: mapMilestone(node.milestone),
     participants: mapActorNodes(node.participants?.nodes),
     comments: mapComments(node.comments?.nodes),
     timelineEvents: mapTimelineEvents(node.timelineItems?.nodes),
     reactions: mapReactions(node.reactionGroups),
+    development: mapIssueDevelopment(node),
     url: node.url,
-    hasUpdates: unreadKeys.has(createWorkItemKey('issue', repository.repository, node.number))
+    hasUpdates: unreadKeys.has(createWorkItemKey('issue', repository.repository, node.number)),
+    viewerCanUpdate: node.viewerCanUpdate ?? false,
+    viewerCanClose: node.viewerCanClose ?? false,
+    viewerCanReopen: node.viewerCanReopen ?? false,
+    nodeId: node.id,
+    locked: node.locked ?? false,
+    isPinned: node.isPinned ?? false,
+    viewerSubscription: normalizeIssueSubscription(node.viewerSubscription)
   }
 }
 
@@ -760,14 +1092,15 @@ function mapComments(
 
     return [
       {
-        id: `issue-comment:${comment.id}`,
+        id: `issue-comment:${comment.databaseId ?? comment.id}`,
         author: normalizeActor(comment.author),
         body: comment.body,
         createdAt: comment.createdAt,
         updatedAt: comment.updatedAt,
         authorAssociation: comment.authorAssociation,
         reactions: mapReactions(comment.reactionGroups),
-        url: comment.url
+        url: comment.url,
+        viewerCanUpdate: comment.viewerCanUpdate ?? false
       }
     ]
   })
@@ -775,7 +1108,7 @@ function mapComments(
 
 function mapRestIssueComment(comment: RestIssueCommentNode): GitHubIssueComment {
   return {
-    id: `issue-comment:${comment.node_id ?? comment.id}`,
+    id: `issue-comment:${comment.id}`,
     author: {
       login: comment.user?.login ?? 'unknown',
       avatarUrl: comment.user?.avatar_url ?? undefined
@@ -785,8 +1118,27 @@ function mapRestIssueComment(comment: RestIssueCommentNode): GitHubIssueComment 
     updatedAt: comment.updated_at ?? comment.created_at ?? '',
     authorAssociation: comment.author_association ?? 'NONE',
     reactions: [],
-    url: comment.html_url ?? ''
+    url: comment.html_url ?? '',
+    viewerCanUpdate: true
   }
+}
+
+function issueStateReasonToRest(reason: UpdateIssueOptions['stateReason']): 'completed' | 'not_planned' {
+  return reason === 'not_planned' ? 'not_planned' : 'completed'
+}
+
+function normalizeIssueCommentId(value: string | number): number {
+  if (typeof value === 'number' && Number.isInteger(value) && value > 0) return value
+
+  const raw = String(value)
+  const numericPart = raw.includes(':') ? raw.split(':').at(-1) : raw
+  const parsed = Number(numericPart)
+
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    throw new Error('Issue comment id must be a positive integer')
+  }
+
+  return parsed
 }
 
 function mapReactions(

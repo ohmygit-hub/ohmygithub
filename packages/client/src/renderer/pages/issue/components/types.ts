@@ -19,7 +19,27 @@ export interface IssueLabelSummary {
   description?: string | null
 }
 
+export interface IssueTypeSummary {
+  name: string
+  color?: string | null
+  description?: string | null
+}
+
+export interface IssueRelationshipsSummary {
+  parent: IssueLinkedWorkSummary | null
+  subIssues: IssueLinkedWorkSummary[]
+  tracked: IssueLinkedWorkSummary[]
+}
+
+export interface IssueProjectSummary {
+  id: string
+  title: string
+  url?: string | null
+  fields: Array<{ name: string, value: string }>
+}
+
 export interface IssueMilestoneSummary {
+  number?: number
   title: string
   dueOn?: string | null
   state?: string | null
@@ -56,6 +76,7 @@ export interface IssueTimelineComment {
   authorAssociation?: string | null
   reactions?: IssueReactionSummary[]
   url?: string | null
+  viewerCanUpdate?: boolean
 }
 
 export interface IssueTimelineReference {
@@ -93,6 +114,7 @@ export type IssueTimelineItem =
       updatedAt?: string | null
       badges: ConversationBadge[]
       reactions: ConversationReaction[]
+      viewerCanUpdate?: boolean
     }
   | SharedConversationTimelineItem & {
       id: string
@@ -114,6 +136,9 @@ export interface IssueDetail {
   updatedAt: string
   closedAt?: string | null
   labels: Array<IssueLabelSummary | string>
+  issueType?: IssueTypeSummary | null
+  relationships?: IssueRelationshipsSummary
+  projects?: IssueProjectSummary[]
   assignees?: IssueActorSummary[]
   milestone?: IssueMilestoneSummary | null
   participants?: IssueActorSummary[]
@@ -124,4 +149,11 @@ export interface IssueDetail {
   linkedWork?: IssueLinkedWorkSummary[]
   url: string
   hasUpdates?: boolean
+  viewerCanUpdate: boolean
+  viewerCanClose: boolean
+  viewerCanReopen: boolean
+  nodeId?: string
+  locked?: boolean
+  isPinned?: boolean
+  viewerSubscription?: 'SUBSCRIBED' | 'UNSUBSCRIBED' | 'IGNORED' | null
 }

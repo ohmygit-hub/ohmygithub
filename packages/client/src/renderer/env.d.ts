@@ -631,6 +631,26 @@ type GitHubActor = {
   avatarUrl?: string
 }
 
+type GitHubLabel = {
+  name: string
+  color: string
+  description: string | null
+}
+
+type GitHubIssueType = {
+  name: string
+  color: string | null
+  description: string | null
+}
+
+type GitHubIssueLinkedRef = {
+  id: string
+  number: number
+  title: string | null
+  state: string | null
+  url: string | null
+}
+
 type GitHubPullRequest = {
   id: string
   owner: string
@@ -737,7 +757,7 @@ type GitHubIssue = {
   state: GitHubIssueState
   author: GitHubActor
   updatedAt: string
-  labels: string[]
+  labels: GitHubLabel[]
   url: string
   hasUpdates: boolean
 }
@@ -785,6 +805,7 @@ type GitHubIssueComment = {
   authorAssociation: string
   reactions: GitHubIssueReaction[]
   url: string
+  viewerCanUpdate: boolean
 }
 
 type GitHubIssueTimelineEventType =
@@ -835,15 +856,34 @@ type GitHubIssueDetail = {
   updatedAt: string
   closedAt: string | null
   body: string
-  labels: string[]
+  labels: GitHubLabel[]
+  issueType: GitHubIssueType | null
+  relationships: {
+    parent: GitHubIssueLinkedRef | null
+    subIssues: GitHubIssueLinkedRef[]
+    tracked: GitHubIssueLinkedRef[]
+  }
+  projects: Array<{ id: string, title: string, url: string | null, fields: Array<{ name: string, value: string }> }>
   assignees: GitHubActor[]
   milestone: GitHubIssueMilestone | null
   participants: GitHubActor[]
   comments: GitHubIssueComment[]
   timelineEvents: GitHubIssueTimelineEvent[]
   reactions: GitHubIssueReaction[]
+  development: {
+    branches: number | null
+    commits: number | null
+    pullRequests: Array<{ id: string, number: number, title: string | null, state: string | null, url: string | null }>
+  } | null
   url: string
   hasUpdates: boolean
+  viewerCanUpdate: boolean
+  viewerCanClose: boolean
+  viewerCanReopen: boolean
+  nodeId: string
+  locked: boolean
+  isPinned: boolean
+  viewerSubscription: 'SUBSCRIBED' | 'UNSUBSCRIBED' | 'IGNORED' | null
 }
 
 type GitHubPullRequestTimelineEventType =
@@ -1068,6 +1108,33 @@ interface Window {
         number: number,
         body: string
       ) => Promise<GitHubIssueComment>
+      listRepositoryLabels: (owner: string, repo: string) => Promise<GitHubLabel[]>
+      listRepositoryMilestones: (owner: string, repo: string) => Promise<GitHubIssueMilestone[]>
+      listAssignableUsers: (owner: string, repo: string) => Promise<GitHubActor[]>
+      updateIssue: (
+        owner: string,
+        repo: string,
+        number: number,
+        changes: {
+          title?: string
+          body?: string
+          state?: 'open' | 'closed'
+          stateReason?: 'completed' | 'not_planned'
+          assignees?: string[]
+          labels?: string[]
+          milestone?: number | null
+        }
+      ) => Promise<void>
+      updateIssueComment: (
+        owner: string,
+        repo: string,
+        commentId: string | number,
+        body: string
+      ) => Promise<void>
+      setIssueSubscription: (subscribableId: string, subscribed: boolean) => Promise<void>
+      setIssueLock: (owner: string, repo: string, number: number, locked: boolean) => Promise<void>
+      setIssuePinned: (issueId: string, pinned: boolean) => Promise<void>
+      deleteIssue: (issueId: string) => Promise<void>
     }
     pulls: {
       listPullRequestCategory: (category: GitHubPullRequestCategory) => Promise<GitHubPullRequest[]>
