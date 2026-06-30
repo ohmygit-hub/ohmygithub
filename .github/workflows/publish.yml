@@ -1,0 +1,103 @@
+name: Publish
+
+# Triggered by pushing a version tag (e.g. v0.2.0):
+#   1. package the app on every platform
+#   2. generate a changelog + create the GitHub Release (changelogithub)
+#   3. attach installers to the release and upload them to Cloudflare R2 (public download)
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest # builds both arm64 (Apple Silicon) and x64 (Intel)
+            script: package:mac
+          - os: windows-latest
+            script: package:win
+          - os: ubuntu-latest
+            script: package:linux
+    runs-on: ${{ matrix.os }}
+    env:
+      GITHUB_CLIENT_ID: ${{ vars.GITHUB_CLIENT_ID }}
+      # When set, the build also emits latest*.yml + app-update.yml (update manifest for R2).
+      R2_PUBLIC_BASE_URL: ${{ vars.R2_PUBLIC_BASE_URL }}
+      # Code signing (optional — empty = unsigned build).
+      CSC_LINK: ${{ secrets.CSC_LINK }}
+      CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+      APPLE_ID: ${{ vars.APPLE_ID }}
+      APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+      APPLE_TEAM_ID: ${{ vars.APPLE_TEAM_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Download Electron runtime
+        run: pnpm --filter @oh-my-github/client exec install-electron
+      - name: Package
+        run: pnpm ${{ matrix.script }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ matrix.os }}
+          path: packages/client/release/**
+          retention-days: 7
+          if-no-files-found: error
+
+  release:
+    needs: package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # changelogithub needs full history
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Collect release files
+        run: |
+          mkdir -p out
+          find artifacts -type f \
+            \( -name '*.dmg' -o -name '*.zip' -o -name '*.exe' \
+               -o -name '*.AppImage' -o -name 'latest*.yml' -o -name '*.blockmap' \) \
+            -exec cp -f {} out/ \;
+          ls -la out
+      - name: Generate changelog and create GitHub Release
+        run: pnpm dlx changelogithub
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Attach installers to the GitHub Release
+        run: gh release upload "${GITHUB_REF_NAME}" out/* --clobber
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload to Cloudflare R2
+        if: ${{ vars.R2_BUCKET != '' }}
+        env:
+          R2_BUCKET: ${{ vars.R2_BUCKET }}
+          R2_ACCOUNT_ID: ${{ vars.R2_ACCOUNT_ID }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+        run: |
+          endpoint="https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com"
+          # Installers + blockmaps: immutable filenames, fine to cache.
+          aws s3 cp out/ "s3://${R2_BUCKET}/" --recursive \
+            --exclude 'latest*.yml' --endpoint-url "$endpoint"
+          # Update manifests must not be cached, or an update check would miss new releases.
+          aws s3 cp out/ "s3://${R2_BUCKET}/" --recursive \
+            --exclude '*' --include 'latest*.yml' \
+            --cache-control 'no-cache' --endpoint-url "$endpoint"

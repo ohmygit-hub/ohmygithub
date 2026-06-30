@@ -15,7 +15,9 @@ npmRebuild: false
 
 mac:
   category: public.app-category.developer-tools
-  identity: null
+  # Signing is driven by env: with no CSC_LINK the build script sets
+  # CSC_IDENTITY_AUTO_DISCOVERY=false (unsigned, no keychain prompt); set CSC_LINK +
+  # CSC_KEY_PASSWORD to sign. See scripts/with-env.mjs and CONTRIBUTING.md.
   target:
     - target: dmg
       arch:

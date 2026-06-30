@@ -9,12 +9,12 @@
   "scripts": {
     "dev": "electron-vite dev",
     "build": "electron-vite build",
-    "package": "pnpm run build && electron-builder",
-    "package:dir": "pnpm run build && electron-builder --dir",
-    "package:mac": "pnpm run build && electron-builder --mac",
-    "package:win": "pnpm run build && electron-builder --win --x64",
-    "package:win:arm64": "pnpm run build && electron-builder --win --arm64",
-    "package:linux": "pnpm run build && electron-builder --linux",
+    "package": "pnpm run build && node scripts/with-env.mjs electron-builder",
+    "package:dir": "pnpm run build && node scripts/with-env.mjs electron-builder --dir",
+    "package:mac": "pnpm run build && node scripts/with-env.mjs electron-builder --mac",
+    "package:win": "pnpm run build && node scripts/with-env.mjs electron-builder --win --x64",
+    "package:win:arm64": "pnpm run build && node scripts/with-env.mjs electron-builder --win --arm64",
+    "package:linux": "pnpm run build && node scripts/with-env.mjs electron-builder --linux",
     "typecheck": "vue-tsc -p tsconfig.json --noEmit",
     "test": "vitest run"
   },

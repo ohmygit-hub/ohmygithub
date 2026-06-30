@@ -39,6 +39,9 @@ project pins `electron_mirror` in `.npmrc` so Electron installs reliably in loca
 installers are available through `pnpm package:mac` for `.dmg`/`.zip` and `pnpm package:win` for a
 Windows NSIS `.exe` installer. Release artifacts are written under `packages/client/release/`.
 
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) for environment variables, the CI/CD workflows, how to
+cut a release, and code-signing setup.
+
 ## Developer Debugging
 
 The Electron renderer can expose a local Chrome DevTools Protocol endpoint in development builds.

@@ -1,0 +1,49 @@
+name: Build
+
+# Test-packages the app across platforms/architectures to catch packaging breakage.
+# Produces unsigned artifacts; does not create a release.
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  package:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest # builds both arm64 (Apple Silicon) and x64 (Intel)
+            script: package:mac
+          - os: windows-latest
+            script: package:win
+          - os: ubuntu-latest
+            script: package:linux
+    runs-on: ${{ matrix.os }}
+    env:
+      GITHUB_CLIENT_ID: ${{ vars.GITHUB_CLIENT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Download Electron runtime
+        run: pnpm --filter @oh-my-github/client exec install-electron
+      - name: Package
+        run: pnpm ${{ matrix.script }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ matrix.os }}
+          path: packages/client/release/**
+          retention-days: 7
+          if-no-files-found: error
