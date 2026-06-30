@@ -832,6 +832,15 @@ function persistPinnedOrganizationLogins(logins: string[]): void {
   height: 0.25rem;
 }
 
+[data-workspace-sidebar] :deep([data-slot="sidebar-header"]) {
+  -webkit-app-region: drag;
+}
+
+[data-workspace-sidebar] :deep([data-slot="sidebar-header"] button),
+[data-workspace-sidebar] :deep([data-slot="sidebar-header"] [role="button"]) {
+  -webkit-app-region: no-drag;
+}
+
 :deep([data-workspace-sidebar] [data-sidebar="menu-button"][data-active="true"]::before) {
   display: none !important;
 }
