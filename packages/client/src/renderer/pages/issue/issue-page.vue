@@ -1,7 +1,15 @@
 <script setup lang="ts">
 import type { WorkspaceTab } from '../workspace/types'
-import type { IssueDetail } from './components/types'
-import { computed, ref } from 'vue'
+import type {
+  IssueAssigneesUpdatePayload,
+  IssueDetail,
+  IssueLabelsUpdatePayload,
+  IssueMilestoneUpdatePayload,
+  IssueStateUpdatePayload,
+  IssueTimelineItem,
+  IssueTitleUpdatePayload,
+} from './components/types'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   Button,
@@ -21,7 +29,16 @@ import {
   ConversationTimeline,
   GitHubActorLink,
 } from '../../components'
-import { createIssueComment, useIssueDetailQuery } from '../../composables/github/use-issues'
+import {
+  createIssueComment,
+  deleteIssueComment,
+  editIssueComment,
+  updateIssue,
+  useIssueDetailQuery,
+  useRepositoryAssignableUsersQuery,
+  useRepositoryIssueLabelsQuery,
+  useRepositoryIssueMilestonesQuery,
+} from '../../composables/github/use-issues'
 import IssueHeader from './components/issue-header.vue'
 import IssueSidebar from './components/issue-sidebar.vue'
 import { useIssueTimelineItems } from './composables/use-issue-timeline-items'
@@ -45,11 +62,27 @@ const hasIdentity = computed(() =>
 )
 
 const issueQuery = useIssueDetailQuery(owner, repo, number, hasIdentity)
+const labelOptionsQuery = useRepositoryIssueLabelsQuery(owner, repo, hasIdentity)
+const assigneeOptionsQuery = useRepositoryAssignableUsersQuery(owner, repo, hasIdentity)
+const milestoneOptionsQuery = useRepositoryIssueMilestonesQuery(owner, repo, hasIdentity)
 const issue = computed<IssueDetail | null>(() => (issueQuery.data.value ?? null) as IssueDetail | null)
 const timelineItems = useIssueTimelineItems(issue)
+const labelOptions = computed(() => labelOptionsQuery.data.value ?? null)
+const assigneeOptions = computed(() => assigneeOptionsQuery.data.value ?? null)
+const milestoneOptions = computed(() => milestoneOptionsQuery.data.value ?? null)
 const commentBody = ref('')
 const commentError = ref<string | null>(null)
+const mutationError = ref<string | null>(null)
+const viewerLogin = ref<string | null>(null)
 const isSubmittingComment = ref(false)
+const isUpdatingTitle = ref(false)
+const isUpdatingState = ref(false)
+const isUpdatingLabels = ref(false)
+const isUpdatingAssignees = ref(false)
+const isUpdatingMilestone = ref(false)
+const editingCommentId = ref<string | null>(null)
+const savingCommentDatabaseId = ref<number | null>(null)
+const deletingCommentDatabaseId = ref<number | null>(null)
 const isLoading = computed(() => hasIdentity.value && issueQuery.isLoading.value && !issue.value)
 const hasError = computed(() => Boolean(issueQuery.error.value))
 const showUnavailable = computed(() =>
@@ -58,9 +91,124 @@ const showUnavailable = computed(() =>
   && !hasError.value
   && !issue.value
 )
+const commentActionLabels = computed(() => ({
+  actions: t('issue.comment.actions'),
+  cancel: t('issue.comment.cancel'),
+  delete: t('issue.comment.delete'),
+  edit: t('issue.comment.edit'),
+  emptyPreview: t('issue.comment.emptyPreview'),
+  input: t('issue.comment.inputLabel'),
+  placeholder: t('issue.comment.placeholder'),
+  preview: t('issue.comment.preview'),
+  save: t('issue.comment.save'),
+  write: t('issue.comment.write'),
+}))
+
+type IssueCommentTimelineItem = Extract<IssueTimelineItem, { kind: 'comment' }>
+
+onMounted(() => {
+  void loadViewer()
+})
 
 function retryIssue(): void {
   void issueQuery.refetch()
+}
+
+async function loadViewer(): Promise<void> {
+  try {
+    const state = await window.ohMyGithub.auth.get()
+    viewerLogin.value = state.auth?.viewer.login ?? null
+  } catch {
+    viewerLogin.value = null
+  }
+}
+
+async function refetchIssue(): Promise<void> {
+  await issueQuery.refetch()
+}
+
+async function updateCurrentIssue(
+  patch: Omit<UpdateIssueOptions, 'owner' | 'repo' | 'number'>,
+): Promise<void> {
+  mutationError.value = null
+
+  await updateIssue({
+    owner: owner.value,
+    repo: repo.value,
+    number: number.value,
+    ...patch,
+  })
+  await refetchIssue()
+}
+
+async function updateIssueTitle(payload: IssueTitleUpdatePayload): Promise<void> {
+  if (isUpdatingTitle.value) return
+
+  isUpdatingTitle.value = true
+
+  try {
+    await updateCurrentIssue({ title: payload.title })
+  } catch {
+    mutationError.value = t('issue.error.update')
+  } finally {
+    isUpdatingTitle.value = false
+  }
+}
+
+async function updateIssueState(payload: IssueStateUpdatePayload): Promise<void> {
+  if (isUpdatingState.value) return
+
+  isUpdatingState.value = true
+
+  try {
+    await updateCurrentIssue({ state: payload.state })
+  } catch {
+    mutationError.value = t('issue.error.update')
+  } finally {
+    isUpdatingState.value = false
+  }
+}
+
+async function updateIssueLabels(payload: IssueLabelsUpdatePayload): Promise<void> {
+  if (isUpdatingLabels.value) return
+
+  isUpdatingLabels.value = true
+
+  try {
+    await updateCurrentIssue({ labels: payload.labelNames })
+  } catch {
+    mutationError.value = t('issue.error.update')
+  } finally {
+    isUpdatingLabels.value = false
+  }
+}
+
+async function updateIssueAssignees(payload: IssueAssigneesUpdatePayload): Promise<void> {
+  if (isUpdatingAssignees.value) return
+
+  isUpdatingAssignees.value = true
+
+  try {
+    await updateCurrentIssue({ assignees: payload.assigneeLogins })
+  } catch {
+    mutationError.value = t('issue.error.update')
+  } finally {
+    isUpdatingAssignees.value = false
+  }
+}
+
+async function updateIssueMilestone(payload: IssueMilestoneUpdatePayload): Promise<void> {
+  if (isUpdatingMilestone.value) return
+
+  isUpdatingMilestone.value = true
+
+  try {
+    await updateCurrentIssue({ milestone: payload.milestoneNumber })
+  } catch {
+    mutationError.value = t('issue.error.update')
+  } finally {
+    isUpdatingMilestone.value = false
+  }
 }
 
 async function submitIssueComment(): Promise<void> {
@@ -69,6 +217,7 @@ async function submitIssueComment(): Promise<void> {
 
   isSubmittingComment.value = true
   commentError.value = null
+  mutationError.value = null
 
   try {
     await createIssueComment(owner.value, repo.value, number.value, body)
@@ -79,6 +228,60 @@ async function submitIssueComment(): Promise<void> {
   } finally {
     isSubmittingComment.value = false
   }
+}
+
+function startCommentEdit(item: IssueCommentTimelineItem): void {
+  editingCommentId.value = item.commentId
+}
+
+function cancelCommentEdit(item: IssueCommentTimelineItem): void {
+  if (editingCommentId.value === item.commentId) {
+    editingCommentId.value = null
+  }
+}
+
+async function saveIssueComment(item: IssueCommentTimelineItem, body: string): Promise<void> {
+  const nextBody = body.trim()
+  if (!item.databaseId || !nextBody || savingCommentDatabaseId.value !== null) return
+
+  savingCommentDatabaseId.value = item.databaseId
+  mutationError.value = null
+
+  try {
+    await editIssueComment(owner.value, repo.value, item.databaseId, nextBody)
+    editingCommentId.value = null
+    await refetchIssue()
+  } catch {
+    mutationError.value = t('issue.comment.editError')
+  } finally {
+    savingCommentDatabaseId.value = null
+  }
+}
+
+async function deleteIssueTimelineComment(item: IssueCommentTimelineItem): Promise<void> {
+  if (!item.databaseId || deletingCommentDatabaseId.value !== null) return
+  if (!window.confirm(t('issue.comment.confirmDelete'))) return
+
+  deletingCommentDatabaseId.value = item.databaseId
+  mutationError.value = null
+
+  try {
+    await deleteIssueComment(owner.value, repo.value, item.databaseId)
+    cancelCommentEdit(item)
+    await refetchIssue()
+  } catch {
+    mutationError.value = t('issue.comment.deleteError')
+  } finally {
+    deletingCommentDatabaseId.value = null
+  }
+}
+
+function canManageComment(item: IssueCommentTimelineItem): boolean {
+  return Boolean(
+    item.databaseId
+    && viewerLogin.value
+    && item.actor.login.toLocaleLowerCase() === viewerLogin.value.toLocaleLowerCase(),
+  )
 }
 </script>
 
@@ -176,8 +379,20 @@ async function submitIssueComment(): Promise<void> {
       <template v-else-if="issue">
         <IssueHeader
           :issue="issue"
+          :is-updating-state="isUpdatingState"
+          :is-updating-title="isUpdatingTitle"
           :repository="repository"
+          @update-state="updateIssueState"
+          @update-title="updateIssueTitle"
         />
+
+        <p
+          v-if="mutationError"
+          class="-mt-2 text-body text-destructive"
+          role="alert"
+        >
+          {{ mutationError }}
+        </p>
 
         <div class="grid gap-4 xl:grid-cols-[minmax(0,1fr)_18rem]">
           <main class="grid min-w-0 content-start gap-4">
@@ -215,16 +430,26 @@ async function submitIssueComment(): Promise<void> {
                         />
                       </div>
                       <ConversationCommentCard
+                        :action-labels="commentActionLabels"
                         :actor="item.actor"
                         :badges="item.badges"
                         :body="item.body"
                         :comment-id="item.commentId"
                         :created-at="item.createdAt"
+                        :deletable="canManageComment(item)"
+                        :editable="canManageComment(item)"
+                        :is-deleting="deletingCommentDatabaseId === item.databaseId"
+                        :is-editing="editingCommentId === item.commentId"
+                        :is-saving="savingCommentDatabaseId === item.databaseId"
                         :owner="owner"
                         :repo="repo"
                         :reactions="item.reactions"
                         :show-avatar="false"
                         :updated-at="item.updatedAt"
+                        @cancel="cancelCommentEdit(item)"
+                        @delete="deleteIssueTimelineComment(item)"
+                        @edit="startCommentEdit(item)"
+                        @save="saveIssueComment(item, $event.body)"
                       />
                     </div>
                     <ConversationEventRow
@@ -254,7 +479,16 @@ async function submitIssueComment(): Promise<void> {
 
           <IssueSidebar
             class="min-w-0 xl:sticky xl:top-4 xl:self-start"
+            :assignee-options="assigneeOptions"
             :issue="issue"
+            :is-updating-assignees="isUpdatingAssignees || assigneeOptionsQuery.isLoading.value"
+            :is-updating-labels="isUpdatingLabels || labelOptionsQuery.isLoading.value"
+            :is-updating-milestone="isUpdatingMilestone || milestoneOptionsQuery.isLoading.value"
+            :label-options="labelOptions"
+            :milestone-options="milestoneOptions"
+            @update-assignees="updateIssueAssignees"
+            @update-labels="updateIssueLabels"
+            @update-milestone="updateIssueMilestone"
           />
         </div>
       </template>

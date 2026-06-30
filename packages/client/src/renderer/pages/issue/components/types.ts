@@ -12,11 +12,20 @@ export interface IssueActorSummary {
   url?: string | null
 }
 
-export interface IssueLabelSummary {
+export interface IssueColoredLabelSummary {
   id?: string | number
   name: string
   color?: string | null
   description?: string | null
+}
+
+export interface IssueLabelSummary extends IssueColoredLabelSummary {}
+
+export interface IssueLabelOption extends IssueColoredLabelSummary {}
+
+export interface IssueAssignableUserOption extends IssueActorSummary {
+  id?: string | number
+  name?: string | null
 }
 
 export interface IssueMilestoneSummary {
@@ -24,6 +33,35 @@ export interface IssueMilestoneSummary {
   dueOn?: string | null
   state?: string | null
   url?: string | null
+}
+
+export interface IssueMilestoneOption extends IssueMilestoneSummary {
+  id?: string | number
+  number?: number | null
+  description?: string | null
+}
+
+export interface IssueTitleUpdatePayload {
+  title: string
+}
+
+export interface IssueStateUpdatePayload {
+  state: GitHubIssueUpdateState
+}
+
+export interface IssueLabelsUpdatePayload {
+  labels: IssueLabelOption[]
+  labelNames: string[]
+}
+
+export interface IssueAssigneesUpdatePayload {
+  assignees: IssueAssignableUserOption[]
+  assigneeLogins: string[]
+}
+
+export interface IssueMilestoneUpdatePayload {
+  milestone: IssueMilestoneOption | null
+  milestoneNumber: number | null
 }
 
 export interface IssueLinkedWorkSummary {
@@ -49,6 +87,7 @@ export interface IssueReactionSummary {
 
 export interface IssueTimelineComment {
   id: string | number
+  databaseId?: number
   author: IssueActorSummary
   body: string
   createdAt: string
@@ -87,6 +126,7 @@ export type IssueTimelineItem =
       id: string
       kind: 'comment'
       commentId: string
+      databaseId?: number
       actor: ConversationActor
       body: string
       createdAt?: string | null

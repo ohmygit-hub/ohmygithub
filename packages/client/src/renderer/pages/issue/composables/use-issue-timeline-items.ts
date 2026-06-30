@@ -41,6 +41,7 @@ export function useIssueTimelineItems(
       id: `comment-${comment.id}`,
       kind: 'comment',
       commentId: String(comment.id),
+      databaseId: comment.databaseId,
       actor: toConversationActor(comment.author) ?? { login: t('issue.values.unknown') },
       body: comment.body,
       createdAt: comment.createdAt,

@@ -743,19 +743,35 @@
     "description": "{repository} {number} 已作为 Issue 工作页打开。讨论、标签和项目数据会在这里继续接入。",
     "eyebrow": "Issue",
     "actions": {
+      "cancelTitleEdit": "取消",
+      "closeIssue": "关闭 Issue",
       "copyUrl": "复制链接",
+      "editAssignees": "编辑负责人",
+      "editLabels": "编辑标签",
+      "editMilestone": "编辑里程碑",
+      "editTitle": "编辑标题",
       "more": "更多 Issue 操作",
-      "openOnGitHub": "在 GitHub 打开"
+      "openOnGitHub": "在 GitHub 打开",
+      "reopenIssue": "重新打开 Issue",
+      "saveTitle": "保存标题"
     },
     "activity": {
       "empty": "这个 Issue 还没有加载到动态。"
     },
     "comment": {
+      "actions": "评论操作",
+      "cancel": "取消",
+      "confirmDelete": "确定删除这条评论吗？",
+      "delete": "删除",
+      "deleteError": "无法删除评论。请检查权限后重试。",
+      "edit": "编辑",
+      "editError": "无法更新评论。请检查权限后重试。",
       "emptyPreview": "没有可预览的内容。",
       "error": "无法发表评论。请检查权限后重试。",
       "inputLabel": "Issue 评论",
       "placeholder": "留下评论",
       "preview": "预览",
+      "save": "保存",
       "submit": "评论",
       "write": "编辑"
     },
@@ -773,9 +789,13 @@
     "error": {
       "description": "无法从 GitHub 加载 Issue 详情。请检查连接后重试。",
       "retry": "重试",
-      "title": "无法加载 Issue"
+      "title": "无法加载 Issue",
+      "update": "无法更新 Issue。请检查权限后重试。"
     },
     "loading": "正在加载 Issue...",
+    "title": {
+      "inputLabel": "Issue 标题"
+    },
     "meta": {
       "createdBy": "{author} 于 {date} 打开",
       "createdByDate": "于 {date} 打开",
@@ -806,8 +826,14 @@
       },
       "empty": {
         "assignees": "没有负责人",
+        "assigneeOptions": "没有可指派用户",
+        "assigneeOptionsUnavailable": "可指派用户暂不可用",
         "labels": "没有标签",
+        "labelOptions": "没有可选标签",
+        "labelOptionsUnavailable": "标签选项暂不可用",
         "milestone": "没有里程碑",
+        "milestoneOptions": "没有里程碑",
+        "milestoneOptionsUnavailable": "里程碑选项暂不可用",
         "participants": "没有参与者"
       },
       "sections": {
@@ -817,6 +843,9 @@
         "labels": "标签",
         "milestone": "里程碑",
         "participants": "参与者"
+      },
+      "values": {
+        "noMilestone": "不设置里程碑"
       }
     },
     "states": {

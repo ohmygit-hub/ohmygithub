@@ -743,19 +743,35 @@
     "description": "{repository} {number} is open as an issue workspace. Conversation, labels, and project data will be connected here later.",
     "eyebrow": "Issue",
     "actions": {
+      "cancelTitleEdit": "Cancel",
+      "closeIssue": "Close issue",
       "copyUrl": "Copy URL",
+      "editAssignees": "Edit assignees",
+      "editLabels": "Edit labels",
+      "editMilestone": "Edit milestone",
+      "editTitle": "Edit title",
       "more": "More issue actions",
-      "openOnGitHub": "Open on GitHub"
+      "openOnGitHub": "Open on GitHub",
+      "reopenIssue": "Reopen issue",
+      "saveTitle": "Save title"
     },
     "activity": {
       "empty": "No activity has been loaded for this issue yet."
     },
     "comment": {
+      "actions": "Comment actions",
+      "cancel": "Cancel",
+      "confirmDelete": "Delete this comment?",
+      "delete": "Delete",
+      "deleteError": "Comment could not be deleted. Check your permissions and try again.",
+      "edit": "Edit",
+      "editError": "Comment could not be updated. Check your permissions and try again.",
       "emptyPreview": "Nothing to preview.",
       "error": "Comment could not be posted. Check your permissions and try again.",
       "inputLabel": "Issue comment",
       "placeholder": "Leave a comment",
       "preview": "Preview",
+      "save": "Save",
       "submit": "Comment",
       "write": "Write"
     },
@@ -773,9 +789,13 @@
     "error": {
       "description": "GitHub issue details could not be loaded. Check the connection and try again.",
       "retry": "Retry",
-      "title": "Could not load issue"
+      "title": "Could not load issue",
+      "update": "Issue could not be updated. Check your permissions and try again."
     },
     "loading": "Loading issue...",
+    "title": {
+      "inputLabel": "Issue title"
+    },
     "meta": {
       "createdBy": "Opened by {author} on {date}",
       "createdByDate": "on {date}",
@@ -806,8 +826,14 @@
       },
       "empty": {
         "assignees": "No assignees",
+        "assigneeOptions": "No assignable users",
+        "assigneeOptionsUnavailable": "Assignable users unavailable",
         "labels": "No labels",
+        "labelOptions": "No label options",
+        "labelOptionsUnavailable": "Label options unavailable",
         "milestone": "No milestone",
+        "milestoneOptions": "No milestones",
+        "milestoneOptionsUnavailable": "Milestones unavailable",
         "participants": "No participants"
       },
       "sections": {
@@ -817,6 +843,9 @@
         "labels": "Labels",
         "milestone": "Milestone",
         "participants": "Participants"
+      },
+      "values": {
+        "noMilestone": "No milestone"
       }
     },
     "states": {

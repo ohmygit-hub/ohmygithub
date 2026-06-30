@@ -365,6 +365,8 @@ export type GitHubIssueState =
 
 export type GitHubIssueSearchState = 'open' | 'closed' | 'all'
 
+export type GitHubIssueUpdateState = 'open' | 'closed'
+
 export type GitHubRepositoryReferenceKind = 'issue' | 'pull-request'
 
 export type GitHubRepositoryReferenceState = GitHubIssueState | GitHubPullRequestState
@@ -511,6 +513,19 @@ export interface GitHubIssueSearchResult {
   incompleteResults: boolean
 }
 
+export interface GitHubIssueLabel {
+  id: number
+  name: string
+  color: string
+  description: string | null
+}
+
+export interface GitHubAssignableUser {
+  id: number
+  login: string
+  avatarUrl?: string
+}
+
 export interface GitHubIssueReaction {
   content: string
   count: number
@@ -529,6 +544,7 @@ export interface GitHubIssueMilestone {
 
 export interface GitHubIssueComment {
   id: string
+  databaseId?: number
   author: GitHubActor
   body: string
   createdAt: string
@@ -775,7 +791,13 @@ export interface GitHubClient {
   listRepositoryIssues(options: ListRepositoryWorkspaceItemsOptions): Promise<GitHubIssue[]>
   searchRepositoryIssues(options: SearchRepositoryIssuesOptions): Promise<GitHubIssueSearchResult>
   getIssueDetail(options: GetIssueDetailOptions): Promise<GitHubIssueDetail>
+  updateIssue(options: UpdateIssueOptions): Promise<GitHubIssueDetail>
+  listRepositoryIssueLabels(options: RepositoryOptions): Promise<GitHubIssueLabel[]>
+  listRepositoryAssignableUsers(options: RepositoryOptions): Promise<GitHubAssignableUser[]>
+  listRepositoryIssueMilestones(options: RepositoryOptions): Promise<GitHubIssueMilestone[]>
   createIssueComment(options: CreateIssueCommentOptions): Promise<GitHubIssueComment>
+  editIssueComment(options: EditIssueCommentOptions): Promise<GitHubIssueComment>
+  deleteIssueComment(options: DeleteIssueCommentOptions): Promise<void>
   getAccountProfile(login: string): Promise<GitHubAccountProfile>
   getAccountOverview(login: string): Promise<GitHubAccountOverview>
   getAccountContributions(options: AccountContributionsOptions): Promise<GitHubAccountContributionYear>
@@ -834,8 +856,26 @@ export interface GetIssueDetailOptions extends RepositoryOptions {
   number: number
 }
 
+export interface UpdateIssueOptions extends GetIssueDetailOptions {
+  title?: string
+  body?: string
+  state?: GitHubIssueUpdateState
+  labels?: string[]
+  assignees?: string[]
+  milestone?: number | null
+}
+
 export interface CreateIssueCommentOptions extends GetIssueDetailOptions {
   body: string
+}
+
+export interface EditIssueCommentOptions extends RepositoryOptions {
+  commentId: number
+  body: string
+}
+
+export interface DeleteIssueCommentOptions extends RepositoryOptions {
+  commentId: number
 }
 
 export interface GetPullRequestDetailOptions extends RepositoryOptions {

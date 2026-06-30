@@ -2,6 +2,8 @@ import type {
   CreateIssueCommentOptions,
   CreatePullRequestCommentOptions,
   AccountContributionsOptions,
+  DeleteIssueCommentOptions,
+  EditIssueCommentOptions,
   GetIssueDetailOptions,
   GetPullRequestDetailOptions,
   GitHubAccountContributionYear,
@@ -10,11 +12,14 @@ import type {
   GitHubAccountRepository,
   GitHubAccountRepositoryPage,
   GitHubAccountViewerState,
+  GitHubAssignableUser,
   GitHubClient,
   GitHubIssue,
   GitHubIssueSearchResult,
   GitHubIssueComment,
   GitHubIssueDetail,
+  GitHubIssueLabel,
+  GitHubIssueMilestone,
   GitHubOrganization,
   GitHubPullRequest,
   GitHubPullRequestComment,
@@ -44,7 +49,8 @@ import type {
   SearchWorkspaceOptions,
   SetAccountFollowedOptions,
   SetRepositoryStarredOptions,
-  SetRepositoryWatchingOptions
+  SetRepositoryWatchingOptions,
+  UpdateIssueOptions
 } from './types'
 
 const items: GitHubWorkspaceItem[] = [
@@ -262,6 +268,12 @@ const issuesByRepository: Record<string, GitHubIssue[]> = {
 const viewerStateByRepository = new Map<string, GitHubRepositoryViewerState>()
 const followedAccounts = new Set(['octocat'])
 const mockIssueCommentsByIssue = new Map<string, GitHubIssueComment[]>()
+const mockIssueCommentEdits = new Map<number, { body: string, updatedAt: string }>()
+const mockDeletedIssueComments = new Set<number>()
+const mockIssueDetailOverridesByIssue = new Map<
+  string,
+  Partial<Pick<GitHubIssueDetail, 'body' | 'assignees' | 'milestone'>>
+>()
 const mockPullRequestCommentsByPullRequest = new Map<string, GitHubPullRequestComment[]>()
 
 export class MockGitHubClient implements GitHubClient {
@@ -673,6 +685,67 @@ export class MockGitHubClient implements GitHubClient {
     return createMockIssueDetail(options, issue)
   }
 
+  async updateIssue(options: UpdateIssueOptions): Promise<GitHubIssueDetail> {
+    const key = repositoryKey(options)
+    const updatedAt = new Date().toISOString()
+    const issues = issuesByRepository[key] ?? []
+    let issue = issues.find((item) => item.number === options.number)
+
+    if (!issue) {
+      issue = {
+        id: `mock-issue:${key}:${options.number}`,
+        owner: options.owner,
+        repo: options.repo,
+        repository: key,
+        number: options.number,
+        title: options.title?.trim() || `Issue ${options.number}`,
+        state: 'open',
+        author: {
+          login: 'acbox',
+          avatarUrl: 'https://avatars.githubusercontent.com/u/9919?s=80&v=4',
+        },
+        updatedAt,
+        labels: [],
+        url: `https://github.com/${key}/issues/${options.number}`,
+        hasUpdates: false,
+      }
+      issuesByRepository[key] = [...issues, issue]
+    }
+
+    issue.title = options.title?.trim() || issue.title
+    issue.state = options.state === 'closed' ? 'completed' : options.state === 'open' ? 'open' : issue.state
+    issue.labels = options.labels ? [...options.labels] : issue.labels
+    issue.updatedAt = updatedAt
+
+    const overrides = mockIssueDetailOverridesByIssue.get(issueThreadKey(options)) ?? {}
+    if (options.body !== undefined) {
+      overrides.body = options.body
+    }
+    if (options.assignees !== undefined) {
+      overrides.assignees = options.assignees.map((login) => mockAssignableUserActor(login))
+    }
+    if (options.milestone !== undefined) {
+      overrides.milestone = options.milestone === null
+        ? null
+        : mockMilestoneForNumber(options, options.milestone)
+    }
+    mockIssueDetailOverridesByIssue.set(issueThreadKey(options), overrides)
+
+    return createMockIssueDetail(options, issue)
+  }
+
+  async listRepositoryIssueLabels(options: ListRepositoryWorkspaceItemsOptions): Promise<GitHubIssueLabel[]> {
+    return createMockIssueLabels(options)
+  }
+
+  async listRepositoryAssignableUsers(_options: ListRepositoryWorkspaceItemsOptions): Promise<GitHubAssignableUser[]> {
+    return createMockAssignableUsers()
+  }
+
+  async listRepositoryIssueMilestones(options: ListRepositoryWorkspaceItemsOptions): Promise<GitHubIssueMilestone[]> {
+    return createMockIssueMilestones(options)
+  }
+
   async createIssueComment(options: CreateIssueCommentOptions): Promise<GitHubIssueComment> {
     const body = options.body.trim()
 
@@ -682,8 +755,10 @@ export class MockGitHubClient implements GitHubClient {
 
     const key = issueThreadKey(options)
     const createdAt = new Date().toISOString()
+    const databaseId = mockDatabaseId(`${key}:created:${createdAt}`)
     const comment: GitHubIssueComment = {
-      id: `mock-comment:${repositoryKey(options)}:${options.number}:created:${Date.now()}`,
+      id: `mock-comment:${databaseId}`,
+      databaseId,
       author: {
         login: 'acbox',
         avatarUrl: 'https://avatars.githubusercontent.com/u/9919?s=80&v=4',
@@ -702,6 +777,51 @@ export class MockGitHubClient implements GitHubClient {
     ])
 
     return comment
+  }
+
+  async editIssueComment(options: EditIssueCommentOptions): Promise<GitHubIssueComment> {
+    const body = options.body.trim()
+
+    if (!body) {
+      throw new Error('Comment body is required')
+    }
+
+    const updatedAt = new Date().toISOString()
+    const existingComment = findMockIssueComment(options.commentId)
+
+    if (existingComment) {
+      existingComment.body = body
+      existingComment.updatedAt = updatedAt
+      return existingComment
+    }
+
+    mockIssueCommentEdits.set(options.commentId, { body, updatedAt })
+
+    return {
+      id: `mock-comment:${options.commentId}`,
+      databaseId: options.commentId,
+      author: {
+        login: 'acbox',
+        avatarUrl: 'https://avatars.githubusercontent.com/u/9919?s=80&v=4',
+      },
+      body,
+      createdAt: updatedAt,
+      updatedAt,
+      authorAssociation: 'OWNER',
+      reactions: [],
+      url: `https://github.com/${repositoryKey(options)}#issuecomment-${options.commentId}`,
+    }
+  }
+
+  async deleteIssueComment(options: DeleteIssueCommentOptions): Promise<void> {
+    for (const [key, comments] of mockIssueCommentsByIssue.entries()) {
+      mockIssueCommentsByIssue.set(
+        key,
+        comments.filter((comment) => comment.databaseId !== options.commentId),
+      )
+    }
+
+    mockDeletedIssueComments.add(options.commentId)
   }
 
   async getRepositoryViewerState(options: RepositoryOptions): Promise<GitHubRepositoryViewerState> {
@@ -842,8 +962,150 @@ function pullRequestThreadKey(options: GetPullRequestDetailOptions): string {
   return `${repositoryKey(options)}#${options.number}`
 }
 
+function createMockIssueLabels(options: RepositoryOptions): GitHubIssueLabel[] {
+  const key = repositoryKey(options)
+  const baseLabels: Array<Pick<GitHubIssueLabel, 'name' | 'color' | 'description'>> = [
+    { name: 'bug', color: 'd73a4a', description: 'Something is not working' },
+    { name: 'triage', color: 'ededed', description: 'Needs initial review' },
+    { name: 'detail', color: '5319e7', description: 'Issue detail surface work' },
+    { name: 'good first issue', color: '7057ff', description: 'Friendly for first-time contributors' },
+    { name: 'design', color: 'f9d0c4', description: 'User interface and interaction work' },
+  ]
+  const labels = new Map<string, GitHubIssueLabel>(
+    baseLabels.map((label) => [
+      label.name,
+      {
+        id: mockDatabaseId(`${key}:label:${label.name}`),
+        name: label.name,
+        color: label.color,
+        description: label.description,
+      },
+    ]),
+  )
+
+  for (const label of (issuesByRepository[key] ?? []).flatMap((issue) => issue.labels)) {
+    if (labels.has(label)) continue
+
+    labels.set(label, {
+      id: mockDatabaseId(`${key}:label:${label}`),
+      name: label,
+      color: 'ededed',
+      description: null,
+    })
+  }
+
+  return Array.from(labels.values())
+}
+
+function createMockAssignableUsers(): GitHubAssignableUser[] {
+  const assignableUsers = [
+    ...users.map((user) => ({
+      id: user.id,
+      login: user.login,
+      avatarUrl: user.avatarUrl,
+    })),
+    {
+      id: mockDatabaseId('assignable:arden'),
+      login: 'arden',
+      avatarUrl: 'https://avatars.githubusercontent.com/u/810438?s=80&v=4',
+    },
+    {
+      id: mockDatabaseId('assignable:octo-lina'),
+      login: 'octo-lina',
+      avatarUrl: 'https://avatars.githubusercontent.com/u/583231?s=80&v=4',
+    },
+  ]
+  const seen = new Set<string>()
+
+  return assignableUsers.filter((user) => {
+    const login = user.login.toLowerCase()
+    if (seen.has(login)) return false
+
+    seen.add(login)
+    return true
+  })
+}
+
+function mockAssignableUserActor(login: string): GitHubIssueDetail['assignees'][number] {
+  const user = createMockAssignableUsers()
+    .find((item) => item.login.toLowerCase() === login.toLowerCase())
+
+  return {
+    login,
+    avatarUrl: user?.avatarUrl,
+  }
+}
+
+function createMockIssueMilestones(options: RepositoryOptions): GitHubIssueMilestone[] {
+  const key = repositoryKey(options)
+
+  return [
+    {
+      id: `mock-milestone:${key}:1`,
+      number: 1,
+      title: 'Issue detail beta',
+      description: 'Read-only issue detail data for the desktop workspace.',
+      dueOn: '2026-07-10T00:00:00.000Z',
+      state: 'open',
+      url: `https://github.com/${key}/milestone/1`,
+    },
+    {
+      id: `mock-milestone:${key}:2`,
+      number: 2,
+      title: 'Issue management actions',
+      description: 'Editing, labeling, assignment, milestones, and comments.',
+      dueOn: '2026-07-24T00:00:00.000Z',
+      state: 'open',
+      url: `https://github.com/${key}/milestone/2`,
+    },
+  ]
+}
+
+function mockMilestoneForNumber(options: RepositoryOptions, number: number): GitHubIssueMilestone {
+  return createMockIssueMilestones(options).find((milestone) => milestone.number === number) ?? {
+    id: `mock-milestone:${repositoryKey(options)}:${number}`,
+    number,
+    title: `Milestone ${number}`,
+    description: null,
+    dueOn: null,
+    state: 'open',
+    url: `https://github.com/${repositoryKey(options)}/milestone/${number}`,
+  }
+}
+
+function findMockIssueComment(commentId: number): GitHubIssueComment | undefined {
+  for (const comments of mockIssueCommentsByIssue.values()) {
+    const comment = comments.find((item) => item.databaseId === commentId)
+    if (comment) return comment
+  }
+
+  return undefined
+}
+
+function applyMockIssueCommentOverrides(comments: GitHubIssueComment[]): GitHubIssueComment[] {
+  return comments.flatMap((comment) => {
+    const databaseId = comment.databaseId
+    if (databaseId !== undefined && mockDeletedIssueComments.has(databaseId)) return []
+
+    const edit = databaseId !== undefined ? mockIssueCommentEdits.get(databaseId) : undefined
+
+    return [
+      {
+        ...comment,
+        body: edit?.body ?? comment.body,
+        updatedAt: edit?.updatedAt ?? comment.updatedAt,
+      },
+    ]
+  })
+}
+
 function mockRepositoryStarCount(options: RepositoryOptions): number {
   return Array.from(repositoryKey(options)).reduce((count, character) => count + character.charCodeAt(0), 0)
+}
+
+function mockDatabaseId(value: string): number {
+  return Array.from(value)
+    .reduce((hash, character) => (hash * 31 + character.charCodeAt(0)) >>> 0, 0) + 1
 }
 
 function createMockAccountRepositories(owner: string, names: string[]): GitHubAccountRepository[] {
@@ -1607,10 +1869,14 @@ function createMockPullRequestDetail(
 
 function createMockIssueDetail(options: GetIssueDetailOptions, issue?: GitHubIssue): GitHubIssueDetail {
   const key = repositoryKey(options)
+  const threadKey = issueThreadKey(options)
+  const overrides = mockIssueDetailOverridesByIssue.get(threadKey) ?? {}
+  const hasMilestoneOverride = Object.prototype.hasOwnProperty.call(overrides, 'milestone')
   const title = issue?.title ?? `Follow up on ${options.repo} issue detail`
   const author = issue?.author ?? { login: 'acbox', avatarUrl: 'https://avatars.githubusercontent.com/u/9919?s=80&v=4' }
   const updatedAt = issue?.updatedAt ?? new Date(Date.UTC(2026, 5, 26, 10)).toISOString()
   const createdAt = new Date(Date.UTC(2026, 5, 24, 9, 30)).toISOString()
+  const firstCommentAt = new Date(Date.UTC(2026, 5, 25, 13, 15)).toISOString()
   const secondCommentAt = new Date(Date.UTC(2026, 5, 26, 8, 45)).toISOString()
 
   return {
@@ -1625,7 +1891,7 @@ function createMockIssueDetail(options: GetIssueDetailOptions, issue?: GitHubIss
     createdAt,
     updatedAt,
     closedAt: issue?.state === 'open' || !issue ? null : updatedAt,
-    body: [
+    body: overrides.body ?? [
       `The issue detail surface needs a reliable read-only contract for ${key}.`,
       '',
       'Expected data:',
@@ -1636,31 +1902,24 @@ function createMockIssueDetail(options: GetIssueDetailOptions, issue?: GitHubIss
       '- core timeline events for triage and state changes',
     ].join('\n'),
     labels: issue?.labels ?? ['triage', 'detail'],
-    assignees: [
+    assignees: overrides.assignees ?? [
       { login: 'octo-lina', avatarUrl: 'https://avatars.githubusercontent.com/u/583231?s=80&v=4' },
       { login: 'maya', avatarUrl: 'https://avatars.githubusercontent.com/u/69631?s=80&v=4' },
     ],
-    milestone: {
-      id: `mock-milestone:${key}:1`,
-      number: 1,
-      title: 'Issue detail beta',
-      description: 'Read-only issue detail data for the desktop workspace.',
-      dueOn: '2026-07-10T00:00:00.000Z',
-      state: 'open',
-      url: `https://github.com/${key}/milestone/1`,
-    },
+    milestone: hasMilestoneOverride ? overrides.milestone ?? null : mockMilestoneForNumber(options, 1),
     participants: [
       author,
       { login: 'octo-lina', avatarUrl: 'https://avatars.githubusercontent.com/u/583231?s=80&v=4' },
       { login: 'arden', avatarUrl: 'https://avatars.githubusercontent.com/u/810438?s=80&v=4' },
     ],
-    comments: [
+    comments: applyMockIssueCommentOverrides([
       {
         id: `mock-comment:${key}:${options.number}:1`,
+        databaseId: mockDatabaseId(`${threadKey}:comment:1`),
         author: { login: 'octo-lina', avatarUrl: 'https://avatars.githubusercontent.com/u/583231?s=80&v=4' },
         body: 'I can reproduce this from the repository issue list. The detail route should be able to render without extra renderer-side GitHub calls.',
-        createdAt: new Date(Date.UTC(2026, 5, 25, 13, 15)).toISOString(),
-        updatedAt: new Date(Date.UTC(2026, 5, 25, 13, 15)).toISOString(),
+        createdAt: firstCommentAt,
+        updatedAt: firstCommentAt,
         authorAssociation: 'MEMBER',
         reactions: [
           { content: 'thumbs-up', count: 3, viewerHasReacted: true },
@@ -1670,6 +1929,7 @@ function createMockIssueDetail(options: GetIssueDetailOptions, issue?: GitHubIss
       },
       {
         id: `mock-comment:${key}:${options.number}:2`,
+        databaseId: mockDatabaseId(`${threadKey}:comment:2`),
         author: { login: 'arden', avatarUrl: 'https://avatars.githubusercontent.com/u/810438?s=80&v=4' },
         body: 'Mock data should include at least one cross-reference and one rename event so the activity list can be designed against real shapes.',
         createdAt: secondCommentAt,
@@ -1680,8 +1940,8 @@ function createMockIssueDetail(options: GetIssueDetailOptions, issue?: GitHubIss
         ],
         url: `https://github.com/${key}/issues/${options.number}#issuecomment-2`,
       },
-      ...(mockIssueCommentsByIssue.get(issueThreadKey(options)) ?? []),
-    ],
+      ...(mockIssueCommentsByIssue.get(threadKey) ?? []),
+    ]),
     timelineEvents: [
       {
         id: `mock-event:${key}:${options.number}:mentioned`,

@@ -1,6 +1,10 @@
 <script setup lang="ts">
-import type { IssueDetail } from './types'
-import { computed } from 'vue'
+import type {
+  IssueDetail,
+  IssueStateUpdatePayload,
+  IssueTitleUpdatePayload,
+} from './types'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import {
@@ -9,26 +13,57 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  Input,
 } from '@oh-my-github/ui'
-import { Copy, ExternalLink, MoreHorizontal } from 'lucide-vue-next'
+import {
+  Check,
+  CircleDot,
+  CircleOff,
+  Copy,
+  ExternalLink,
+  MoreHorizontal,
+  Pencil,
+  X,
+} from 'lucide-vue-next'
 import { GitHubActorLink, WorkItemStateBadge } from '../../../components'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   issue: IssueDetail
   repository: string
+  isUpdatingTitle?: boolean
+  isUpdatingState?: boolean
+  titleActionsDisabled?: boolean
+  stateActionsDisabled?: boolean
+}>(), {
+  isUpdatingTitle: false,
+  isUpdatingState: false,
+  titleActionsDisabled: false,
+  stateActionsDisabled: false,
+})
+
+const emit = defineEmits<{
+  updateTitle: [payload: IssueTitleUpdatePayload]
+  updateState: [payload: IssueStateUpdatePayload]
 }>()
 
 const { t } = useI18n()
 const router = useRouter()
+const isEditingTitle = ref(false)
+const titleDraft = ref(props.issue.title)
 
 const issueNumber = computed(() => `#${props.issue.number}`)
 const createdAt = computed(() => formatDate(props.issue.createdAt))
 const updatedAt = computed(() => formatDate(props.issue.updatedAt))
+const isIssueOpen = computed(() => props.issue.state === 'open')
 const stateLabel = computed(() => {
   const state = normalizeState(props.issue.state)
 
   return t(`issue.states.${state}`)
 })
+const nextIssueState = computed<GitHubIssueUpdateState>(() => (isIssueOpen.value ? 'closed' : 'open'))
+const stateToggleLabel = computed(() =>
+  isIssueOpen.value ? t('issue.actions.closeIssue') : t('issue.actions.reopenIssue')
+)
 const updatedMeta = computed(() =>
   t('issue.meta.updated', {
     date: updatedAt.value,
@@ -39,11 +74,52 @@ const repositoryUrl = computed(() =>
     ? `/${encodeURIComponent(props.issue.owner)}/${encodeURIComponent(props.issue.repo)}`
     : null
 )
+const trimmedTitleDraft = computed(() => titleDraft.value.trim())
+const canSaveTitle = computed(() =>
+  trimmedTitleDraft.value.length > 0
+  && trimmedTitleDraft.value !== props.issue.title.trim()
+  && !props.isUpdatingTitle
+  && !props.titleActionsDisabled
+)
+
+watch(() => props.issue.title, (title) => {
+  if (!isEditingTitle.value) titleDraft.value = title
+})
 
 async function copyIssueUrl(): Promise<void> {
   if (!props.issue.url || !navigator.clipboard) return
 
   await navigator.clipboard.writeText(props.issue.url)
+}
+
+function startTitleEdit(): void {
+  titleDraft.value = props.issue.title
+  isEditingTitle.value = true
+}
+
+function cancelTitleEdit(): void {
+  titleDraft.value = props.issue.title
+  isEditingTitle.value = false
+}
+
+function submitTitleEdit(): void {
+  if (!canSaveTitle.value) {
+    if (trimmedTitleDraft.value === props.issue.title.trim()) cancelTitleEdit()
+    return
+  }
+
+  emit('updateTitle', {
+    title: trimmedTitleDraft.value,
+  })
+  isEditingTitle.value = false
+}
+
+function toggleIssueState(): void {
+  if (props.isUpdatingState || props.stateActionsDisabled) return
+
+  emit('updateState', {
+    state: nextIssueState.value,
+  })
 }
 
 function openRepository(): void {
@@ -98,12 +174,87 @@ function normalizeState(state: string): 'open' | 'completed' | 'not_planned' | '
           </span>
         </div>
 
-        <h1 class="min-w-0 text-heading font-semibold leading-tight text-foreground">
-          {{ issue.title }}
-        </h1>
+        <form
+          v-if="isEditingTitle"
+          class="grid min-w-0 gap-2"
+          @submit.prevent="submitTitleEdit"
+        >
+          <Input
+            v-model="titleDraft"
+            :aria-label="t('issue.title.inputLabel')"
+            autofocus
+            class="h-9 rounded-md text-heading font-semibold leading-tight tracking-normal"
+            :disabled="isUpdatingTitle"
+            size="lg"
+            @keydown.esc.prevent="cancelTitleEdit"
+          />
+          <div class="flex min-w-0 flex-wrap items-center gap-1.5">
+            <Button
+              :disabled="!canSaveTitle"
+              :loading="isUpdatingTitle"
+              size="sm"
+              type="submit"
+              variant="primary"
+            >
+              <Check class="size-3.5" />
+              <span>{{ t('issue.actions.saveTitle') }}</span>
+            </Button>
+            <Button
+              :disabled="isUpdatingTitle"
+              size="sm"
+              type="button"
+              variant="outline"
+              @click="cancelTitleEdit"
+            >
+              <X class="size-3.5" />
+              <span>{{ t('issue.actions.cancelTitleEdit') }}</span>
+            </Button>
+          </div>
+        </form>
+
+        <div
+          v-else
+          class="flex min-w-0 items-start gap-1.5"
+        >
+          <h1 class="min-w-0 text-heading font-semibold leading-tight text-foreground">
+            {{ issue.title }}
+          </h1>
+          <Button
+            :aria-label="t('issue.actions.editTitle')"
+            class="mt-0.5 text-muted-foreground"
+            :disabled="titleActionsDisabled"
+            size="icon-sm"
+            :title="t('issue.actions.editTitle')"
+            type="button"
+            variant="ghost"
+            @click="startTitleEdit"
+          >
+            <Pencil class="size-3.5" />
+          </Button>
+        </div>
       </div>
 
       <div class="flex shrink-0 items-center gap-1.5">
+        <Button
+          :aria-label="stateToggleLabel"
+          :disabled="stateActionsDisabled"
+          :loading="isUpdatingState"
+          size="sm"
+          type="button"
+          variant="outline"
+          @click="toggleIssueState"
+        >
+          <CircleOff
+            v-if="isIssueOpen"
+            class="size-3.5"
+          />
+          <CircleDot
+            v-else
+            class="size-3.5"
+          />
+          <span>{{ stateToggleLabel }}</span>
+        </Button>
+
         <Button
           v-if="issue.url"
           as="a"

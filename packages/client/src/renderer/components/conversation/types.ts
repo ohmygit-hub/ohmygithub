@@ -40,6 +40,28 @@ export interface ConversationComment {
   reactions?: ConversationReaction[]
 }
 
+export interface ConversationCommentActionPayload {
+  comment?: ConversationComment
+  commentId?: string
+}
+
+export interface ConversationCommentSavePayload extends ConversationCommentActionPayload {
+  body: string
+}
+
+export interface ConversationCommentActionLabels {
+  actions?: string
+  cancel?: string
+  delete?: string
+  edit?: string
+  emptyPreview?: string
+  input?: string
+  placeholder?: string
+  preview?: string
+  save?: string
+  write?: string
+}
+
 export interface ConversationTimelineEvent {
   id: string | number
   icon?: Component

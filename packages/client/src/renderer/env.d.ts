@@ -396,6 +396,8 @@ type GitHubIssueState = 'open' | 'completed' | 'not_planned'
 
 type GitHubIssueSearchState = 'open' | 'closed' | 'all'
 
+type GitHubIssueUpdateState = 'open' | 'closed'
+
 type GitHubRepositoryReferenceKind = 'issue' | 'pull-request'
 
 type GitHubRepositoryReferenceState = GitHubIssueState | GitHubPullRequestState
@@ -550,6 +552,18 @@ type SearchRepositoryIssuesOptions = {
   state?: GitHubIssueSearchState
 }
 
+type UpdateIssueOptions = {
+  owner: string
+  repo: string
+  number: number
+  title?: string
+  body?: string
+  state?: GitHubIssueUpdateState
+  labels?: string[]
+  assignees?: string[]
+  milestone?: number | null
+}
+
 type GitHubIssueSearchResult = {
   items: GitHubIssue[]
   totalCount: number
@@ -557,6 +571,19 @@ type GitHubIssueSearchResult = {
   perPage: number
   hasNextPage: boolean
   incompleteResults: boolean
+}
+
+type GitHubIssueLabel = {
+  id: number
+  name: string
+  color: string
+  description: string | null
+}
+
+type GitHubAssignableUser = {
+  id: number
+  login: string
+  avatarUrl?: string
 }
 
 type GitHubIssueReaction = {
@@ -577,6 +604,7 @@ type GitHubIssueMilestone = {
 
 type GitHubIssueComment = {
   id: string
+  databaseId?: number
   author: GitHubActor
   body: string
   createdAt: string
@@ -851,12 +879,23 @@ interface Window {
       listRepositoryIssues: (owner: string, repo: string) => Promise<GitHubIssue[]>
       searchRepositoryIssues: (options: SearchRepositoryIssuesOptions) => Promise<GitHubIssueSearchResult>
       getIssueDetail: (owner: string, repo: string, number: number) => Promise<GitHubIssueDetail>
+      updateIssue: (options: UpdateIssueOptions) => Promise<GitHubIssueDetail>
+      listRepositoryIssueLabels: (owner: string, repo: string) => Promise<GitHubIssueLabel[]>
+      listRepositoryAssignableUsers: (owner: string, repo: string) => Promise<GitHubAssignableUser[]>
+      listRepositoryIssueMilestones: (owner: string, repo: string) => Promise<GitHubIssueMilestone[]>
       createIssueComment: (
         owner: string,
         repo: string,
         number: number,
         body: string
       ) => Promise<GitHubIssueComment>
+      editIssueComment: (
+        owner: string,
+        repo: string,
+        commentId: number,
+        body: string
+      ) => Promise<GitHubIssueComment>
+      deleteIssueComment: (owner: string, repo: string, commentId: number) => Promise<void>
     }
     pulls: {
       listPullRequestCategory: (category: GitHubPullRequestCategory) => Promise<GitHubPullRequest[]>

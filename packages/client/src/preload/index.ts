@@ -28,8 +28,19 @@ const api = {
       ipcRenderer.invoke('issues:search-repository', options),
     getIssueDetail: (owner: string, repo: string, number: number) =>
       ipcRenderer.invoke('issues:get-detail', owner, repo, number),
+    updateIssue: (options: unknown) => ipcRenderer.invoke('issues:update', options),
+    listRepositoryIssueLabels: (owner: string, repo: string) =>
+      ipcRenderer.invoke('issues:list-repository-labels', owner, repo),
+    listRepositoryAssignableUsers: (owner: string, repo: string) =>
+      ipcRenderer.invoke('issues:list-repository-assignable-users', owner, repo),
+    listRepositoryIssueMilestones: (owner: string, repo: string) =>
+      ipcRenderer.invoke('issues:list-repository-milestones', owner, repo),
     createIssueComment: (owner: string, repo: string, number: number, body: string) =>
-      ipcRenderer.invoke('issues:create-comment', owner, repo, number, body)
+      ipcRenderer.invoke('issues:create-comment', owner, repo, number, body),
+    editIssueComment: (owner: string, repo: string, commentId: number, body: string) =>
+      ipcRenderer.invoke('issues:edit-comment', owner, repo, commentId, body),
+    deleteIssueComment: (owner: string, repo: string, commentId: number) =>
+      ipcRenderer.invoke('issues:delete-comment', owner, repo, commentId)
   },
   pulls: {
     listPullRequestCategory: (category: string) => ipcRenderer.invoke('pulls:list-category', category),

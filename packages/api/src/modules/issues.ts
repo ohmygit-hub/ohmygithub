@@ -1,11 +1,15 @@
 import type { GitHubOctokit } from '../transport'
 import type {
   CreateIssueCommentOptions,
+  DeleteIssueCommentOptions,
+  EditIssueCommentOptions,
   GetIssueDetailOptions,
   GitHubActor,
+  GitHubAssignableUser,
   GitHubIssue,
   GitHubIssueComment,
   GitHubIssueDetail,
+  GitHubIssueLabel,
   GitHubIssueMilestone,
   GitHubIssueReaction,
   GitHubIssueSearchResult,
@@ -16,7 +20,8 @@ import type {
   ListIssueCategoryOptions,
   ListRepositoryWorkspaceItemsOptions,
   ListWorkspaceItemsOptions,
-  SearchRepositoryIssuesOptions
+  SearchRepositoryIssuesOptions,
+  UpdateIssueOptions
 } from '../types'
 import {
   createWorkItemKey,
@@ -58,6 +63,7 @@ interface GraphQLMilestoneNode {
 
 interface GraphQLIssueCommentNode {
   id: string
+  databaseId?: number | null
   body: string
   createdAt: string
   updatedAt: string
@@ -79,6 +85,30 @@ interface RestIssueCommentNode {
     login?: string | null
     avatar_url?: string | null
   } | null
+}
+
+interface RestIssueLabelNode {
+  id?: number | null
+  name?: string | null
+  color?: string | null
+  description?: string | null
+}
+
+interface RestAssignableUserNode {
+  id?: number | null
+  login?: string | null
+  avatar_url?: string | null
+}
+
+interface RestMilestoneNode {
+  id?: number | null
+  node_id?: string | null
+  number?: number | null
+  title?: string | null
+  description?: string | null
+  due_on?: string | null
+  state?: string | null
+  html_url?: string | null
 }
 
 interface GraphQLTimelineSourceNode {
@@ -269,6 +299,7 @@ const issueDetailQuery = `
         comments(last: 100) {
           nodes {
             id
+            databaseId
             body
             createdAt
             updatedAt
@@ -554,6 +585,55 @@ export class IssuesApi {
     return mapIssueDetailNode(issue, unreadKeys)
   }
 
+  async updateIssue(options: UpdateIssueOptions): Promise<GitHubIssueDetail> {
+    await this.octokit.rest.issues.update({
+      owner: options.owner,
+      repo: options.repo,
+      issue_number: options.number,
+      ...(options.title !== undefined ? { title: options.title } : {}),
+      ...(options.body !== undefined ? { body: options.body } : {}),
+      ...(options.state !== undefined ? { state: options.state } : {}),
+      ...(options.labels !== undefined ? { labels: options.labels } : {}),
+      ...(options.assignees !== undefined ? { assignees: options.assignees } : {}),
+      ...(options.milestone !== undefined ? { milestone: options.milestone } : {}),
+    })
+
+    return this.getIssueDetail(options)
+  }
+
+  async listRepositoryIssueLabels(options: ListRepositoryWorkspaceItemsOptions): Promise<GitHubIssueLabel[]> {
+    const response = await this.octokit.rest.issues.listLabelsForRepo({
+      owner: options.owner,
+      repo: options.repo,
+      per_page: 100
+    })
+
+    return mapRestIssueLabels(response.data as RestIssueLabelNode[])
+  }
+
+  async listRepositoryAssignableUsers(options: ListRepositoryWorkspaceItemsOptions): Promise<GitHubAssignableUser[]> {
+    const response = await this.octokit.rest.issues.listAssignees({
+      owner: options.owner,
+      repo: options.repo,
+      per_page: 100
+    })
+
+    return mapRestAssignableUsers(response.data as RestAssignableUserNode[])
+  }
+
+  async listRepositoryIssueMilestones(options: ListRepositoryWorkspaceItemsOptions): Promise<GitHubIssueMilestone[]> {
+    const response = await this.octokit.rest.issues.listMilestones({
+      owner: options.owner,
+      repo: options.repo,
+      state: 'all',
+      sort: 'due_on',
+      direction: 'asc',
+      per_page: 100
+    })
+
+    return mapRestMilestones(response.data as RestMilestoneNode[])
+  }
+
   async createIssueComment(options: CreateIssueCommentOptions): Promise<GitHubIssueComment> {
     const response = await this.octokit.rest.issues.createComment({
       owner: options.owner,
@@ -563,6 +643,25 @@ export class IssuesApi {
     })
 
     return mapRestIssueComment(response.data)
+  }
+
+  async editIssueComment(options: EditIssueCommentOptions): Promise<GitHubIssueComment> {
+    const response = await this.octokit.rest.issues.updateComment({
+      owner: options.owner,
+      repo: options.repo,
+      comment_id: options.commentId,
+      body: options.body
+    })
+
+    return mapRestIssueComment(response.data)
+  }
+
+  async deleteIssueComment(options: DeleteIssueCommentOptions): Promise<void> {
+    await this.octokit.rest.issues.deleteComment({
+      owner: options.owner,
+      repo: options.repo,
+      comment_id: options.commentId
+    })
   }
 
   private async searchIssues(searchQuery: string, limit: number): Promise<GitHubIssue[]> {
@@ -761,6 +860,7 @@ function mapComments(
     return [
       {
         id: `issue-comment:${comment.id}`,
+        databaseId: comment.databaseId ?? undefined,
         author: normalizeActor(comment.author),
         body: comment.body,
         createdAt: comment.createdAt,
@@ -776,6 +876,7 @@ function mapComments(
 function mapRestIssueComment(comment: RestIssueCommentNode): GitHubIssueComment {
   return {
     id: `issue-comment:${comment.node_id ?? comment.id}`,
+    databaseId: comment.id,
     author: {
       login: comment.user?.login ?? 'unknown',
       avatarUrl: comment.user?.avatar_url ?? undefined
@@ -787,6 +888,53 @@ function mapRestIssueComment(comment: RestIssueCommentNode): GitHubIssueComment 
     reactions: [],
     url: comment.html_url ?? ''
   }
+}
+
+function mapRestIssueLabels(labels: RestIssueLabelNode[]): GitHubIssueLabel[] {
+  return labels.flatMap((label) => {
+    if (!label.name) return []
+
+    return [
+      {
+        id: Number(label.id ?? 0),
+        name: label.name,
+        color: label.color ?? '',
+        description: label.description ?? null
+      }
+    ]
+  })
+}
+
+function mapRestAssignableUsers(users: RestAssignableUserNode[]): GitHubAssignableUser[] {
+  return users.flatMap((user) => {
+    if (!user.login) return []
+
+    return [
+      {
+        id: Number(user.id ?? 0),
+        login: user.login,
+        avatarUrl: user.avatar_url ?? undefined
+      }
+    ]
+  })
+}
+
+function mapRestMilestones(milestones: RestMilestoneNode[]): GitHubIssueMilestone[] {
+  return milestones.flatMap((milestone) => {
+    if (!milestone.number || !milestone.title) return []
+
+    return [
+      {
+        id: milestone.node_id ?? String(milestone.id ?? milestone.number),
+        number: milestone.number,
+        title: milestone.title,
+        description: milestone.description ?? null,
+        dueOn: milestone.due_on ?? null,
+        state: milestone.state === 'closed' ? 'closed' : 'open',
+        url: milestone.html_url ?? ''
+      }
+    ]
+  })
 }
 
 function mapReactions(

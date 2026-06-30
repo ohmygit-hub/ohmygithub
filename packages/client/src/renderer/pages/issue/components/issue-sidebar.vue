@@ -1,28 +1,75 @@
 <script setup lang="ts">
 import type {
+  IssueActorSummary,
+  IssueAssignableUserOption,
+  IssueAssigneesUpdatePayload,
   IssueDetail,
+  IssueLabelOption,
   IssueLabelSummary,
+  IssueLabelsUpdatePayload,
   IssueLinkedWorkSummary,
+  IssueMilestoneOption,
+  IssueMilestoneSummary,
+  IssueMilestoneUpdatePayload,
 } from './types'
 import type { Component } from 'vue'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { CalendarDays, GitBranch, GitCommitHorizontal, GitPullRequest } from 'lucide-vue-next'
+import {
+  Badge,
+  Button,
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@oh-my-github/ui'
+import { CalendarDays, GitBranch, GitCommitHorizontal, GitPullRequest, Pencil } from 'lucide-vue-next'
 import {
   GitHubActorLink,
   GitHubReferenceLink,
-  WorkItemLabelList,
   WorkItemSidebarSection,
   parseGitHubReferenceUrl,
 } from '../../../components'
 
-const props = defineProps<{
+const NO_MILESTONE_VALUE = '__no_milestone__'
+
+const props = withDefaults(defineProps<{
   issue: IssueDetail
+  labelOptions?: IssueLabelOption[] | null
+  assigneeOptions?: IssueAssignableUserOption[] | null
+  milestoneOptions?: IssueMilestoneOption[] | null
+  isUpdatingLabels?: boolean
+  isUpdatingAssignees?: boolean
+  isUpdatingMilestone?: boolean
+}>(), {
+  labelOptions: null,
+  assigneeOptions: null,
+  milestoneOptions: null,
+  isUpdatingLabels: false,
+  isUpdatingAssignees: false,
+  isUpdatingMilestone: false,
+})
+
+const emit = defineEmits<{
+  updateLabels: [payload: IssueLabelsUpdatePayload]
+  updateAssignees: [payload: IssueAssigneesUpdatePayload]
+  updateMilestone: [payload: IssueMilestoneUpdatePayload]
 }>()
 
 interface DevelopmentItem {
   id: string
   icon: Component
+  label: string
+  value: string
+}
+
+interface DateItem {
+  id: string
   label: string
   value: string
 }
@@ -40,8 +87,89 @@ interface LinkedPullRequestReference {
 const { t } = useI18n()
 
 const assignees = computed(() => props.issue.assignees ?? [])
-const labels = computed(() => normalizeLabels(props.issue.labels))
-const labelNames = computed(() => labels.value.map((label) => label.name))
+const assigneeOptions = computed(() =>
+  (props.assigneeOptions ?? []).flatMap((assignee) => {
+    const normalized = normalizeAssignableUserOption(assignee)
+
+    return normalized ? [normalized] : []
+  })
+)
+const hasAssigneeOptions = computed(() => props.assigneeOptions !== null && props.assigneeOptions !== undefined)
+const canOpenAssigneeOptions = computed(() => hasAssigneeOptions.value && !props.isUpdatingAssignees)
+const assigneeEditTitle = computed(() =>
+  hasAssigneeOptions.value
+    ? t('issue.actions.editAssignees')
+    : t('issue.sidebar.empty.assigneeOptionsUnavailable')
+)
+const selectedAssigneeKeys = computed(() =>
+  new Set(assignees.value.map((assignee) => loginKey(assignee.login)))
+)
+
+const rawLabels = computed(() => normalizeLabels(props.issue.labels))
+const labelOptions = computed(() =>
+  (props.labelOptions ?? []).flatMap((label) => {
+    const normalized = normalizeLabelOption(label)
+
+    return normalized ? [normalized] : []
+  })
+)
+const labelOptionByName = computed(() => {
+  const options = new Map<string, IssueLabelOption>()
+
+  for (const label of labelOptions.value) {
+    options.set(labelNameKey(label.name), label)
+  }
+
+  return options
+})
+const labels = computed(() =>
+  rawLabels.value.map((label) => {
+    const option = labelOptionByName.value.get(labelNameKey(label.name))
+    if (!option) return label
+
+    return {
+      ...option,
+      ...label,
+      id: label.id ?? option.id,
+      color: label.color ?? option.color ?? null,
+      description: label.description ?? option.description ?? null,
+    }
+  })
+)
+const hasLabelOptions = computed(() => props.labelOptions !== null && props.labelOptions !== undefined)
+const canOpenLabelOptions = computed(() => hasLabelOptions.value && !props.isUpdatingLabels)
+const labelEditTitle = computed(() =>
+  hasLabelOptions.value
+    ? t('issue.actions.editLabels')
+    : t('issue.sidebar.empty.labelOptionsUnavailable')
+)
+const selectedLabelKeys = computed(() =>
+  new Set(labels.value.map((label) => labelNameKey(label.name)))
+)
+
+const milestoneOptions = computed(() =>
+  (props.milestoneOptions ?? []).flatMap((milestone) => {
+    const normalized = normalizeMilestoneOption(milestone)
+
+    return normalized ? [normalized] : []
+  })
+)
+const hasMilestoneOptions = computed(() => props.milestoneOptions !== null && props.milestoneOptions !== undefined)
+const canOpenMilestoneOptions = computed(() => hasMilestoneOptions.value && !props.isUpdatingMilestone)
+const milestoneEditTitle = computed(() =>
+  hasMilestoneOptions.value
+    ? t('issue.actions.editMilestone')
+    : t('issue.sidebar.empty.milestoneOptionsUnavailable')
+)
+const selectedMilestoneValue = computed(() => {
+  const milestone = props.issue.milestone
+  if (!milestone) return NO_MILESTONE_VALUE
+
+  const matchingOption = milestoneOptions.value.find((option) => isSameMilestone(option, milestone))
+
+  return matchingOption ? milestoneOptionValue(matchingOption) : currentMilestoneValue(milestone)
+})
+
 const participants = computed(() => props.issue.participants ?? [])
 const linkedPullRequests = computed(() =>
   props.issue.development?.pullRequests ?? props.issue.linkedWork ?? []
@@ -77,7 +205,7 @@ const developmentItems = computed<DevelopmentItem[]>(() => {
 const shouldShowDevelopment = computed(() =>
   linkedPullRequestReferences.value.length > 0 || developmentItems.value.length > 0
 )
-const dates = computed(() => [
+const dates = computed<DateItem[]>(() => [
   {
     id: 'created',
     label: t('issue.sidebar.dates.created'),
@@ -119,21 +247,196 @@ function isLinkedCount(value: number | null | undefined): value is number {
 }
 
 function normalizeLabels(labels: Array<IssueLabelSummary | string>): IssueLabelSummary[] {
-  return labels.map((label) => {
-    if (typeof label === 'string') {
-      return {
-        id: label,
-        name: label,
-      }
-    }
+  return labels.flatMap((label) => {
+    const normalized = normalizeLabelSummary(label)
 
-    return label
+    return normalized ? [normalized] : []
   })
 }
 
-function isDateItem(
-  value: { id: string, label: string, value: string } | null,
-): value is { id: string, label: string, value: string } {
+function normalizeLabelSummary(label: IssueLabelSummary | string): IssueLabelSummary | null {
+  if (typeof label === 'string') {
+    const name = label.trim()
+    if (!name) return null
+
+    return {
+      id: name,
+      name,
+    }
+  }
+
+  const name = label.name.trim()
+  if (!name) return null
+
+  return {
+    ...label,
+    name,
+  }
+}
+
+function normalizeLabelOption(label: IssueLabelOption): IssueLabelOption | null {
+  const name = label.name.trim()
+  if (!name) return null
+
+  return {
+    ...label,
+    name,
+  }
+}
+
+function labelNameKey(name: string): string {
+  return name.trim().toLocaleLowerCase()
+}
+
+function labelKey(label: IssueLabelSummary | IssueLabelOption): string {
+  return String(label.id ?? label.name)
+}
+
+function normalizeLabelColor(color: string | null | undefined): string | null {
+  const value = color?.trim().replace(/^#/, '')
+  if (!value || !/^[\da-f]{3}([\da-f]{3})?$/i.test(value)) return null
+
+  return `#${value}`
+}
+
+function labelColorStyle(label: IssueLabelSummary | IssueLabelOption): Record<string, string> | undefined {
+  const color = normalizeLabelColor(label.color)
+
+  return color ? { backgroundColor: color } : undefined
+}
+
+function isLabelSelected(label: IssueLabelOption): boolean {
+  return selectedLabelKeys.value.has(labelNameKey(label.name))
+}
+
+function updateLabelSelection(label: IssueLabelOption, checked: boolean): void {
+  const normalizedLabel = normalizeLabelOption(label)
+  if (!normalizedLabel) return
+
+  const nextLabels = new Map<string, IssueLabelOption>()
+
+  for (const currentLabel of labels.value) {
+    nextLabels.set(labelNameKey(currentLabel.name), currentLabel)
+  }
+
+  if (checked) {
+    nextLabels.set(labelNameKey(normalizedLabel.name), normalizedLabel)
+  } else {
+    nextLabels.delete(labelNameKey(normalizedLabel.name))
+  }
+
+  const labelsPayload = Array.from(nextLabels.values())
+
+  emit('updateLabels', {
+    labels: labelsPayload,
+    labelNames: labelsPayload.map((item) => item.name),
+  })
+}
+
+function normalizeAssignableUserOption(user: IssueAssignableUserOption | IssueActorSummary): IssueAssignableUserOption | null {
+  const login = user.login.trim()
+  if (!login) return null
+
+  return {
+    ...user,
+    login,
+  }
+}
+
+function loginKey(login: string): string {
+  return login.trim().toLocaleLowerCase()
+}
+
+function assigneeKey(assignee: IssueAssignableUserOption): string {
+  return String(assignee.id ?? assignee.login)
+}
+
+function isAssigneeSelected(assignee: IssueAssignableUserOption): boolean {
+  return selectedAssigneeKeys.value.has(loginKey(assignee.login))
+}
+
+function updateAssigneeSelection(assignee: IssueAssignableUserOption, checked: boolean): void {
+  const normalizedAssignee = normalizeAssignableUserOption(assignee)
+  if (!normalizedAssignee) return
+
+  const nextAssignees = new Map<string, IssueAssignableUserOption>()
+
+  for (const currentAssignee of assignees.value) {
+    const normalizedCurrentAssignee = normalizeAssignableUserOption(currentAssignee)
+    if (normalizedCurrentAssignee) {
+      nextAssignees.set(loginKey(normalizedCurrentAssignee.login), normalizedCurrentAssignee)
+    }
+  }
+
+  if (checked) {
+    nextAssignees.set(loginKey(normalizedAssignee.login), normalizedAssignee)
+  } else {
+    nextAssignees.delete(loginKey(normalizedAssignee.login))
+  }
+
+  const assigneesPayload = Array.from(nextAssignees.values())
+
+  emit('updateAssignees', {
+    assignees: assigneesPayload,
+    assigneeLogins: assigneesPayload.map((item) => item.login),
+  })
+}
+
+function normalizeMilestoneOption(milestone: IssueMilestoneOption): IssueMilestoneOption | null {
+  const title = milestone.title.trim()
+  if (!title) return null
+
+  return {
+    ...milestone,
+    title,
+  }
+}
+
+function milestoneOptionValue(milestone: IssueMilestoneOption): string {
+  return String(milestone.id ?? milestone.number ?? milestone.title)
+}
+
+function currentMilestoneValue(milestone: IssueMilestoneSummary): string {
+  const currentMilestone = milestone as IssueMilestoneOption
+
+  return String(currentMilestone.id ?? currentMilestone.number ?? currentMilestone.title)
+}
+
+function isSameMilestone(option: IssueMilestoneOption, milestone: IssueMilestoneSummary): boolean {
+  const currentMilestone = milestone as IssueMilestoneOption
+
+  if (option.id !== undefined && currentMilestone.id !== undefined) {
+    return String(option.id) === String(currentMilestone.id)
+  }
+
+  if (option.number !== undefined && option.number !== null && currentMilestone.number !== undefined && currentMilestone.number !== null) {
+    return option.number === currentMilestone.number
+  }
+
+  return option.title.trim() === milestone.title.trim()
+}
+
+function updateMilestoneSelection(value: unknown): void {
+  const nextValue = String(value ?? '')
+
+  if (nextValue === NO_MILESTONE_VALUE) {
+    emit('updateMilestone', {
+      milestone: null,
+      milestoneNumber: null,
+    })
+    return
+  }
+
+  const milestone = milestoneOptions.value.find((option) => milestoneOptionValue(option) === nextValue)
+  if (!milestone) return
+
+  emit('updateMilestone', {
+    milestone,
+    milestoneNumber: milestone.number ?? null,
+  })
+}
+
+function isDateItem(value: DateItem | null): value is DateItem {
   return value !== null
 }
 
@@ -166,12 +469,61 @@ function normalizePullRequestState(value: string | null | undefined): GitHubRepo
 
   return null
 }
-
 </script>
 
 <template>
   <aside class="grid">
     <WorkItemSidebarSection :title="t('issue.sidebar.sections.assignees')">
+      <template #action>
+        <DropdownMenu>
+          <DropdownMenuTrigger as-child>
+            <Button
+              :aria-label="t('issue.actions.editAssignees')"
+              class="size-7 text-muted-foreground"
+              :disabled="!canOpenAssigneeOptions"
+              :loading="isUpdatingAssignees"
+              size="icon-sm"
+              :title="assigneeEditTitle"
+              type="button"
+              variant="ghost"
+            >
+              <Pencil class="size-3.5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="end"
+            class="w-64"
+          >
+            <DropdownMenuLabel>
+              {{ t('issue.sidebar.sections.assignees') }}
+            </DropdownMenuLabel>
+            <template v-if="assigneeOptions.length > 0">
+              <DropdownMenuCheckboxItem
+                v-for="assignee in assigneeOptions"
+                :key="assigneeKey(assignee)"
+                :checked="isAssigneeSelected(assignee)"
+                class="min-w-0"
+                @select.prevent
+                @update:checked="updateAssigneeSelection(assignee, $event === true)"
+              >
+                <GitHubActorLink
+                  class="min-w-0 text-control"
+                  :avatar-url="assignee.avatarUrl"
+                  :interactive="false"
+                  :login="assignee.login"
+                />
+              </DropdownMenuCheckboxItem>
+            </template>
+            <DropdownMenuItem
+              v-else
+              disabled
+            >
+              {{ t('issue.sidebar.empty.assigneeOptions') }}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </template>
+
       <div
         v-if="assignees.length > 0"
         class="grid gap-2"
@@ -196,13 +548,144 @@ function normalizePullRequestState(value: string | null | undefined): GitHubRepo
     </WorkItemSidebarSection>
 
     <WorkItemSidebarSection :title="t('issue.sidebar.sections.labels')">
-      <WorkItemLabelList
-        :empty-label="t('issue.sidebar.empty.labels')"
-        :labels="labelNames"
-      />
+      <template #action>
+        <DropdownMenu>
+          <DropdownMenuTrigger as-child>
+            <Button
+              :aria-label="t('issue.actions.editLabels')"
+              class="size-7 text-muted-foreground"
+              :disabled="!canOpenLabelOptions"
+              :loading="isUpdatingLabels"
+              size="icon-sm"
+              :title="labelEditTitle"
+              type="button"
+              variant="ghost"
+            >
+              <Pencil class="size-3.5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="end"
+            class="w-64"
+          >
+            <DropdownMenuLabel>
+              {{ t('issue.sidebar.sections.labels') }}
+            </DropdownMenuLabel>
+            <template v-if="labelOptions.length > 0">
+              <DropdownMenuCheckboxItem
+                v-for="label in labelOptions"
+                :key="labelKey(label)"
+                :checked="isLabelSelected(label)"
+                class="min-w-0"
+                @select.prevent
+                @update:checked="updateLabelSelection(label, $event === true)"
+              >
+                <span
+                  v-if="labelColorStyle(label)"
+                  aria-hidden="true"
+                  class="size-2.5 shrink-0 rounded-full border border-border"
+                  :style="labelColorStyle(label)"
+                />
+                <span class="min-w-0 truncate">{{ label.name }}</span>
+              </DropdownMenuCheckboxItem>
+            </template>
+            <DropdownMenuItem
+              v-else
+              disabled
+            >
+              {{ t('issue.sidebar.empty.labelOptions') }}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </template>
+
+      <div
+        v-if="labels.length > 0"
+        class="flex min-w-0 flex-wrap items-center gap-1.5"
+      >
+        <Badge
+          v-for="label in labels"
+          :key="labelKey(label)"
+          class="max-w-full gap-1.5"
+          size="sm"
+          variant="secondary"
+        >
+          <span
+            v-if="labelColorStyle(label)"
+            aria-hidden="true"
+            class="size-2 shrink-0 rounded-full border border-border"
+            :style="labelColorStyle(label)"
+          />
+          <span class="truncate">{{ label.name }}</span>
+        </Badge>
+      </div>
+      <p
+        v-else
+        class="text-body text-muted-foreground"
+      >
+        {{ t('issue.sidebar.empty.labels') }}
+      </p>
     </WorkItemSidebarSection>
 
     <WorkItemSidebarSection :title="t('issue.sidebar.sections.milestone')">
+      <template #action>
+        <DropdownMenu>
+          <DropdownMenuTrigger as-child>
+            <Button
+              :aria-label="t('issue.actions.editMilestone')"
+              class="size-7 text-muted-foreground"
+              :disabled="!canOpenMilestoneOptions"
+              :loading="isUpdatingMilestone"
+              size="icon-sm"
+              :title="milestoneEditTitle"
+              type="button"
+              variant="ghost"
+            >
+              <Pencil class="size-3.5" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="end"
+            class="w-64"
+          >
+            <DropdownMenuLabel>
+              {{ t('issue.sidebar.sections.milestone') }}
+            </DropdownMenuLabel>
+            <DropdownMenuRadioGroup
+              :model-value="selectedMilestoneValue"
+              @update:model-value="updateMilestoneSelection"
+            >
+              <DropdownMenuRadioItem :value="NO_MILESTONE_VALUE">
+                {{ t('issue.sidebar.values.noMilestone') }}
+              </DropdownMenuRadioItem>
+              <DropdownMenuSeparator v-if="milestoneOptions.length > 0" />
+              <DropdownMenuRadioItem
+                v-for="milestone in milestoneOptions"
+                :key="milestoneOptionValue(milestone)"
+                :value="milestoneOptionValue(milestone)"
+                class="min-w-0"
+              >
+                <span class="grid min-w-0 gap-0.5">
+                  <span class="min-w-0 truncate">{{ milestone.title }}</span>
+                  <span
+                    v-if="milestone.dueOn"
+                    class="min-w-0 truncate text-body text-muted-foreground"
+                  >
+                    {{ t('issue.sidebar.dates.due', { date: formatDate(milestone.dueOn) }) }}
+                  </span>
+                </span>
+              </DropdownMenuRadioItem>
+            </DropdownMenuRadioGroup>
+            <DropdownMenuItem
+              v-if="milestoneOptions.length === 0"
+              disabled
+            >
+              {{ t('issue.sidebar.empty.milestoneOptions') }}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </template>
+
       <div
         v-if="issue.milestone"
         class="grid gap-1 text-body"
