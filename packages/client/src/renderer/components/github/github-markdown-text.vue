@@ -40,7 +40,11 @@ function tokenizeText(value: string): TextSegment[] {
   const owner = context?.value.owner?.trim()
   const repo = context?.value.repo?.trim()
   const segments: TextSegment[] = []
-  const pattern = /https:\/\/github\.com\/[^\s<>"']+|(^|[^A-Za-z0-9_./-])@([A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?)|(^|[^A-Za-z0-9_/#-])#([1-9]\d*)/g
+  // The mention branch's trailing guard mirrors GitHub: a login is not a mention when followed by
+  // a login-continuation char ([A-Za-z0-9/_-]) or `.<alnum>`, so `@scope/pkg`, `@user_name` and
+  // `@user.name` stay plain text. The continuation chars in the lookahead also block the regex from
+  // backtracking to a shorter login (e.g. matching `memoha` out of `@memohai/web`).
+  const pattern = /https:\/\/github\.com\/[^\s<>"']+|(^|[^A-Za-z0-9_./-])@([A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?)(?![A-Za-z0-9/_-]|\.[A-Za-z0-9])|(^|[^A-Za-z0-9_/#-])#([1-9]\d*)/g
   let lastIndex = 0
   let match: RegExpExecArray | null
 
