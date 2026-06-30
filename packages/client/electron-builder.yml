@@ -45,6 +45,9 @@ nsis:
 
 linux:
   category: Development
+  # The scoped package name (@oh-my-github/client) is not a valid AppImage executable
+  # name, so set a clean one explicitly.
+  executableName: oh-my-github
   target:
     - target: AppImage
       arch:
