@@ -60,7 +60,8 @@ body {
   color: var(--foreground);
 }
 
-html:not([data-focus-ring-modality="keyboard"]) :focus-visible {
+html:not([data-focus-ring-modality="keyboard"])
+  :focus-visible:not([data-slot="input"]):not([data-slot="textarea"]) {
   box-shadow: none !important;
   outline: none !important;
 }
@@ -104,6 +105,37 @@ html:not([data-focus-ring-modality="keyboard"]) :focus-visible {
   min-width: 2ch;
   text-align: right;
   user-select: none;
+}
+
+.rich-content-code[data-diff="true"] .line {
+  display: inline-block;
+  min-width: 100%;
+  padding-right: 0.75rem;
+}
+
+.rich-content-code[data-diff="true"] .line::before {
+  background-color: color-mix(in oklab, var(--muted-foreground) 8%, transparent);
+  color: var(--muted-foreground);
+  content: attr(data-linenums);
+  display: inline-block;
+  font-variant-numeric: tabular-nums;
+  margin-right: 1ch;
+  padding: 0 0.75ch;
+  user-select: none;
+  white-space: pre;
+}
+
+.rich-content-code[data-diff="true"] .line.diff-add {
+  background-color: color-mix(in oklab, var(--success) 16%, transparent);
+}
+
+.rich-content-code[data-diff="true"] .line.diff-remove {
+  background-color: color-mix(in oklab, var(--destructive) 16%, transparent);
+}
+
+.rich-content-code[data-diff="true"] .line.diff-hunk {
+  background-color: color-mix(in oklab, var(--muted-foreground) 10%, transparent);
+  color: var(--muted-foreground);
 }
 
 .rich-content-markdown {

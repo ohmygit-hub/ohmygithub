@@ -1,7 +1,8 @@
 import { ref } from 'vue'
-import type { BundledLanguage, BundledTheme, HighlighterGeneric } from 'shiki'
+import type { BundledLanguage, BundledTheme, HighlighterGeneric, ShikiTransformer } from 'shiki'
 import { useSettingsStore } from '../../stores/settings'
 import { normalizeCodeLanguage, resolveCodeLanguage } from './code-language'
+import type { DiffLine } from './parse-diff'
 
 type Highlighter = HighlighterGeneric<BundledLanguage, BundledTheme>
 export type ShikiThemePair = {
@@ -14,6 +15,7 @@ export type ShikiHighlightOptions = {
   filename?: string
   theme?: BundledTheme
   themes?: ShikiThemePair
+  diffLines?: DiffLine[]
 }
 
 let highlighterPromise: Promise<Highlighter> | null = null
@@ -69,6 +71,48 @@ function escapeHtml(value: string): string {
     .replace(/"/g, '&quot;')
 }
 
+function createDiffTransformer(lines: DiffLine[]): ShikiTransformer {
+  let maxLine = 0
+  for (const line of lines) {
+    if (line.oldLine && line.oldLine > maxLine) maxLine = line.oldLine
+    if (line.newLine && line.newLine > maxLine) maxLine = line.newLine
+  }
+  const width = Math.max(2, String(maxLine).length)
+  const pad = (value: number | null): string =>
+    value === null ? ' '.repeat(width) : String(value).padStart(width)
+
+  return {
+    name: 'oh-my-github-diff',
+    line(node, line) {
+      const info = lines[line - 1]
+      if (!info) return
+
+      const className =
+        info.type === 'add'
+          ? 'diff-add'
+          : info.type === 'del'
+            ? 'diff-remove'
+            : info.type === 'hunk'
+              ? 'diff-hunk'
+              : ''
+
+      if (className) {
+        const existing = node.properties.class
+        if (Array.isArray(existing)) {
+          existing.push(className)
+        } else if (typeof existing === 'string' && existing.length > 0) {
+          node.properties.class = `${existing} ${className}`
+        } else {
+          node.properties.class = className
+        }
+      }
+
+      const marker = info.type === 'add' ? '+' : info.type === 'del' ? '-' : ' '
+      node.properties.dataLinenums = `${pad(info.oldLine)} ${pad(info.newLine)} ${marker}`
+    },
+  }
+}
+
 export function useShikiHighlighter() {
   const settings = useSettingsStore()
   const html = ref('')
@@ -84,12 +128,16 @@ export function useShikiHighlighter() {
         light: settings.codeThemeLight as BundledTheme,
         dark: settings.codeThemeDark as BundledTheme
       }
+      const transformers = options.diffLines
+        ? [createDiffTransformer(options.diffLines)]
+        : undefined
 
       if (options.theme) {
         await ensureTheme(highlighter, options.theme)
         html.value = highlighter.codeToHtml(code, {
           lang: language as BundledLanguage,
-          theme: options.theme
+          theme: options.theme,
+          transformers
         })
       } else {
         await Promise.all([
@@ -99,7 +147,8 @@ export function useShikiHighlighter() {
 
         html.value = highlighter.codeToHtml(code, {
           lang: language as BundledLanguage,
-          themes
+          themes,
+          transformers
         })
       }
     } catch {

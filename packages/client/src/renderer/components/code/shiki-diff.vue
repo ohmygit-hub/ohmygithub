@@ -30,7 +30,8 @@ const diffCode = computed(() => {
 <template>
   <ShikiCode
     :code="diffCode"
+    :diff="true"
     :filename="props.filename"
-    language="diff"
+    :show-line-numbers="false"
   />
 </template>

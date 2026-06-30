@@ -27,6 +27,7 @@ const props = defineProps<{
   showAvatar?: boolean
   owner?: string | null
   repo?: string | null
+  editing?: boolean
 }>()
 
 const resolvedCommentId = computed(() => {
@@ -79,11 +80,15 @@ const hasReactions = computed(() => resolvedReactions.value.some((reaction) => r
     </div>
 
     <div
-      v-if="hasBody || emptyLabel"
+      v-if="(editing && $slots.editor) || hasBody || emptyLabel"
       class="min-w-0 px-3 py-2"
     >
+      <slot
+        v-if="editing && $slots.editor"
+        name="editor"
+      />
       <MarkdownRenderer
-        v-if="hasBody && !(owner && repo)"
+        v-else-if="hasBody && !(owner && repo)"
         class="rich-content-markdown--compact"
         :content="resolvedBody"
       />

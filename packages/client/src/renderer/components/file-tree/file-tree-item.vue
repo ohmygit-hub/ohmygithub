@@ -33,6 +33,9 @@ const emit = defineEmits<{
 const isFolder = computed(() => props.item.type === 'tree')
 const isExpanded = computed(() => props.expandedPaths.has(props.item.path))
 const isSelected = computed(() => props.selectedPath === props.item.path)
+const hasStats = computed(() =>
+  !isFolder.value && (props.item.additions !== undefined || props.item.deletions !== undefined)
+)
 const rowStyle = computed(() => ({
   paddingLeft: `${0.5 + props.level * 1.125}rem`,
 }))
@@ -62,7 +65,7 @@ function activateItem(): void {
 <template>
   <li>
     <button
-      class="grid h-8 w-full grid-cols-[1rem_1rem_minmax(0,1fr)] items-center gap-2 rounded-md pr-2 text-left text-body outline-hidden transition-colors hover:bg-accent focus-visible:bg-accent focus-visible:ring-2 focus-visible:ring-ring/30"
+      class="grid h-8 w-full grid-cols-[1rem_1rem_minmax(0,1fr)_auto] items-center gap-2 rounded-md pr-2 text-left text-body outline-hidden transition-colors hover:bg-accent focus-visible:bg-accent focus-visible:ring-2 focus-visible:ring-ring/30"
       :class="isSelected ? 'bg-accent text-foreground' : 'text-muted-foreground'"
       :style="rowStyle"
       :aria-expanded="isFolder ? isExpanded : undefined"
@@ -96,6 +99,18 @@ function activateItem(): void {
       <span class="min-w-0 truncate">
         {{ item.name }}
       </span>
+
+      <span
+        v-if="hasStats"
+        class="flex shrink-0 items-center gap-1.5 pl-2 font-mono text-[0.6875rem] leading-none tabular-nums"
+      >
+        <span class="text-success">+{{ item.additions ?? 0 }}</span>
+        <span class="text-destructive">&minus;{{ item.deletions ?? 0 }}</span>
+      </span>
+      <span
+        v-else
+        aria-hidden="true"
+      />
     </button>
 
     <ul

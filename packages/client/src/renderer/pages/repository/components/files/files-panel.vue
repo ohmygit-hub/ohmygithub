@@ -11,7 +11,7 @@ import {
 } from '@oh-my-github/ui'
 import { useRepositoryFilesQuery } from '../../../../composables/github/use-repositories'
 import { useRightPanel } from '../../../../composables/use-right-panel'
-import FileTreeItem from './file-tree-item.vue'
+import { FileTree } from '../../../../components'
 
 const props = defineProps<{
   defaultBranch: string | null
@@ -231,21 +231,14 @@ watch(
           </div>
         </div>
 
-        <ul
+        <FileTree
           v-if="fileItems.length > 0"
-          class="grid gap-0.5"
-        >
-          <FileTreeItem
-            v-for="item in fileItems"
-            :key="item.path"
-            :expanded-paths="expandedPaths"
-            :item="item"
-            :level="0"
-            :selected-path="selectedPath"
-            @select="selectFile"
-            @toggle="toggleFolder"
-          />
-        </ul>
+          :expanded-paths="expandedPaths"
+          :items="fileItems"
+          :selected-path="selectedPath"
+          @select="selectFile"
+          @toggle="toggleFolder"
+        />
 
         <Empty
           v-else

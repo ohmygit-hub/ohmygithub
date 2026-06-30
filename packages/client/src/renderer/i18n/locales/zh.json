@@ -737,11 +737,29 @@
       "placeholder": "未接入"
     }
   },
+  "conversation": {
+    "editor": {
+      "cancel": "取消",
+      "emptyPreview": "没有可预览的内容。",
+      "inputLabel": "Markdown 内容",
+      "placeholder": "编写 Markdown",
+      "preview": "预览",
+      "save": "保存",
+      "write": "编辑"
+    }
+  },
   "pullRequest": {
     "actions": {
+      "close": "关闭 Pull Request",
       "copyUrl": "复制链接",
+      "editBody": "编辑 Pull Request 描述",
+      "editComment": "编辑评论",
+      "lock": "锁定对话",
       "more": "更多 Pull Request 操作",
-      "openOnGitHub": "在 GitHub 打开"
+      "readyForReview": "Ready for review",
+      "subscribe": "订阅",
+      "unlock": "解锁对话",
+      "unsubscribe": "取消订阅"
     },
     "activity": {
       "empty": "这个 Pull Request 还没有加载到动态。"

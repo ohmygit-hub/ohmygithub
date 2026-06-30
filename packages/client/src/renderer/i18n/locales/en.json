@@ -737,11 +737,29 @@
       "placeholder": "Not connected"
     }
   },
+  "conversation": {
+    "editor": {
+      "cancel": "Cancel",
+      "emptyPreview": "Nothing to preview.",
+      "inputLabel": "Markdown body",
+      "placeholder": "Write Markdown",
+      "preview": "Preview",
+      "save": "Save",
+      "write": "Write"
+    }
+  },
   "pullRequest": {
     "actions": {
+      "close": "Close pull request",
       "copyUrl": "Copy URL",
+      "editBody": "Edit pull request description",
+      "editComment": "Edit comment",
+      "lock": "Lock conversation",
       "more": "More pull request actions",
-      "openOnGitHub": "Open on GitHub"
+      "readyForReview": "Ready for review",
+      "subscribe": "Subscribe",
+      "unlock": "Unlock conversation",
+      "unsubscribe": "Unsubscribe"
     },
     "activity": {
       "empty": "No activity has been loaded for this pull request yet."

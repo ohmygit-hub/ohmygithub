@@ -9,6 +9,15 @@ export type RightPanelContent =
       title?: string
     }
   | {
+      type: 'diff'
+      patch: string
+      filename: string
+      language?: string
+      additions?: number
+      deletions?: number
+      title?: string
+    }
+  | {
       type: 'markdown'
       content: string
       owner?: string | null
