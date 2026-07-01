@@ -63,6 +63,7 @@ const timestamp = computed(() => formatConversationDate(props.notification.updat
     tabindex="0"
     @click="emit('open', notification)"
     @keydown.enter.prevent="emit('open', notification)"
+    @keydown.space.prevent="emit('open', notification)"
   >
     <span
       class="size-2 shrink-0 rounded-full"
@@ -94,7 +95,7 @@ const timestamp = computed(() => formatConversationDate(props.notification.updat
       >{{ timestamp }}</span>
     </div>
 
-    <div class="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+    <div class="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
       <Tooltip v-if="notification.unread">
         <TooltipTrigger as-child>
           <Button
