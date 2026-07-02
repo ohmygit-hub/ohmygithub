@@ -12,6 +12,7 @@ import {
 import { useRepositoryFilesQuery } from '../../../../composables/github/use-repositories'
 import { useRightPanel } from '../../../../composables/use-right-panel'
 import { FileTree } from '../../../../components'
+import GitHubBranchSelect from '../../../../components/github/github-branch-select.vue'
 
 const props = defineProps<{
   defaultBranch: string | null
@@ -22,6 +23,7 @@ const props = defineProps<{
 const { t } = useI18n()
 const expandedPaths = ref(new Set<string>())
 const selectedPath = ref<string | null>(null)
+const selectedRef = ref<string | null>(props.defaultBranch)
 const previewRequestId = ref(0)
 const {
   openRightPanel,
@@ -29,10 +31,11 @@ const {
 } = useRightPanel()
 
 const hasRepositoryIdentity = computed(() => Boolean(props.owner && props.repo))
+const effectiveRef = computed(() => selectedRef.value ?? props.defaultBranch)
 const filesQuery = useRepositoryFilesQuery(
   () => props.owner,
   () => props.repo,
-  () => props.defaultBranch,
+  effectiveRef,
   hasRepositoryIdentity,
 )
 const fileTree = computed(() => filesQuery.data.value ?? null)
@@ -145,9 +148,26 @@ function countFileNodes(items: GitHubRepositoryFileNode[]): number {
   ), 0)
 }
 
+function selectBranch(branch: string): void {
+  if (branch === effectiveRef.value) return
+  selectedRef.value = branch
+  expandedPaths.value = new Set()
+  selectedPath.value = null
+}
+
 watch(
-  () => [props.owner, props.repo, props.defaultBranch] as const,
+  () => props.defaultBranch,
+  (branch) => {
+    if (selectedRef.value === null && branch) {
+      selectedRef.value = branch
+    }
+  },
+)
+
+watch(
+  () => [props.owner, props.repo] as const,
   () => {
+    selectedRef.value = props.defaultBranch
     expandedPaths.value = new Set()
     selectedPath.value = null
   },
@@ -155,25 +175,32 @@ watch(
 </script>
 
 <template>
-  <section class="overflow-hidden rounded-xl border border-border bg-card">
-    <header class="flex min-h-11 items-center justify-between gap-3 border-b border-border px-4">
-      <div class="flex min-w-0 items-center gap-2">
-        <Folder class="size-4 shrink-0 text-muted-foreground" />
-        <h2 class="select-none truncate text-label font-medium text-foreground">
-          {{ t('repository.files.title') }}
-        </h2>
-      </div>
+  <section class="grid gap-3">
+    <div class="flex min-w-0 items-center gap-2">
+      <GitHubBranchSelect
+        :default-branch="defaultBranch"
+        :model-value="effectiveRef"
+        :owner="owner"
+        :repo="repo"
+        @update:model-value="selectBranch"
+      />
+    </div>
 
-      <div class="flex min-w-0 shrink-0 items-center gap-2 text-body text-muted-foreground">
-        <span class="max-w-40 truncate">
-          {{ t('repository.files.branch', { branch: branchLabel }) }}
-        </span>
-        <span aria-hidden="true">/</span>
-        <span class="tabular-nums">
-          {{ t('repository.files.count', { count: formattedFileCount }) }}
-        </span>
-      </div>
-    </header>
+    <div class="overflow-hidden rounded-xl border border-border bg-card">
+      <header class="flex min-h-11 items-center justify-between gap-3 border-b border-border px-4">
+        <div class="flex min-w-0 items-center gap-2">
+          <Folder class="size-4 shrink-0 text-muted-foreground" />
+          <h2 class="select-none truncate text-label font-medium text-foreground">
+            {{ t('repository.files.title') }}
+          </h2>
+        </div>
+
+        <div class="flex min-w-0 shrink-0 items-center gap-2 text-body text-muted-foreground">
+          <span class="tabular-nums">
+            {{ t('repository.files.count', { count: formattedFileCount }) }}
+          </span>
+        </div>
+      </header>
 
     <div class="min-h-[24rem] p-3">
       <Empty
@@ -255,5 +282,6 @@ watch(
         </Empty>
       </template>
     </div>
+  </div>
   </section>
 </template>
