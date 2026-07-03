@@ -6,9 +6,13 @@
 // Behavior:
 //   - Loads the monorepo-root `.env` and fills env GAPS only: anything already present in
 //     process.env (CI / GitHub Actions Variables and Secrets) takes precedence.
+//   - Accepts either electron-builder's `CSC_LINK` + `CSC_KEY_PASSWORD` names or the
+//     common `APPLE_CERTIFICATE` + `APPLE_CERTIFICATE_PASSWORD` aliases.
 //   - Without a signing certificate (`CSC_LINK`), disables identity auto-discovery so macOS
 //     builds stay unsigned and never prompt for a keychain identity (matches the previous
 //     `mac.identity: null` behavior).
+//   - With signing credentials and App Store Connect API credentials, enables notarization
+//     for macOS builds. Unsigned local / PR builds stay unsigned and skip notarization.
 //   - With `R2_PUBLIC_BASE_URL` set, injects a generic publish provider so electron-builder
 //     emits the update manifest (latest*.yml) and bakes app-update.yml pointing at R2.
 //     `-p never` keeps it local: generic providers are never network-published, so the files
@@ -16,8 +20,9 @@
 //     auto-updater; the manifest is there for a future manual "check for updates".
 
 import { spawnSync } from 'node:child_process'
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
+import { tmpdir } from 'node:os'
 import { fileURLToPath } from 'node:url'
 
 const here = dirname(fileURLToPath(import.meta.url))
@@ -46,6 +51,21 @@ function loadEnvFile(path) {
 
 loadEnvFile(envPath)
 
+if (!process.env.CSC_LINK && process.env.APPLE_CERTIFICATE) {
+  process.env.CSC_LINK = process.env.APPLE_CERTIFICATE
+}
+if (!process.env.CSC_KEY_PASSWORD && process.env.APPLE_CERTIFICATE_PASSWORD) {
+  process.env.CSC_KEY_PASSWORD = process.env.APPLE_CERTIFICATE_PASSWORD
+}
+if (process.env.APPLE_API_KEY && !existsSync(process.env.APPLE_API_KEY)) {
+  const keyBody = process.env.APPLE_API_KEY.includes('BEGIN PRIVATE KEY')
+    ? process.env.APPLE_API_KEY
+    : Buffer.from(process.env.APPLE_API_KEY, 'base64').toString('utf8')
+  const keyPath = resolve(tmpdir(), `oh-my-github-${process.env.APPLE_API_KEY_ID ?? 'apple-api-key'}.p8`)
+  writeFileSync(keyPath, keyBody, { mode: 0o600 })
+  process.env.APPLE_API_KEY = keyPath
+}
+
 const [command, ...args] = process.argv.slice(2)
 if (!command) {
   console.error('with-env: no command provided')
@@ -72,6 +92,18 @@ if (process.env.R2_PUBLIC_BASE_URL) {
 // Override the app/bundle id when APP_ID is set; otherwise electron-builder.yml's default is used.
 if (process.env.APP_ID) {
   extraArgs.push(`-c.appId=${process.env.APP_ID}`)
+}
+
+const hasSigningCert = Boolean(process.env.CSC_LINK && process.env.CSC_KEY_PASSWORD)
+const hasAppleApiNotarization = Boolean(
+  process.env.APPLE_API_KEY &&
+  process.env.APPLE_API_KEY_ID &&
+  process.env.APPLE_API_ISSUER &&
+  process.env.APPLE_TEAM_ID
+)
+
+if (hasSigningCert && hasAppleApiNotarization) {
+  extraArgs.push('-c.mac.notarize=true')
 }
 
 const result = spawnSync(command, [...args, ...extraArgs], {

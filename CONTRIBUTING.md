@@ -37,8 +37,11 @@ rest are optional and used only for signed/published release builds.
 | `APP_ID` | no | Override the app/bundle id (defaults to `electron-builder.yml`'s `appId`) | `.env` | **Variable** |
 | `CSC_LINK` | no | Code-signing cert — `.p12` path or base64 string | `.env` | **Secret** |
 | `CSC_KEY_PASSWORD` | no | Code-signing cert password | `.env` | **Secret** |
-| `APPLE_ID` | no | Apple ID email (notarization) | `.env` | **Variable** |
-| `APPLE_APP_SPECIFIC_PASSWORD` | no | Apple app-specific password (notarization) | `.env` | **Secret** |
+| `APPLE_CERTIFICATE` | no | Alias for `CSC_LINK`, useful with Apple-named CI templates | `.env` | **Secret** |
+| `APPLE_CERTIFICATE_PASSWORD` | no | Alias for `CSC_KEY_PASSWORD`, useful with Apple-named CI templates | `.env` | **Secret** |
+| `APPLE_API_KEY` | no | App Store Connect API key — `AuthKey_*.p8` path, pasted PEM, or base64 string (notarization) | `.env` | **Secret** |
+| `APPLE_API_KEY_ID` | no | App Store Connect API key id (notarization) | `.env` | **Variable** |
+| `APPLE_API_ISSUER` | no | App Store Connect issuer id (notarization) | `.env` | **Variable** |
 | `APPLE_TEAM_ID` | no | Apple Developer Team ID (notarization) | `.env` | **Variable** |
 | `R2_ACCOUNT_ID` | no | Cloudflare account id (R2 upload) | `.env` | **Variable** |
 | `R2_BUCKET` | no | R2 bucket name (publish uploads here; also gates the R2 step) | `.env` | **Variable** |
@@ -90,11 +93,12 @@ updates" can read the latest version from R2.
 
 Builds are unsigned by default. To sign:
 
-- **macOS / Windows:** set `CSC_LINK` + `CSC_KEY_PASSWORD`. The build script auto-signs when a
-  cert is present (and stays unsigned otherwise).
-- **macOS notarization:** additionally set `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`,
-  `APPLE_TEAM_ID` and add `notarize: true` under `mac:` in
-  `packages/client/electron-builder.yml`.
+- **macOS / Windows:** set `CSC_LINK` + `CSC_KEY_PASSWORD` (or `APPLE_CERTIFICATE` +
+  `APPLE_CERTIFICATE_PASSWORD`). The build script auto-signs when a cert is present (and stays
+  unsigned otherwise).
+- **macOS notarization:** additionally set `APPLE_API_KEY`, `APPLE_API_KEY_ID`,
+  `APPLE_API_ISSUER`, and `APPLE_TEAM_ID`. The build script enables `mac.notarize` only when
+  signing credentials and these App Store Connect API credentials are present.
 
 ## Commit & PR conventions
 
