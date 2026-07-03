@@ -1,7 +1,11 @@
 import { RequestError, type GitHubOctokit } from '../transport'
+import { CONTRIBUTOR_STATS_PENDING } from '../types'
 import type {
   GitHubCiState,
   GitHubCommitDetail,
+  GitHubContributorStatsWeek,
+  GitHubRepositoryContributorStats,
+  GitHubRepositoryContributorStatsResult,
   GitHubCommitFile,
   GitHubRepositoryBranch,
   GitHubRepositoryCommit,
@@ -15,18 +19,35 @@ import type {
   GitHubRepositoryFileTree,
   GitHubRepositoryLanguage,
   GitHubRepositoryLicense,
+  GitHubRepositoryNavigationCounts,
   GitHubRepositoryOverview,
   GitHubRepositoryOverviewCounts,
+  GitHubRepositorySubscription,
   GitHubRepositoryViewerState,
   GitHubRepositoryVisibility,
+  CreateRepositoryBranchOptions,
+  CreateRepositoryTagOptions,
+  DeleteRepositoryBranchOptions,
+  DeleteRepositoryTagOptions,
+  ForkRepositoryOptions,
+  GitHubBranchListItem,
+  GitHubBranchPage,
+  GitHubCreatedRef,
+  GitHubForkedRepository,
+  GitHubTagListItem,
+  GitHubTagPage,
+  ListRepositoryBranchesDetailedOptions,
+  ListRepositoryTagsOptions,
+  RenameRepositoryBranchOptions,
   RepositoryBranchesOptions,
   RepositoryCommitOptions,
   RepositoryCommitsOptions,
+  RepositoryContributorStatsOptions,
   RepositoryFilePreviewOptions,
   RepositoryFilesOptions,
   RepositoryOptions,
   SetRepositoryStarredOptions,
-  SetRepositoryWatchingOptions,
+  SetRepositorySubscriptionOptions,
 } from '../types'
 
 interface RepositoryResponse {
@@ -139,6 +160,12 @@ interface CommunityProfile {
 
 interface GraphRepositoryCountsResponse {
   repository: {
+    defaultBranchRef: {
+      target: {
+        history?: { totalCount: number }
+      } | null
+    } | null
+    issues: { totalCount: number }
     pullRequests: { totalCount: number }
     releases: { totalCount: number }
     branchRefs: { totalCount: number }
@@ -152,7 +179,69 @@ interface GraphRepositoryPackagesResponse {
   } | null
 }
 
+interface GraphRefPageInfo {
+  hasNextPage?: boolean
+  endCursor?: string | null
+}
+
+interface GraphBranchRefNode {
+  name?: string | null
+  branchProtectionRule?: { id?: string | null } | null
+  associatedPullRequests?: {
+    nodes?: Array<{ number?: number | null; title?: string | null; url?: string | null } | null> | null
+  } | null
+  compare?: { aheadBy?: number | null; behindBy?: number | null } | null
+  target?: {
+    oid?: string | null
+    committedDate?: string | null
+    author?: {
+      name?: string | null
+      avatarUrl?: string | null
+      user?: { login?: string | null } | null
+    } | null
+  } | null
+}
+
+interface GraphBranchListResponse {
+  repository: {
+    refs?: {
+      totalCount?: number
+      pageInfo?: GraphRefPageInfo | null
+      nodes?: Array<GraphBranchRefNode | null> | null
+    } | null
+  } | null
+}
+
+interface GraphTagRefNode {
+  name?: string | null
+  target?: {
+    __typename?: string
+    oid?: string | null
+    committedDate?: string | null
+    message?: string | null
+    tagger?: { date?: string | null } | null
+    target?: { oid?: string | null; committedDate?: string | null } | null
+  } | null
+}
+
+interface GraphTagListResponse {
+  repository: {
+    refs?: {
+      totalCount?: number
+      pageInfo?: GraphRefPageInfo | null
+      nodes?: Array<GraphTagRefNode | null> | null
+    } | null
+  } | null
+}
+
+interface GitRefResponse {
+  ref?: string
+  object?: { sha?: string } | null
+}
+
 interface RepositoryGraphCounts {
+  commits: number | null
+  openIssues: number | null
   openPullRequests: number | null
   releases: number | null
   branches: number | null
@@ -164,6 +253,18 @@ const FILE_PREVIEW_SIZE_LIMIT = 1024 * 1024
 const repositoryCountsQuery = `
   query RepositoryOverviewCounts($owner: String!, $repo: String!) {
     repository(owner: $owner, name: $repo) {
+      defaultBranchRef {
+        target {
+          ... on Commit {
+            history {
+              totalCount
+            }
+          }
+        }
+      }
+      issues(states: OPEN) {
+        totalCount
+      }
       pullRequests(states: OPEN) {
         totalCount
       }
@@ -190,20 +291,128 @@ const repositoryPackagesQuery = `
   }
 `
 
+const repositoryBranchListQuery = `
+  query RepositoryBranchList($owner: String!, $repo: String!, $headRef: String!, $searchQuery: String, $first: Int!, $after: String) {
+    repository(owner: $owner, name: $repo) {
+      refs(refPrefix: "refs/heads/", query: $searchQuery, first: $first, after: $after, orderBy: { field: ALPHABETICAL, direction: ASC }) {
+        totalCount
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
+        nodes {
+          name
+          branchProtectionRule {
+            id
+          }
+          associatedPullRequests(first: 1, states: [OPEN]) {
+            nodes {
+              number
+              title
+              url
+            }
+          }
+          compare(headRef: $headRef) {
+            aheadBy
+            behindBy
+          }
+          target {
+            oid
+            ... on Commit {
+              committedDate
+              author {
+                name
+                avatarUrl
+                user {
+                  login
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+`
+
+const repositoryTagListQuery = `
+  query RepositoryTagList($owner: String!, $repo: String!, $searchQuery: String, $first: Int!, $after: String) {
+    repository(owner: $owner, name: $repo) {
+      refs(refPrefix: "refs/tags/", query: $searchQuery, first: $first, after: $after, orderBy: { field: TAG_COMMIT_DATE, direction: DESC }) {
+        totalCount
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
+        nodes {
+          name
+          target {
+            __typename
+            oid
+            ... on Commit {
+              committedDate
+            }
+            ... on Tag {
+              message
+              tagger {
+                date
+              }
+              target {
+                oid
+                ... on Commit {
+                  committedDate
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+`
+
+const REFS_DEFAULT_PER_PAGE = 20
+const REFS_MAX_PER_PAGE = 50
+
+function clampRefsPerPage(perPage: number | undefined): number {
+  return Math.max(1, Math.min(REFS_MAX_PER_PAGE, Math.floor(perPage ?? REFS_DEFAULT_PER_PAGE)))
+}
+
+// The refs connection encodes cursors as base64 of the 1-based item offset
+// (e.g. "MjA" = "20"), so a page number maps straight to an `after` cursor and
+// arbitrary page jumps work like offset pagination.
+function refsPageCursor(page: number, perPage: number): string | undefined {
+  const offset = (page - 1) * perPage
+  if (offset <= 0) return undefined
+
+  return Buffer.from(String(offset), 'utf8').toString('base64').replace(/=+$/, '')
+}
+
 export class RepositoriesApi {
   constructor(private readonly octokit: GitHubOctokit) {}
 
   async getViewerState(options: RepositoryOptions): Promise<GitHubRepositoryViewerState> {
-    const [isStarred, isWatching, starCount] = await Promise.all([
+    const [isStarred, subscription, starCount] = await Promise.all([
       this.isRepositoryStarred(options),
-      this.isRepositoryWatching(options),
+      this.getSubscription(options),
       this.getRepositoryStarCount(options),
     ])
 
     return {
       isStarred,
-      isWatching,
+      isWatching: subscription === 'all',
+      subscription,
       starCount,
+    }
+  }
+
+  async getNavigationCounts(options: RepositoryOptions): Promise<GitHubRepositoryNavigationCounts> {
+    const graphCounts = await this.getGraphCounts(options)
+
+    return {
+      commits: graphCounts.commits,
+      openIssues: graphCounts.openIssues ?? 0,
+      openPullRequests: graphCounts.openPullRequests,
     }
   }
 
@@ -219,6 +428,8 @@ export class RepositoriesApi {
       this.getGraphCounts(options).catch(() => {
         warnings.push('counts_unavailable')
         return {
+          commits: null,
+          openIssues: null,
           openPullRequests: null,
           releases: null,
           branches: null,
@@ -326,6 +537,240 @@ export class RepositoriesApi {
     })
   }
 
+  async listBranchesDetailed(options: ListRepositoryBranchesDetailedOptions): Promise<GitHubBranchPage> {
+    const defaultBranch = options.defaultBranch?.trim()
+      || (await this.getRepository(options)).default_branch?.trim()
+      || null
+    const page = Math.max(1, Math.floor(options.page ?? 1))
+    const perPage = clampRefsPerPage(options.perPage)
+    const response = await this.octokit.graphql<GraphBranchListResponse>(repositoryBranchListQuery, {
+      owner: options.owner,
+      repo: options.repo,
+      headRef: defaultBranch ?? 'HEAD',
+      searchQuery: options.query?.trim() || undefined,
+      first: perPage,
+      after: refsPageCursor(page, perPage),
+    })
+    const refs = response.repository?.refs
+    const items = (refs?.nodes ?? []).flatMap((node): GitHubBranchListItem[] => {
+      if (!node?.name) return []
+
+      const sha = node.target?.oid ?? ''
+      const pullRequest = node.associatedPullRequests?.nodes?.find((entry) => entry?.number != null) ?? null
+      // Ref.compare treats the branch as base and headRef (default branch) as
+      // head, so its counts are the default branch's ahead/behind — swap them
+      // to express the branch relative to the default branch.
+      const compare = node.compare ?? null
+
+      return [{
+        name: node.name,
+        commitSha: sha,
+        shortSha: sha.slice(0, 7),
+        committedDate: node.target?.committedDate ?? null,
+        author: {
+          login: node.target?.author?.user?.login ?? null,
+          name: node.target?.author?.name ?? null,
+          avatarUrl: node.target?.author?.avatarUrl ?? null,
+        },
+        aheadBy: compare?.behindBy ?? null,
+        behindBy: compare?.aheadBy ?? null,
+        isDefault: defaultBranch != null && node.name === defaultBranch,
+        isProtected: Boolean(node.branchProtectionRule),
+        associatedPullRequest: pullRequest?.number != null
+          ? {
+              number: pullRequest.number,
+              title: pullRequest.title ?? '',
+              url: pullRequest.url ?? '',
+            }
+          : null,
+      }]
+    })
+
+    return {
+      items,
+      totalCount: refs?.totalCount ?? items.length,
+      page,
+      perPage,
+      hasNextPage: refs?.pageInfo?.hasNextPage ?? false,
+      defaultBranch,
+    }
+  }
+
+  async listTags(options: ListRepositoryTagsOptions): Promise<GitHubTagPage> {
+    const page = Math.max(1, Math.floor(options.page ?? 1))
+    const perPage = clampRefsPerPage(options.perPage)
+    const response = await this.octokit.graphql<GraphTagListResponse>(repositoryTagListQuery, {
+      owner: options.owner,
+      repo: options.repo,
+      searchQuery: options.query?.trim() || undefined,
+      first: perPage,
+      after: refsPageCursor(page, perPage),
+    })
+    const refs = response.repository?.refs
+    const items = (refs?.nodes ?? []).flatMap((node): GitHubTagListItem[] => {
+      if (!node?.name) return []
+
+      const isAnnotated = node.target?.__typename === 'Tag'
+      const sha = (isAnnotated ? node.target?.target?.oid : node.target?.oid) ?? ''
+
+      return [{
+        name: node.name,
+        commitSha: sha,
+        shortSha: sha.slice(0, 7),
+        date: (isAnnotated
+          ? node.target?.tagger?.date ?? node.target?.target?.committedDate
+          : node.target?.committedDate) ?? null,
+        message: isAnnotated ? node.target?.message ?? null : null,
+        isAnnotated,
+      }]
+    })
+
+    return {
+      items,
+      totalCount: refs?.totalCount ?? items.length,
+      page,
+      perPage,
+      hasNextPage: refs?.pageInfo?.hasNextPage ?? false,
+    }
+  }
+
+  async createBranch(options: CreateRepositoryBranchOptions): Promise<GitHubCreatedRef> {
+    const name = options.name.trim()
+    const fromRef = options.fromRef.trim()
+    if (!name) {
+      throw new Error('Branch name is required')
+    }
+    if (!fromRef) {
+      throw new Error('Base branch is required')
+    }
+
+    const sha = await this.getRefSha(options, `heads/${fromRef}`)
+
+    return this.createRef(options, `refs/heads/${name}`, sha)
+  }
+
+  async renameBranch(options: RenameRepositoryBranchOptions): Promise<void> {
+    const name = options.name.trim()
+    const newName = options.newName.trim()
+    if (!name) {
+      throw new Error('Branch name is required')
+    }
+    if (!newName) {
+      throw new Error('New branch name is required')
+    }
+
+    await this.octokit.request('POST /repos/{owner}/{repo}/branches/{branch}/rename', {
+      owner: options.owner,
+      repo: options.repo,
+      branch: name,
+      new_name: newName,
+    })
+  }
+
+  async deleteBranch(options: DeleteRepositoryBranchOptions): Promise<void> {
+    const name = options.name.trim()
+    if (!name) {
+      throw new Error('Branch name is required')
+    }
+
+    await this.octokit.request('DELETE /repos/{owner}/{repo}/git/refs/{ref}', {
+      owner: options.owner,
+      repo: options.repo,
+      ref: `heads/${name}`,
+    })
+  }
+
+  async createTag(options: CreateRepositoryTagOptions): Promise<GitHubCreatedRef> {
+    const name = options.name.trim()
+    const fromRef = options.fromRef.trim()
+    if (!name) {
+      throw new Error('Tag name is required')
+    }
+    if (!fromRef) {
+      throw new Error('Base branch is required')
+    }
+
+    const commitSha = await this.getRefSha(options, `heads/${fromRef}`)
+    const message = options.message?.trim()
+    if (!message) {
+      return this.createRef(options, `refs/tags/${name}`, commitSha)
+    }
+
+    const tagResponse = await this.octokit.request('POST /repos/{owner}/{repo}/git/tags', {
+      owner: options.owner,
+      repo: options.repo,
+      tag: name,
+      message,
+      object: commitSha,
+      type: 'commit',
+    })
+
+    return this.createRef(options, `refs/tags/${name}`, (tagResponse.data as { sha?: string }).sha ?? commitSha)
+  }
+
+  async deleteTag(options: DeleteRepositoryTagOptions): Promise<void> {
+    const name = options.name.trim()
+    if (!name) {
+      throw new Error('Tag name is required')
+    }
+
+    await this.octokit.request('DELETE /repos/{owner}/{repo}/git/refs/{ref}', {
+      owner: options.owner,
+      repo: options.repo,
+      ref: `tags/${name}`,
+    })
+  }
+
+  private async getRefSha(options: RepositoryOptions, ref: string): Promise<string> {
+    const response = await this.octokit.request('GET /repos/{owner}/{repo}/git/ref/{ref}', {
+      owner: options.owner,
+      repo: options.repo,
+      ref,
+    })
+    const sha = (response.data as GitRefResponse).object?.sha
+    if (!sha) {
+      throw new Error(`Unable to resolve ref "${ref}"`)
+    }
+
+    return sha
+  }
+
+  private async createRef(options: RepositoryOptions, ref: string, sha: string): Promise<GitHubCreatedRef> {
+    const response = await this.octokit.request('POST /repos/{owner}/{repo}/git/refs', {
+      owner: options.owner,
+      repo: options.repo,
+      ref,
+      sha,
+    })
+    const data = response.data as GitRefResponse
+
+    return { ref: data.ref ?? ref, sha: data.object?.sha ?? sha }
+  }
+
+  async getContributorStats(
+    options: RepositoryContributorStatsOptions
+  ): Promise<GitHubRepositoryContributorStatsResult> {
+    const maxAttempts = Math.max(1, Math.floor(options.maxAttempts ?? 6))
+    const retryDelayMs = Math.max(0, Math.floor(options.retryDelayMs ?? 2000))
+
+    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      const response = await this.octokit.request('GET /repos/{owner}/{repo}/stats/contributors', {
+        owner: options.owner,
+        repo: options.repo,
+      })
+
+      if (response.status !== 202) {
+        return normalizeContributorStats(response.data)
+      }
+
+      if (attempt < maxAttempts) {
+        await sleep(retryDelayMs)
+      }
+    }
+
+    throw new Error(CONTRIBUTOR_STATS_PENDING)
+  }
+
   async getCommit(options: RepositoryCommitOptions): Promise<GitHubCommitDetail> {
     const response = await this.octokit.request('GET /repos/{owner}/{repo}/commits/{ref}', {
       owner: options.owner,
@@ -429,21 +874,47 @@ export class RepositoriesApi {
     })
   }
 
-  async setWatching(options: SetRepositoryWatchingOptions): Promise<void> {
-    if (options.watching) {
-      await this.octokit.request('PUT /repos/{owner}/{repo}/subscription', {
+  async setSubscription(options: SetRepositorySubscriptionOptions): Promise<void> {
+    if (options.subscription === 'participating') {
+      await this.octokit.request('DELETE /repos/{owner}/{repo}/subscription', {
         owner: options.owner,
         repo: options.repo,
-        subscribed: true,
-        ignored: false,
       })
       return
     }
 
-    await this.octokit.request('DELETE /repos/{owner}/{repo}/subscription', {
+    await this.octokit.request('PUT /repos/{owner}/{repo}/subscription', {
       owner: options.owner,
       repo: options.repo,
+      subscribed: options.subscription === 'all',
+      ignored: options.subscription === 'ignore',
     })
+  }
+
+  async fork(options: ForkRepositoryOptions): Promise<GitHubForkedRepository> {
+    const name = options.name?.trim() || null
+    const organization = options.organization?.trim() || null
+    const response = await this.octokit.request('POST /repos/{owner}/{repo}/forks', {
+      owner: options.owner,
+      repo: options.repo,
+      ...(organization ? { organization } : {}),
+      ...(name ? { name } : {}),
+      default_branch_only: options.defaultBranchOnly ?? true,
+    })
+    const fork = response.data as RepositoryResponse
+    const forkOwner = fork.owner?.login ?? organization ?? ''
+    const forkName = fork.name ?? name ?? options.repo
+    // Fork creation is asynchronous on GitHub's side; wait until the new
+    // repository responds before reporting it as ready.
+    const ready = await this.waitForRepository({ owner: forkOwner, repo: forkName })
+
+    return {
+      owner: forkOwner,
+      name: forkName,
+      nameWithOwner: fork.full_name ?? `${forkOwner}/${forkName}`,
+      url: fork.html_url ?? `https://github.com/${forkOwner}/${forkName}`,
+      ready,
+    }
   }
 
   private async getRepository(options: RepositoryOptions): Promise<RepositoryResponse> {
@@ -493,6 +964,8 @@ export class RepositoriesApi {
     const repository = response.repository
 
     return {
+      commits: repository?.defaultBranchRef?.target?.history?.totalCount ?? null,
+      openIssues: repository?.issues.totalCount ?? null,
       openPullRequests: repository?.pullRequests.totalCount ?? null,
       releases: repository?.releases.totalCount ?? null,
       branches: repository?.branchRefs.totalCount ?? null,
@@ -739,19 +1212,37 @@ export class RepositoriesApi {
     }
   }
 
-  private async isRepositoryWatching(options: RepositoryOptions): Promise<boolean> {
+  private async getSubscription(options: RepositoryOptions): Promise<GitHubRepositorySubscription> {
     try {
       const response = await this.octokit.request('GET /repos/{owner}/{repo}/subscription', {
         owner: options.owner,
         repo: options.repo,
       })
-      const subscription = response.data as { subscribed?: boolean }
+      const subscription = response.data as { subscribed?: boolean, ignored?: boolean }
 
-      return Boolean(subscription.subscribed)
+      if (subscription.ignored) return 'ignore'
+      if (subscription.subscribed) return 'all'
+      return 'participating'
     } catch (error) {
-      if (isNotFoundError(error)) return false
+      if (isNotFoundError(error)) return 'participating'
       throw error
     }
+  }
+
+  private async waitForRepository(options: RepositoryOptions, attempts = 20, delayMs = 1500): Promise<boolean> {
+    if (!options.owner || !options.repo) return false
+
+    for (let attempt = 0; attempt < attempts; attempt += 1) {
+      try {
+        await this.getRepository(options)
+        return true
+      } catch (error) {
+        if (!isNotFoundError(error)) throw error
+        await new Promise((resolve) => setTimeout(resolve, delayMs))
+      }
+    }
+
+    return false
   }
 
   private async getRepositoryStarCount(options: RepositoryOptions): Promise<number> {
@@ -951,6 +1442,73 @@ function mapRepositoryFilePreview(
   }
 }
 
+interface ContributorStatsEntryResponse {
+  author?: {
+    id?: number
+    login?: string | null
+    avatar_url?: string | null
+    type?: string | null
+  } | null
+  total?: number
+  weeks?: Array<{ w?: number; a?: number; d?: number; c?: number }>
+}
+
+function normalizeContributorStats(payload: unknown): GitHubRepositoryContributorStatsResult {
+  if (!Array.isArray(payload) || payload.length === 0) {
+    return { contributors: [], firstWeek: null, lastWeek: null, hasLineStats: false }
+  }
+
+  let firstWeek: number | null = null
+  let lastWeek: number | null = null
+  let hasLineStats = false
+  const contributors: GitHubRepositoryContributorStats[] = []
+
+  for (const entry of payload as ContributorStatsEntryResponse[]) {
+    const rawWeeks = Array.isArray(entry?.weeks) ? entry.weeks : []
+    for (const week of rawWeeks) {
+      if (typeof week?.w !== 'number') continue
+      if (firstWeek === null || week.w < firstWeek) firstWeek = week.w
+      if (lastWeek === null || week.w > lastWeek) lastWeek = week.w
+    }
+
+    const author = entry?.author
+    if (!author?.login) continue
+
+    const weeks: GitHubContributorStatsWeek[] = []
+    for (const week of rawWeeks) {
+      if (typeof week?.w !== 'number') continue
+      const a = week.a ?? 0
+      const d = week.d ?? 0
+      const c = week.c ?? 0
+      if (a === 0 && d === 0 && c === 0) continue
+      if (a > 0 || d > 0) hasLineStats = true
+      weeks.push({ w: week.w, a, d, c })
+    }
+    weeks.sort((left, right) => left.w - right.w)
+
+    contributors.push({
+      author: {
+        id: author.id ?? 0,
+        login: author.login,
+        avatarUrl: author.avatar_url ?? null,
+        type: author.type ?? 'User',
+      },
+      total: entry.total ?? weeks.reduce((sum, week) => sum + week.c, 0),
+      weeks,
+    })
+  }
+
+  contributors.sort((left, right) => right.total - left.total)
+
+  return { contributors, firstWeek, lastWeek, hasLineStats }
+}
+
+function sleep(ms: number): Promise<void> {
+  if (ms <= 0) return Promise.resolve()
+
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
 function normalizeCiState(value: string | null | undefined): GitHubCiState | null {
   if (value === 'SUCCESS') return 'success'
   if (value === 'FAILURE' || value === 'ERROR') return 'failure'
@@ -1129,10 +1687,11 @@ function normalizeCounts(
   packageCount: number | null,
 ): GitHubRepositoryOverviewCounts {
   return {
+    commits: graphCounts.commits,
     stars: repository.stargazers_count ?? 0,
     watchers: repository.subscribers_count ?? 0,
     forks: repository.forks_count ?? 0,
-    openIssues: repository.open_issues_count ?? 0,
+    openIssues: graphCounts.openIssues ?? repository.open_issues_count ?? 0,
     openPullRequests: graphCounts.openPullRequests,
     releases: graphCounts.releases,
     branches: graphCounts.branches,

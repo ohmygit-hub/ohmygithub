@@ -7,8 +7,14 @@ export function registerRepositoriesIpc(): void {
   ipcMain.handle('repositories:get-viewer-state', (_event, owner: string, repo: string) =>
     getRepositoryViewerState(owner, repo)
   )
+  ipcMain.handle('repositories:get-navigation-counts', (_event, owner: string, repo: string) =>
+    getRepositoryNavigationCounts(owner, repo)
+  )
   ipcMain.handle('repositories:get-overview', (_event, owner: string, repo: string) =>
     getRepositoryOverview(owner, repo)
+  )
+  ipcMain.handle('repositories:get-contributor-stats', (_event, owner: string, repo: string) =>
+    getRepositoryContributorStats(owner, repo)
   )
   ipcMain.handle('repositories:list-files', (_event, owner: string, repo: string, ref?: string | null) =>
     listRepositoryFiles(owner, repo, ref)
@@ -19,6 +25,27 @@ export function registerRepositoriesIpc(): void {
   ipcMain.handle('repositories:list-branches', (_event, owner: string, repo: string) =>
     listRepositoryBranches(owner, repo)
   )
+  ipcMain.handle('repositories:list-branches-detailed', (_event, owner: string, repo: string, options?: ListRefsIpcOptions) =>
+    listRepositoryBranchesDetailed(owner, repo, options)
+  )
+  ipcMain.handle('repositories:list-tags', (_event, owner: string, repo: string, options?: ListRefsIpcOptions) =>
+    listRepositoryTags(owner, repo, options)
+  )
+  ipcMain.handle('repositories:create-branch', (_event, owner: string, repo: string, name: string, fromRef: string) =>
+    createRepositoryBranch(owner, repo, name, fromRef)
+  )
+  ipcMain.handle('repositories:rename-branch', (_event, owner: string, repo: string, name: string, newName: string) =>
+    renameRepositoryBranch(owner, repo, name, newName)
+  )
+  ipcMain.handle('repositories:delete-branch', (_event, owner: string, repo: string, name: string) =>
+    deleteRepositoryBranch(owner, repo, name)
+  )
+  ipcMain.handle('repositories:create-tag', (_event, owner: string, repo: string, name: string, fromRef: string, message?: string | null) =>
+    createRepositoryTag(owner, repo, name, fromRef, message)
+  )
+  ipcMain.handle('repositories:delete-tag', (_event, owner: string, repo: string, name: string) =>
+    deleteRepositoryTag(owner, repo, name)
+  )
   ipcMain.handle('repositories:get-commit', (_event, owner: string, repo: string, sha: string) =>
     getRepositoryCommit(owner, repo, sha)
   )
@@ -28,9 +55,26 @@ export function registerRepositoriesIpc(): void {
   ipcMain.handle('repositories:set-starred', (_event, owner: string, repo: string, starred: boolean) =>
     setRepositoryStarred(owner, repo, starred)
   )
-  ipcMain.handle('repositories:set-watching', (_event, owner: string, repo: string, watching: boolean) =>
-    setRepositoryWatching(owner, repo, watching)
+  ipcMain.handle('repositories:set-subscription', (_event, owner: string, repo: string, subscription: string) =>
+    setRepositorySubscription(owner, repo, subscription)
   )
+  ipcMain.handle('repositories:fork', (_event, owner: string, repo: string, options?: ForkRepositoryIpcOptions) =>
+    forkRepository(owner, repo, options)
+  )
+}
+
+interface ForkRepositoryIpcOptions {
+  organization?: string | null
+  name?: string | null
+  defaultBranchOnly?: boolean
+}
+
+const repositorySubscriptions = ['participating', 'all', 'ignore'] as const
+
+type RepositorySubscription = (typeof repositorySubscriptions)[number]
+
+function isRepositorySubscription(value: string): value is RepositorySubscription {
+  return (repositorySubscriptions as readonly string[]).includes(value)
 }
 
 async function getRepositoryViewerState(owner: string, repo: string) {
@@ -38,6 +82,13 @@ async function getRepositoryViewerState(owner: string, repo: string) {
   const api = await createAuthenticatedGitHubApi()
 
   return api.repositories.getViewerState(repository)
+}
+
+async function getRepositoryNavigationCounts(owner: string, repo: string) {
+  const repository = normalizeRepository(owner, repo)
+  const api = await createAuthenticatedGitHubApi()
+
+  return api.repositories.getNavigationCounts(repository)
 }
 
 async function getRepositoryOverview(owner: string, repo: string) {
@@ -49,6 +100,13 @@ async function getRepositoryOverview(owner: string, repo: string) {
     ...overview,
     missingScopes: listMissingOAuthScopes()
   }
+}
+
+async function getRepositoryContributorStats(owner: string, repo: string) {
+  const repository = normalizeRepository(owner, repo)
+  const api = await createAuthenticatedGitHubApi()
+
+  return api.repositories.getContributorStats(repository)
 }
 
 async function listRepositoryFiles(owner: string, repo: string, ref?: string | null) {
@@ -78,6 +136,131 @@ async function listRepositoryBranches(owner: string, repo: string) {
   const api = await createAuthenticatedGitHubApi()
 
   return api.repositories.listBranches(repository)
+}
+
+interface ListRefsIpcOptions {
+  query?: string | null
+  page?: number | null
+  perPage?: number | null
+  defaultBranch?: string | null
+}
+
+async function listRepositoryBranchesDetailed(owner: string, repo: string, options?: ListRefsIpcOptions) {
+  const repository = normalizeRepository(owner, repo)
+  const api = await createAuthenticatedGitHubApi()
+
+  return api.repositories.listBranchesDetailed({
+    ...repository,
+    query: options?.query?.trim() || undefined,
+    page: options?.page ?? undefined,
+    perPage: options?.perPage ?? undefined,
+    defaultBranch: options?.defaultBranch ?? null,
+  })
+}
+
+async function listRepositoryTags(owner: string, repo: string, options?: ListRefsIpcOptions) {
+  const repository = normalizeRepository(owner, repo)
+  const api = await createAuthenticatedGitHubApi()
+
+  return api.repositories.listTags({
+    ...repository,
+    query: options?.query?.trim() || undefined,
+    page: options?.page ?? undefined,
+    perPage: options?.perPage ?? undefined,
+  })
+}
+
+async function createRepositoryBranch(owner: string, repo: string, name: string, fromRef: string) {
+  const repository = normalizeRepository(owner, repo)
+  const normalizedName = name?.trim()
+  const normalizedFromRef = fromRef?.trim()
+
+  if (!normalizedName) {
+    throw new Error('Branch name is required')
+  }
+  if (!normalizedFromRef) {
+    throw new Error('Base branch is required')
+  }
+
+  const api = await createAuthenticatedGitHubApi()
+
+  return api.repositories.createBranch({
+    ...repository,
+    name: normalizedName,
+    fromRef: normalizedFromRef,
+  })
+}
+
+async function renameRepositoryBranch(owner: string, repo: string, name: string, newName: string) {
+  const repository = normalizeRepository(owner, repo)
+  const normalizedName = name?.trim()
+  const normalizedNewName = newName?.trim()
+
+  if (!normalizedName || !normalizedNewName) {
+    throw new Error('Branch name is required')
+  }
+
+  const api = await createAuthenticatedGitHubApi()
+
+  return api.repositories.renameBranch({
+    ...repository,
+    name: normalizedName,
+    newName: normalizedNewName,
+  })
+}
+
+async function deleteRepositoryBranch(owner: string, repo: string, name: string) {
+  const repository = normalizeRepository(owner, repo)
+  const normalizedName = name?.trim()
+
+  if (!normalizedName) {
+    throw new Error('Branch name is required')
+  }
+
+  const api = await createAuthenticatedGitHubApi()
+
+  return api.repositories.deleteBranch({
+    ...repository,
+    name: normalizedName,
+  })
+}
+
+async function createRepositoryTag(owner: string, repo: string, name: string, fromRef: string, message?: string | null) {
+  const repository = normalizeRepository(owner, repo)
+  const normalizedName = name?.trim()
+  const normalizedFromRef = fromRef?.trim()
+
+  if (!normalizedName) {
+    throw new Error('Tag name is required')
+  }
+  if (!normalizedFromRef) {
+    throw new Error('Base branch is required')
+  }
+
+  const api = await createAuthenticatedGitHubApi()
+
+  return api.repositories.createTag({
+    ...repository,
+    name: normalizedName,
+    fromRef: normalizedFromRef,
+    message: message?.trim() || undefined,
+  })
+}
+
+async function deleteRepositoryTag(owner: string, repo: string, name: string) {
+  const repository = normalizeRepository(owner, repo)
+  const normalizedName = name?.trim()
+
+  if (!normalizedName) {
+    throw new Error('Tag name is required')
+  }
+
+  const api = await createAuthenticatedGitHubApi()
+
+  return api.repositories.deleteTag({
+    ...repository,
+    name: normalizedName,
+  })
 }
 
 async function getRepositoryCommit(owner: string, repo: string, sha: string) {
@@ -127,17 +310,29 @@ async function setRepositoryStarred(owner: string, repo: string, starred: boolea
   })
 }
 
-async function setRepositoryWatching(owner: string, repo: string, watching: boolean) {
-  if (typeof watching !== 'boolean') {
-    throw new Error('Repository watching state is required')
+async function setRepositorySubscription(owner: string, repo: string, subscription: string) {
+  if (typeof subscription !== 'string' || !isRepositorySubscription(subscription)) {
+    throw new Error('Repository subscription must be participating, all or ignore')
   }
 
   const repository = normalizeRepository(owner, repo)
   const api = await createAuthenticatedGitHubApi()
 
-  return api.repositories.setWatching({
+  return api.repositories.setSubscription({
     ...repository,
-    watching,
+    subscription,
+  })
+}
+
+async function forkRepository(owner: string, repo: string, options?: ForkRepositoryIpcOptions) {
+  const repository = normalizeRepository(owner, repo)
+  const api = await createAuthenticatedGitHubApi()
+
+  return api.repositories.fork({
+    ...repository,
+    organization: options?.organization?.trim() || null,
+    name: options?.name?.trim() || null,
+    defaultBranchOnly: options?.defaultBranchOnly ?? true,
   })
 }
 

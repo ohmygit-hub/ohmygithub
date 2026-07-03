@@ -7,10 +7,13 @@ import { initializeAuth, registerAuthIpc } from './auth'
 import { registerBookmarksIpc } from './bookmarks'
 import { initializeConfig, registerConfigIpc } from './config'
 import { configureDevRemoteDebugging } from './debug'
+import { registerDeploymentsIpc } from './deployments'
 import { registerInboxIpc } from './inbox'
 import { registerIssuesIpc } from './issues'
 import { registerLinksIpc } from './links'
+import { registerPackagesIpc } from './packages'
 import { registerPullsIpc } from './pulls'
+import { registerReleasesIpc } from './releases'
 import { registerRepositoriesIpc } from './repositories'
 import { registerSearchIpc } from './search'
 
@@ -115,10 +118,13 @@ void app.whenReady().then(() => {
   registerAuthIpc()
   registerBookmarksIpc()
   registerConfigIpc()
+  registerDeploymentsIpc()
   registerInboxIpc()
   registerIssuesIpc()
   registerLinksIpc()
+  registerPackagesIpc()
   registerPullsIpc()
+  registerReleasesIpc()
   registerRepositoriesIpc()
   registerSearchIpc()
   registerWindowIpc()

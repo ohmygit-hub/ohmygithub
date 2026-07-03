@@ -1,44 +1,70 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { Eye, GitFork, Star } from 'lucide-vue-next'
+import { BellOff, Eye, GitFork, Star } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
-import { Button, ButtonGroup } from '@oh-my-github/ui'
-import SectionSidebar from '../../../components/navigation/section-sidebar.vue'
+import {
+  Button,
+  ButtonGroup,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from '@oh-my-github/ui'
+import SectionSidebar from '@/components/navigation/section-sidebar.vue'
+import {
+  createRepositorySectionCountLabel,
+  type RepositorySectionCounts,
+} from './repository-section-counts'
 import type { RepositorySection, RepositorySectionId } from './types'
 
 const props = defineProps<{
   activeSection: RepositorySectionId
+  forkButtonDisabled: boolean
   formattedStarCount: string
   isStarred: boolean
-  isWatching: boolean
   owner: string
   repository: string
+  repositoryCounts: RepositorySectionCounts | null
   sections: readonly RepositorySection[]
   starButtonDisabled: boolean
   starLabel: string
+  subscription: GitHubRepositorySubscription
   watchButtonDisabled: boolean
   watchLabel: string
 }>()
 
 const emit = defineEmits<{
+  fork: []
   openOwner: []
+  setSubscription: [value: GitHubRepositorySubscription]
   toggleStarred: []
-  toggleWatching: []
   'update:activeSection': [value: RepositorySectionId]
 }>()
 
 const { t } = useI18n()
 
+const subscriptionOptions: readonly GitHubRepositorySubscription[] = ['participating', 'all', 'ignore']
+
 const sidebarItems = computed(() =>
   props.sections.map((section) => ({
     id: section.id,
+    countLabel: createRepositorySectionCountLabel(section.id, props.repositoryCounts),
     icon: section.icon,
     label: t(`repository.sections.${section.id}.title`),
   }))
 )
 
+const watchIcon = computed(() => (props.subscription === 'ignore' ? BellOff : Eye))
+
 function updateActiveSection(id: string): void {
   emit('update:activeSection', id as RepositorySectionId)
+}
+
+function updateSubscription(value: unknown): void {
+  if (typeof value !== 'string' || value === props.subscription) return
+  emit('setSubscription', value as GitHubRepositorySubscription)
 }
 </script>
 
@@ -94,11 +120,12 @@ function updateActiveSection(id: string): void {
 
             <Button
               :aria-label="t('repository.actions.fork')"
-              disabled
+              :disabled="forkButtonDisabled"
               class="size-8 text-muted-foreground"
               size="icon-sm"
               type="button"
               variant="outline"
+              @click="emit('fork')"
             >
               <GitFork
                 class="size-3.5"
@@ -106,22 +133,48 @@ function updateActiveSection(id: string): void {
               />
             </Button>
 
-            <Button
-              :aria-label="watchLabel"
-              :aria-pressed="isWatching"
-              :disabled="watchButtonDisabled"
-              class="size-8"
-              size="icon-sm"
-              type="button"
-              variant="outline"
-              @click="emit('toggleWatching')"
-            >
-              <Eye
-                class="size-3.5"
-                :class="isWatching ? 'text-foreground' : 'text-muted-foreground'"
-                :stroke-width="1.75"
-              />
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger as-child>
+                <Button
+                  :aria-label="watchLabel"
+                  :disabled="watchButtonDisabled"
+                  class="size-8"
+                  size="icon-sm"
+                  type="button"
+                  variant="outline"
+                >
+                  <component
+                    :is="watchIcon"
+                    class="size-3.5"
+                    :class="subscription === 'participating' ? 'text-muted-foreground' : 'text-foreground'"
+                    :stroke-width="1.75"
+                  />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent
+                align="start"
+                class="w-72"
+              >
+                <DropdownMenuLabel>{{ t('repository.watch.menuLabel') }}</DropdownMenuLabel>
+                <DropdownMenuRadioGroup
+                  :model-value="subscription"
+                  @update:model-value="updateSubscription"
+                >
+                  <DropdownMenuRadioItem
+                    v-for="option in subscriptionOptions"
+                    :key="option"
+                    :value="option"
+                  >
+                    <span class="grid gap-0.5">
+                      <span>{{ t(`repository.watch.${option}`) }}</span>
+                      <span class="text-caption font-normal text-muted-foreground">
+                        {{ t(`repository.watch.${option}Description`) }}
+                      </span>
+                    </span>
+                  </DropdownMenuRadioItem>
+                </DropdownMenuRadioGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </ButtonGroup>
         </div>
       </header>

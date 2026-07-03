@@ -176,10 +176,21 @@ export type GitHubWorkspaceGotoResult =
       url: string
     }
 
+export type GitHubRepositorySubscription = 'participating' | 'all' | 'ignore'
+
 export interface GitHubRepositoryViewerState {
   isStarred: boolean
   isWatching: boolean
+  subscription: GitHubRepositorySubscription
   starCount: number
+}
+
+export interface GitHubForkedRepository {
+  owner: string
+  name: string
+  nameWithOwner: string
+  url: string
+  ready: boolean
 }
 
 export type GitHubRepositoryVisibility = 'public' | 'private' | 'internal'
@@ -224,6 +235,7 @@ export interface GitHubRepositoryCustomProperty {
 }
 
 export interface GitHubRepositoryOverviewCounts {
+  commits: number | null
   stars: number
   watchers: number
   forks: number
@@ -234,6 +246,11 @@ export interface GitHubRepositoryOverviewCounts {
   tags: number | null
   packages: number | null
 }
+
+export type GitHubRepositoryNavigationCounts = Pick<
+  GitHubRepositoryOverviewCounts,
+  'commits' | 'openIssues' | 'openPullRequests'
+>
 
 export interface GitHubRepositoryOverview {
   id: number
@@ -260,6 +277,40 @@ export interface GitHubRepositoryOverview {
   missingScopes: string[]
   warnings: string[]
 }
+
+export interface GitHubContributorStatsAuthor {
+  id: number
+  login: string
+  avatarUrl: string | null
+  type: string
+}
+
+/** Sparse: only weeks with activity are included. w = unix seconds, week start (Sunday UTC). */
+export interface GitHubContributorStatsWeek {
+  w: number
+  a: number
+  d: number
+  c: number
+}
+
+export interface GitHubRepositoryContributorStats {
+  author: GitHubContributorStatsAuthor
+  /** Commits on the default branch, excluding merge and empty commits. */
+  total: number
+  weeks: GitHubContributorStatsWeek[]
+}
+
+export interface GitHubRepositoryContributorStatsResult {
+  /** Sorted descending by total. Max 100 entries (GitHub API limit); anonymous authors are dropped. */
+  contributors: GitHubRepositoryContributorStats[]
+  firstWeek: number | null
+  lastWeek: number | null
+  /** false when GitHub omits line counts (repositories with 10,000+ commits report 0 additions/deletions). */
+  hasLineStats: boolean
+}
+
+/** Thrown (as Error message) when GitHub still responds 202 after polling; callers should retry later. */
+export const CONTRIBUTOR_STATS_PENDING = 'github_contributor_stats_pending'
 
 export type GitHubRepositoryFileNodeType = 'tree' | 'file'
 
@@ -433,11 +484,150 @@ export interface GitHubActionJob {
   steps: GitHubActionStep[]
 }
 
+export interface GitHubActionJobLogStep {
+  number: number | null
+  title: string
+  content: string
+}
+
 export interface GitHubActionJobLog {
   jobId: number
   content: string
   fetchedAt: string
   isAvailable: boolean
+  steps?: GitHubActionJobLogStep[]
+}
+
+export type GitHubDeploymentState =
+  | 'error'
+  | 'failure'
+  | 'inactive'
+  | 'in_progress'
+  | 'queued'
+  | 'pending'
+  | 'success'
+
+export interface GitHubDeploymentStatus {
+  id: number
+  state: GitHubDeploymentState
+  description: string
+  environmentUrl: string | null
+  logUrl: string | null
+  creator: GitHubActor | null
+  createdAt: string
+}
+
+export interface GitHubDeployment {
+  id: number
+  sha: string
+  ref: string
+  task: string
+  environment: string
+  description: string | null
+  transientEnvironment: boolean
+  productionEnvironment: boolean
+  creator: GitHubActor | null
+  latestStatus: GitHubDeploymentStatus | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface GitHubEnvironmentProtectionRule {
+  id: number
+  type: string
+  waitTimer: number | null
+  reviewerCount: number | null
+}
+
+export interface GitHubEnvironment {
+  id: number
+  name: string
+  htmlUrl: string | null
+  createdAt: string | null
+  updatedAt: string | null
+  protectionRules: GitHubEnvironmentProtectionRule[]
+}
+
+export interface GitHubDeploymentPage {
+  items: GitHubDeployment[]
+  totalCount: number | null
+  page: number
+  perPage: number
+  hasNextPage: boolean
+}
+
+export interface GitHubEnvironmentPage {
+  items: GitHubEnvironment[]
+  totalCount: number
+  page: number
+  perPage: number
+  hasNextPage: boolean
+}
+
+export type GitHubPackageType = 'npm' | 'maven' | 'rubygems' | 'docker' | 'nuget' | 'container'
+export type GitHubPackageVisibility = 'public' | 'private' | 'internal'
+
+export interface GitHubPackage {
+  id: number
+  name: string
+  packageType: GitHubPackageType
+  visibility: GitHubPackageVisibility
+  versionCount: number
+  ownerLogin: string
+  htmlUrl: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface GitHubPackageVersion {
+  id: number
+  name: string
+  htmlUrl: string | null
+  description: string | null
+  containerTags: string[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface GitHubPackagePage {
+  items: GitHubPackage[]
+  totalCount: number
+  page: number
+  perPage: number
+  hasNextPage: boolean
+  failedTypes: GitHubPackageType[]
+  truncated: boolean
+}
+
+export interface GitHubPackageVersionPage {
+  items: GitHubPackageVersion[]
+  totalCount: number | null
+  page: number
+  perPage: number
+  hasNextPage: boolean
+}
+
+export interface ListRepositoryPackagesOptions extends RepositoryOptions {
+  page?: number
+  perPage?: number
+}
+
+export interface ListPackageVersionsOptions {
+  owner: string
+  packageType: GitHubPackageType
+  packageName: string
+  page?: number
+  perPage?: number
+}
+
+export interface PackageTargetOptions {
+  owner: string
+  packageType: GitHubPackageType
+  packageName: string
+}
+
+export interface PackageVersionTargetOptions extends PackageTargetOptions {
+  versionId: number
 }
 
 export type GitHubPullRequestState =
@@ -1036,14 +1226,24 @@ export interface GitHubClient {
   resolveRepositoryReference(options: ResolveRepositoryReferenceOptions): Promise<GitHubRepositoryReferenceResolution>
   searchWorkspace(options: SearchWorkspaceOptions): Promise<GitHubWorkspaceSearchResult>
   getRepositoryViewerState(options: RepositoryOptions): Promise<GitHubRepositoryViewerState>
+  getRepositoryNavigationCounts(options: RepositoryOptions): Promise<GitHubRepositoryNavigationCounts>
   getRepositoryOverview(options: RepositoryOptions): Promise<GitHubRepositoryOverview>
+  getRepositoryContributorStats(options: RepositoryContributorStatsOptions): Promise<GitHubRepositoryContributorStatsResult>
   listRepositoryFiles(options: RepositoryFilesOptions): Promise<GitHubRepositoryFileTree>
   listRepositoryCommits(options: RepositoryCommitsOptions): Promise<GitHubRepositoryCommitPage>
   listRepositoryBranches(options: RepositoryBranchesOptions): Promise<GitHubRepositoryBranch[]>
+  listRepositoryBranchesDetailed(options: ListRepositoryBranchesDetailedOptions): Promise<GitHubBranchPage>
+  listRepositoryTags(options: ListRepositoryTagsOptions): Promise<GitHubTagPage>
+  createRepositoryBranch(options: CreateRepositoryBranchOptions): Promise<GitHubCreatedRef>
+  renameRepositoryBranch(options: RenameRepositoryBranchOptions): Promise<void>
+  deleteRepositoryBranch(options: DeleteRepositoryBranchOptions): Promise<void>
+  createRepositoryTag(options: CreateRepositoryTagOptions): Promise<GitHubCreatedRef>
+  deleteRepositoryTag(options: DeleteRepositoryTagOptions): Promise<void>
   getRepositoryCommit(options: RepositoryCommitOptions): Promise<GitHubCommitDetail>
   getRepositoryFilePreview(options: RepositoryFilePreviewOptions): Promise<GitHubRepositoryFilePreview>
   setRepositoryStarred(options: SetRepositoryStarredOptions): Promise<void>
-  setRepositoryWatching(options: SetRepositoryWatchingOptions): Promise<void>
+  setRepositorySubscription(options: SetRepositorySubscriptionOptions): Promise<void>
+  forkRepository(options: ForkRepositoryOptions): Promise<GitHubForkedRepository>
   listRepositoryWorkflows(options: RepositoryOptions): Promise<GitHubActionWorkflow[]>
   listRepositoryWorkflowRuns(options: ListRepositoryWorkflowRunsOptions): Promise<GitHubActionRunPage>
   getWorkflowRun(options: GetWorkflowRunOptions): Promise<GitHubActionRun>
@@ -1052,6 +1252,22 @@ export interface GitHubClient {
   rerunWorkflowRun(options: RerunWorkflowRunOptions): Promise<void>
   rerunFailedWorkflowRunJobs(options: RerunWorkflowRunOptions): Promise<void>
   rerunWorkflowJob(options: RerunWorkflowJobOptions): Promise<void>
+  listRepositoryEnvironments(options: ListRepositoryEnvironmentsOptions): Promise<GitHubEnvironmentPage>
+  listRepositoryDeployments(options: ListRepositoryDeploymentsOptions): Promise<GitHubDeploymentPage>
+  listDeploymentStatuses(options: ListDeploymentStatusesOptions): Promise<GitHubDeploymentStatus[]>
+  markDeploymentInactive(options: DeploymentTargetOptions): Promise<void>
+  deleteDeployment(options: DeleteDeploymentOptions): Promise<void>
+  deleteEnvironment(options: DeleteEnvironmentOptions): Promise<void>
+  listRepositoryReleases(options: ListRepositoryReleasesOptions): Promise<GitHubReleasePage>
+  createRelease(options: CreateReleaseOptions): Promise<GitHubRelease>
+  updateRelease(options: UpdateReleaseOptions): Promise<GitHubRelease>
+  deleteRelease(options: DeleteReleaseOptions): Promise<void>
+  listRepositoryPackages(options: ListRepositoryPackagesOptions): Promise<GitHubPackagePage>
+  listPackageVersions(options: ListPackageVersionsOptions): Promise<GitHubPackageVersionPage>
+  deletePackage(options: PackageTargetOptions): Promise<void>
+  deletePackageVersion(options: PackageVersionTargetOptions): Promise<void>
+  restorePackage(options: PackageTargetOptions): Promise<void>
+  restorePackageVersion(options: PackageVersionTargetOptions): Promise<void>
 }
 
 export interface GitHubApiOptions {
@@ -1261,6 +1477,13 @@ export interface RepositoryFilesOptions extends RepositoryOptions {
   ref?: string | null
 }
 
+export interface RepositoryContributorStatsOptions extends RepositoryOptions {
+  /** Polling attempts while GitHub computes stats (202). Defaults to 6. */
+  maxAttempts?: number
+  /** Delay between polling attempts in milliseconds. Defaults to 2000. */
+  retryDelayMs?: number
+}
+
 export interface RepositoryFilePreviewOptions extends RepositoryFilesOptions {
   path: string
 }
@@ -1302,6 +1525,158 @@ export interface RepositoryCommitsOptions extends RepositoryOptions {
 }
 
 export type RepositoryBranchesOptions = RepositoryOptions
+
+export interface ListRepositoryRefsOptions extends RepositoryOptions {
+  query?: string
+  page?: number
+  perPage?: number
+}
+
+export interface ListRepositoryBranchesDetailedOptions extends ListRepositoryRefsOptions {
+  defaultBranch?: string | null
+}
+
+export type ListRepositoryTagsOptions = ListRepositoryRefsOptions
+
+export interface GitHubBranchAssociatedPullRequest {
+  number: number
+  title: string
+  url: string
+}
+
+export interface GitHubBranchListItem {
+  name: string
+  commitSha: string
+  shortSha: string
+  committedDate: string | null
+  author: GitHubRepositoryCommitAuthor
+  aheadBy: number | null
+  behindBy: number | null
+  isDefault: boolean
+  isProtected: boolean
+  associatedPullRequest: GitHubBranchAssociatedPullRequest | null
+}
+
+export interface GitHubBranchPage {
+  items: GitHubBranchListItem[]
+  totalCount: number
+  page: number
+  perPage: number
+  hasNextPage: boolean
+  defaultBranch: string | null
+}
+
+export interface GitHubTagListItem {
+  name: string
+  commitSha: string
+  shortSha: string
+  date: string | null
+  message: string | null
+  isAnnotated: boolean
+}
+
+export interface GitHubTagPage {
+  items: GitHubTagListItem[]
+  totalCount: number
+  page: number
+  perPage: number
+  hasNextPage: boolean
+}
+
+export interface CreateRepositoryBranchOptions extends RepositoryOptions {
+  name: string
+  fromRef: string
+}
+
+export interface RenameRepositoryBranchOptions extends RepositoryOptions {
+  name: string
+  newName: string
+}
+
+export interface DeleteRepositoryBranchOptions extends RepositoryOptions {
+  name: string
+}
+
+export interface CreateRepositoryTagOptions extends RepositoryOptions {
+  name: string
+  fromRef: string
+  message?: string
+}
+
+export interface DeleteRepositoryTagOptions extends RepositoryOptions {
+  name: string
+}
+
+export interface GitHubCreatedRef {
+  ref: string
+  sha: string
+}
+
+export interface GitHubReleaseAsset {
+  id: number
+  name: string
+  size: number
+  downloadCount: number
+  contentType: string | null
+  browserDownloadUrl: string
+  updatedAt: string | null
+}
+
+export interface GitHubRelease {
+  id: number
+  tagName: string
+  targetCommitish: string
+  name: string | null
+  body: string | null
+  draft: boolean
+  prerelease: boolean
+  createdAt: string | null
+  publishedAt: string | null
+  htmlUrl: string
+  author: GitHubActor | null
+  assets: GitHubReleaseAsset[]
+  tarballUrl: string | null
+  zipballUrl: string | null
+}
+
+export interface GitHubReleasePage {
+  items: GitHubRelease[]
+  page: number
+  perPage: number
+  hasPreviousPage: boolean
+  hasNextPage: boolean
+}
+
+export interface ListRepositoryReleasesOptions extends RepositoryOptions {
+  page?: number
+  perPage?: number
+}
+
+export interface CreateReleaseOptions extends RepositoryOptions {
+  tagName: string
+  targetCommitish?: string | null
+  name?: string | null
+  body?: string | null
+  draft?: boolean
+  prerelease?: boolean
+}
+
+export interface UpdateReleaseChanges {
+  tagName?: string
+  targetCommitish?: string | null
+  name?: string | null
+  body?: string | null
+  draft?: boolean
+  prerelease?: boolean
+}
+
+export interface UpdateReleaseOptions extends RepositoryOptions, UpdateReleaseChanges {
+  releaseId: number
+}
+
+export interface DeleteReleaseOptions extends RepositoryOptions {
+  releaseId: number
+}
 
 export interface GitHubCommitActor {
   login: string | null
@@ -1358,6 +1733,12 @@ export interface SetRepositoryStarredOptions extends RepositoryOptions {
   starred: boolean
 }
 
-export interface SetRepositoryWatchingOptions extends RepositoryOptions {
-  watching: boolean
+export interface SetRepositorySubscriptionOptions extends RepositoryOptions {
+  subscription: GitHubRepositorySubscription
+}
+
+export interface ForkRepositoryOptions extends RepositoryOptions {
+  organization?: string | null
+  name?: string | null
+  defaultBranchOnly?: boolean
 }

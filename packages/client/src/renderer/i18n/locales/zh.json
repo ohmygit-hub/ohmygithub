@@ -291,6 +291,26 @@
           "label": "仓库 Actions",
           "description": "将当前仓库标签页切换到 Actions。"
         },
+        "repositorySectionReleases": {
+          "label": "仓库 Releases",
+          "description": "将当前仓库标签页切换到 Releases。"
+        },
+        "repositorySectionBranches": {
+          "label": "仓库分支",
+          "description": "将当前仓库标签页切换到 Branches。"
+        },
+        "repositorySectionContributors": {
+          "label": "仓库贡献者",
+          "description": "将当前仓库标签页切换到贡献者。"
+        },
+        "repositorySectionPackages": {
+          "label": "仓库软件包",
+          "description": "将当前仓库标签页切换到软件包。"
+        },
+        "repositorySectionDeployments": {
+          "label": "仓库部署",
+          "description": "将当前仓库标签页切换到部署。"
+        },
         "repositorySectionSettings": {
           "label": "仓库设置",
           "description": "将当前仓库标签页切换到设置。"
@@ -482,12 +502,217 @@
         }
       }
     },
+    "deployments": {
+      "title": "部署",
+      "description": "查看这个仓库的部署记录，并管理部署环境。",
+      "environments": {
+        "title": "环境",
+        "all": "全部环境",
+        "delete": "删除环境",
+        "selectAriaLabel": "选择环境",
+        "selectPlaceholder": "选择环境",
+        "selectSearchPlaceholder": "搜索环境...",
+        "selectEmpty": "没有找到环境。",
+        "protection": {
+          "waitTimer": "等待 {minutes} 分钟",
+          "requiredReviewers": "{count} 名审核者",
+          "branchPolicy": "分支策略"
+        },
+        "empty": {
+          "title": "没有环境",
+          "description": "这个仓库还没有部署环境。"
+        },
+        "error": {
+          "title": "无法加载环境",
+          "description": "无法从 GitHub 加载环境。请检查连接后重试。",
+          "retry": "重试"
+        }
+      },
+      "list": {
+        "title": "部署",
+        "meta": {
+          "created": "创建于 {date}"
+        },
+        "actions": {
+          "menu": "部署操作",
+          "viewStatuses": "查看状态历史",
+          "openEnvironment": "打开环境",
+          "openLog": "打开日志",
+          "markInactive": "标记为 inactive",
+          "markInactiveSuccess": "已将部署标记为 inactive。",
+          "markInactiveError": "无法将部署标记为 inactive。",
+          "delete": "删除"
+        },
+        "statuses": {
+          "empty": "还没有状态历史。",
+          "error": "无法加载状态历史。"
+        },
+        "empty": {
+          "title": "没有部署",
+          "allDescription": "这个仓库还没有部署。",
+          "environmentDescription": "{environment} 还没有部署。",
+          "missingRepositoryTitle": "没有选中仓库",
+          "missingRepositoryDescription": "打开带有 owner 和仓库名的仓库后，才会加载部署。"
+        },
+        "error": {
+          "title": "无法加载部署",
+          "description": "无法从 GitHub 加载部署。请检查连接后重试。",
+          "retry": "重试"
+        },
+        "pagination": {
+          "summary": "第 {page} / {pageCount} 页 · 共 {totalCount} 个部署"
+        }
+      },
+      "statuses": {
+        "error": "错误",
+        "failure": "失败",
+        "inactive": "Inactive",
+        "in_progress": "进行中",
+        "queued": "排队中",
+        "pending": "等待中",
+        "success": "成功"
+      },
+      "values": {
+        "unknown": "未知"
+      },
+      "deleteDeployment": {
+        "title": "删除部署",
+        "description": "部署 {sha} 将被永久删除。如果它仍处于活跃状态，将先标记为 inactive 再删除。此操作无法撤销。",
+        "cancel": "取消",
+        "confirm": "删除",
+        "success": "部署已删除。",
+        "error": "无法删除这个部署。"
+      },
+      "deleteEnvironment": {
+        "title": "删除环境",
+        "description": "{environment} 环境将被永久删除，其保护规则与关联的 secrets 也会一并移除。此操作无法撤销。",
+        "cancel": "取消",
+        "confirm": "删除",
+        "success": "环境已删除。",
+        "error": "无法删除这个环境。"
+      }
+    },
+    "packages": {
+      "title": "软件包",
+      "description": "浏览这个仓库发布的软件包，并管理它们的版本。",
+      "visibility": {
+        "public": "公开",
+        "private": "私有",
+        "internal": "内部"
+      },
+      "warnings": {
+        "failedTypes": "部分包类型加载失败：{types}",
+        "truncated": "结果可能不完整。"
+      },
+      "row": {
+        "versionCount": "{count} 个版本",
+        "updated": "更新于 {date}"
+      },
+      "actions": {
+        "menu": "包操作",
+        "viewVersions": "查看版本",
+        "deletePackage": "删除包",
+        "deleteVersion": "删除版本"
+      },
+      "empty": {
+        "title": "没有软件包",
+        "description": "这个仓库没有关联的包。",
+        "missingRepositoryTitle": "没有选中仓库",
+        "missingRepositoryDescription": "打开带有 owner 和仓库名的仓库后，才会加载软件包。"
+      },
+      "error": {
+        "title": "无法加载软件包",
+        "description": "无法从 GitHub 加载软件包。请检查连接后重试。",
+        "retry": "重试",
+        "scopeTitle": "缺少权限",
+        "scopeDescription": "加载软件包需要 read:packages scope。Packages API 不支持细粒度个人访问令牌（fine-grained PAT）——请使用经典个人访问令牌，或重新通过 OAuth 授权。"
+      },
+      "pagination": {
+        "summary": "第 {page} / {pageCount} 页 · 共 {totalCount} 个包"
+      },
+      "versions": {
+        "back": "返回软件包列表",
+        "row": {
+          "moreTags": "还有 {count} 个",
+          "created": "创建于 {date}"
+        },
+        "actions": {
+          "menu": "版本操作"
+        },
+        "empty": {
+          "title": "没有版本",
+          "description": "这个包还没有任何版本。"
+        },
+        "error": {
+          "title": "无法加载版本",
+          "description": "无法从 GitHub 加载软件包版本。请检查连接后重试。",
+          "retry": "重试"
+        },
+        "pagination": {
+          "summary": "第 {page} / {pageCount} 页 · 共 {totalCount} 个版本"
+        }
+      },
+      "deleteDialog": {
+        "packageTitle": "删除包",
+        "packageDescription": "包「{name}」及其所有版本将被永久删除。",
+        "versionTitle": "删除版本",
+        "versionDescription": "版本「{name}」将被永久删除。",
+        "irreversibleHint": "此操作无法撤销。GitHub 拒绝删除下载量超过 5000 次的公开包。",
+        "scopeError": "删除软件包需要 delete:packages scope。请使用包含该权限的令牌重新授权。",
+        "lastVersionHint": "如果这是该包的最后一个版本，请改为删除整个包。",
+        "cancel": "取消",
+        "confirm": "删除",
+        "packageError": "无法删除这个包。",
+        "versionError": "无法删除这个版本。"
+      },
+      "toasts": {
+        "packageDeleted": "包「{name}」已删除。",
+        "versionDeleted": "版本「{name}」已删除。",
+        "undo": "撤销",
+        "packageRestored": "包「{name}」已恢复。",
+        "versionRestored": "版本「{name}」已恢复。",
+        "restoreError": "恢复失败，请到 GitHub 上重试。"
+      }
+    },
+    "fork": {
+      "title": "Fork 仓库",
+      "description": "把 {repo} fork 到其他 owner 名下。",
+      "ownerLabel": "Owner",
+      "ownerPlaceholder": "选择 owner",
+      "nameLabel": "仓库名",
+      "defaultBranchOnly": "只复制默认分支",
+      "cancel": "取消",
+      "submit": "创建 fork",
+      "creating": "Fork 中...",
+      "success": "已 fork 到 {repo}。",
+      "pending": "Fork {repo} 仍在创建中，稍后即可访问。",
+      "error": "无法 fork 这个仓库。"
+    },
+    "watch": {
+      "menuLabel": "通知",
+      "participating": "参与和 {'@'}提及",
+      "participatingDescription": "只在参与讨论或被 {'@'}提及 时接收通知。",
+      "all": "所有活动",
+      "allDescription": "接收这个仓库的全部通知。",
+      "ignore": "忽略",
+      "ignoreDescription": "不接收这个仓库的任何通知。",
+      "error": "无法更新通知设置。"
+    },
     "sections": {
       "actions": {
         "title": "Actions"
       },
       "commits": {
         "title": "Commits"
+      },
+      "branches": {
+        "title": "Branches"
+      },
+      "contributors": {
+        "title": "贡献者"
+      },
+      "deployments": {
+        "title": "部署"
       },
       "files": {
         "title": "Files"
@@ -499,11 +724,227 @@
         "description": "这里会成为仓库概览，后续补上分支、议题和工作流入口。",
         "title": "概览"
       },
+      "packages": {
+        "title": "软件包"
+      },
       "pullRequests": {
         "title": "Pull Requests"
       },
+      "releases": {
+        "title": "Releases"
+      },
       "settings": {
         "title": "Settings"
+      }
+    },
+    "branches": {
+      "title": "Branches",
+      "description": "浏览和管理这个仓库的分支与标签。",
+      "createBranch": "新建分支",
+      "createTag": "新建标签",
+      "tabs": {
+        "label": "分支与标签",
+        "branches": "分支",
+        "tags": "标签"
+      },
+      "search": {
+        "branchesPlaceholder": "筛选分支...",
+        "tagsPlaceholder": "筛选标签..."
+      },
+      "badges": {
+        "default": "默认",
+        "protected": "受保护",
+        "annotated": "附注"
+      },
+      "meta": {
+        "updated": "更新于 {date}"
+      },
+      "compare": {
+        "ahead": "领先 {count}",
+        "behind": "落后 {count}",
+        "hint": "与默认分支相比"
+      },
+      "actions": {
+        "menu": "操作",
+        "rename": "重命名",
+        "delete": "删除"
+      },
+      "empty": {
+        "missingRepositoryTitle": "未选择仓库",
+        "missingRepositoryDescription": "打开一个仓库以浏览它的分支与标签。",
+        "branchesTitle": "暂无分支",
+        "branchesDescription": "这个仓库还没有分支。",
+        "tagsTitle": "暂无标签",
+        "tagsDescription": "这个仓库还没有标签。",
+        "noMatchesTitle": "没有匹配项",
+        "noMatchesDescription": "没有符合当前筛选条件的分支或标签。"
+      },
+      "error": {
+        "title": "加载失败",
+        "description": "加载列表时出现问题。",
+        "retry": "重试"
+      },
+      "pagination": {
+        "branchesSummary": "第 {page} / {pageCount} 页 · 共 {totalCount} 个分支",
+        "tagsSummary": "第 {page} / {pageCount} 页 · 共 {totalCount} 个标签"
+      },
+      "dialogs": {
+        "cancel": "取消",
+        "createBranch": {
+          "title": "创建分支",
+          "description": "在 {repo} 中创建一个新分支。",
+          "nameLabel": "分支名称",
+          "namePlaceholder": "feature/my-branch",
+          "nameRequired": "分支名称不能为空。",
+          "sourceLabel": "来源分支",
+          "submit": "创建分支",
+          "error": "创建分支失败。"
+        },
+        "renameBranch": {
+          "title": "重命名分支",
+          "description": "重命名分支 “{name}”。",
+          "nameLabel": "新分支名称",
+          "hint": "关联的 pull request 和分支保护规则会自动更新。",
+          "submit": "重命名",
+          "error": "重命名分支失败。"
+        },
+        "createTag": {
+          "title": "创建标签",
+          "description": "在 {repo} 中创建一个新标签。",
+          "nameLabel": "标签名称",
+          "namePlaceholder": "v1.0.0",
+          "nameRequired": "标签名称不能为空。",
+          "sourceLabel": "来源分支",
+          "messageLabel": "说明（可选）",
+          "messagePlaceholder": "这个标签的发布说明",
+          "messageHint": "填写说明会创建附注标签（annotated tag）；留空则创建轻量标签。",
+          "submit": "创建标签",
+          "error": "创建标签失败。"
+        },
+        "deleteRef": {
+          "branchTitle": "删除分支",
+          "branchDescription": "将永久删除分支 “{name}”，基于它的开放 pull request 会被关闭。",
+          "tagTitle": "删除标签",
+          "tagDescription": "将永久删除标签 “{name}”。",
+          "confirm": "删除",
+          "error": "删除失败。"
+        }
+      },
+      "toasts": {
+        "branchCreated": "已创建分支 “{name}”。",
+        "branchRenamed": "分支已重命名为 “{name}”。",
+        "branchDeleted": "已删除分支 “{name}”。",
+        "tagCreated": "已创建标签 “{name}”。",
+        "tagDeleted": "已删除标签 “{name}”。"
+      }
+    },
+    "releases": {
+      "title": "Releases",
+      "description": "浏览、发布和管理这个仓库的 releases。",
+      "create": "新建 release",
+      "badges": {
+        "draft": "草稿",
+        "prerelease": "预发布",
+        "latest": "最新"
+      },
+      "meta": {
+        "publishedAt": "发布于 {date}",
+        "createdAt": "创建于 {date}"
+      },
+      "noDescription": "没有填写说明。",
+      "assets": {
+        "title": "附件",
+        "downloads": "{count} 次下载",
+        "sourceZip": "源代码 (zip)",
+        "sourceTarGz": "源代码 (tar.gz)"
+      },
+      "actions": {
+        "edit": "编辑",
+        "publish": "发布",
+        "delete": "删除",
+        "openOnGitHub": "在 GitHub 打开",
+        "menu": "Release 操作"
+      },
+      "form": {
+        "createTitle": "新建 release",
+        "editTitle": "编辑 release",
+        "description": "为 {repo} 发布一个 release。",
+        "tagLabel": "标签",
+        "tagPlaceholder": "v1.0.0",
+        "tagRequired": "标签名称不能为空。",
+        "targetLabel": "目标分支",
+        "targetHint": "仅在标签尚不存在时生效。",
+        "titleLabel": "标题",
+        "titlePlaceholder": "Release 标题",
+        "bodyLabel": "说明",
+        "bodyPlaceholder": "描述这个 release（支持 Markdown）",
+        "draftLabel": "保存为草稿",
+        "prereleaseLabel": "标记为预发布",
+        "cancel": "取消",
+        "create": "创建 release",
+        "save": "保存修改",
+        "error": "无法保存 release。"
+      },
+      "delete": {
+        "title": "删除 release",
+        "description": "{tag} 对应的 release 将被永久删除，此操作无法撤销。",
+        "cancel": "取消",
+        "confirm": "删除"
+      },
+      "toasts": {
+        "created": "Release 已创建。",
+        "updated": "Release 已更新。",
+        "published": "Release 已发布。",
+        "deleted": "Release 已删除。",
+        "errorTitle": "Release 操作失败"
+      },
+      "empty": {
+        "title": "还没有 release",
+        "description": "创建一个 release 来打包和分享软件版本。",
+        "missingRepositoryTitle": "仓库不可用",
+        "missingRepositoryDescription": "打开一个仓库以浏览它的 releases。"
+      },
+      "error": {
+        "title": "无法加载 releases",
+        "description": "加载 releases 时出现了问题。",
+        "retry": "重试"
+      },
+      "pagination": {
+        "summary": "第 {page} 页"
+      }
+    },
+    "contributors": {
+      "chartTitle": "对 {branch} 分支的贡献（不含合并提交）",
+      "chartTitleNoBranch": "贡献统计（不含合并提交）",
+      "metric": {
+        "commits": "提交",
+        "additions": "新增行",
+        "deletions": "删除行"
+      },
+      "metricsLabel": "贡献指标",
+      "tooltip": {
+        "commits": "{date}：{count} 次提交",
+        "additions": "{date}：{count} 行新增",
+        "deletions": "{date}：{count} 行删除"
+      },
+      "card": {
+        "commits": "{count} 次提交"
+      },
+      "pending": {
+        "title": "正在统计最新数据",
+        "description": "GitHub 正在计算贡献者统计数据，大型仓库可能需要一点时间，将自动重试。",
+        "retry": "重试"
+      },
+      "error": {
+        "title": "无法加载贡献者",
+        "description": "加载贡献者统计数据时出错。",
+        "retry": "重试"
+      },
+      "empty": {
+        "title": "暂无贡献数据",
+        "description": "默认分支有提交后将显示贡献统计。",
+        "missingRepositoryTitle": "仓库不可用",
+        "missingRepositoryDescription": "请选择一个仓库以查看贡献者。"
       }
     },
     "commits": {
@@ -1016,7 +1457,28 @@
       "reviewRequested": "请求 {target} Review",
       "reviewed": "{state}这个 Pull Request",
       "unassigned": "移除了 {target} 的指派",
-      "unlabeled": "移除了 {label}"
+      "unlabeled": "移除了 {label}",
+      "locked": "锁定了这个 Pull Request",
+      "lockedWithReason": "以 {reason} 为由锁定了这个 Pull Request",
+      "unlocked": "解锁了这个 Pull Request",
+      "pinned": "置顶了这个 Pull Request",
+      "unpinned": "取消置顶了这个 Pull Request",
+      "transferred": "从 {from} 转移了这个 Pull Request",
+      "markedAsDuplicate": "将其标记为 {source} 的重复项",
+      "markedAsDuplicateAction": "将其标记为重复项：",
+      "unmarkedAsDuplicate": "取消了与 {source} 的重复标记",
+      "unmarkedAsDuplicateAction": "取消了重复标记：",
+      "deployed": "部署了这个 Pull Request",
+      "deployedTo": "将这个 Pull Request 部署到 {environment}",
+      "deploymentEnvironmentChanged": "将部署环境改为 {environment}",
+      "convertedToDiscussion": "将其转换为讨论 {source}",
+      "convertedToDiscussionAction": "将其转换为讨论",
+      "addedToProject": "将其添加到项目 {project}",
+      "addedToProjectGeneric": "将其添加到项目",
+      "removedFromProject": "将其从项目 {project} 中移除",
+      "removedFromProjectGeneric": "将其从项目中移除",
+      "projectStatusChanged": "在 {project} 中将状态从 {from} 改为 {to}",
+      "projectStatusSet": "在 {project} 中将状态设为 {to}"
     },
     "values": {
       "notAvailable": "暂不可用",

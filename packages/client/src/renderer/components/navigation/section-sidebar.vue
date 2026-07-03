@@ -5,6 +5,7 @@ export interface SectionSidebarItem {
   id: string
   label: string
   icon: Component
+  countLabel?: string | null
   disabled?: boolean
 }
 
@@ -31,7 +32,7 @@ const emit = defineEmits<{
         v-for="item in items"
         :key="item.id"
         :class="[
-          'grid h-9 w-full grid-cols-[0.25rem_1rem_minmax(0,1fr)] items-center gap-x-1 rounded-lg pr-2 text-left text-body font-normal outline-hidden transition-colors hover:bg-muted/70 focus-visible:bg-muted/70 focus-visible:ring-2 focus-visible:ring-ring/30 disabled:pointer-events-none disabled:opacity-50',
+          'grid h-9 w-full grid-cols-[0.25rem_1rem_minmax(0,1fr)_auto] items-center gap-x-1 rounded-lg pr-2 text-left text-body font-normal outline-hidden transition-colors hover:bg-muted/70 focus-visible:bg-muted/70 focus-visible:ring-2 focus-visible:ring-ring/30 disabled:pointer-events-none disabled:opacity-50',
           activeId === item.id ? 'text-foreground' : 'text-muted-foreground',
         ]"
         :aria-current="activeId === item.id ? 'page' : undefined"
@@ -48,7 +49,15 @@ const emit = defineEmits<{
           class="size-3.5 justify-self-center"
           :stroke-width="1.75"
         />
-        <span class="ml-1 truncate select-none">{{ item.label }}</span>
+        <span class="ml-1 min-w-0 truncate select-none">
+          {{ item.label }}
+        </span>
+        <span
+          v-if="item.countLabel"
+          class="select-none tabular-nums text-muted-foreground opacity-70"
+        >
+          {{ item.countLabel }}
+        </span>
       </button>
     </nav>
   </aside>

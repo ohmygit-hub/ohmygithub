@@ -37,6 +37,20 @@ const api = {
     rerunWorkflowJob: (owner: string, repo: string, jobId: number) =>
       ipcRenderer.invoke('actions:rerun-job', owner, repo, jobId)
   },
+  deployments: {
+    listEnvironments: (options: unknown) =>
+      ipcRenderer.invoke('deployments:list-environments', options),
+    listDeployments: (options: unknown) =>
+      ipcRenderer.invoke('deployments:list-deployments', options),
+    listStatuses: (options: unknown) =>
+      ipcRenderer.invoke('deployments:list-statuses', options),
+    markInactive: (options: unknown) =>
+      ipcRenderer.invoke('deployments:mark-inactive', options),
+    deleteDeployment: (options: unknown) =>
+      ipcRenderer.invoke('deployments:delete-deployment', options),
+    deleteEnvironment: (options: unknown) =>
+      ipcRenderer.invoke('deployments:delete-environment', options)
+  },
   issues: {
     listIssueCategory: (category: string) => ipcRenderer.invoke('issues:list-category', category),
     listViewerIssues: () => ipcRenderer.invoke('issues:list-viewer'),
@@ -65,7 +79,23 @@ const api = {
     setIssuePinned: (issueId: string, pinned: boolean) =>
       ipcRenderer.invoke('issues:set-pinned', issueId, pinned),
     deleteIssue: (issueId: string) =>
-      ipcRenderer.invoke('issues:delete', issueId)
+      ipcRenderer.invoke('issues:delete', issueId),
+    setReaction: (subjectId: string, content: string, reacted: boolean) =>
+      ipcRenderer.invoke('issues:set-reaction', subjectId, content, reacted)
+  },
+  packages: {
+    listPackages: (options: unknown) =>
+      ipcRenderer.invoke('packages:list-packages', options),
+    listVersions: (options: unknown) =>
+      ipcRenderer.invoke('packages:list-versions', options),
+    deletePackage: (options: unknown) =>
+      ipcRenderer.invoke('packages:delete-package', options),
+    deleteVersion: (options: unknown) =>
+      ipcRenderer.invoke('packages:delete-version', options),
+    restorePackage: (options: unknown) =>
+      ipcRenderer.invoke('packages:restore-package', options),
+    restoreVersion: (options: unknown) =>
+      ipcRenderer.invoke('packages:restore-version', options)
   },
   pulls: {
     listPullRequestCategory: (category: string) => ipcRenderer.invoke('pulls:list-category', category),
@@ -105,25 +135,55 @@ const api = {
     markThreadAsDone: (threadId: string) => ipcRenderer.invoke('inbox:mark-thread-done', threadId),
     unsubscribe: (threadId: string) => ipcRenderer.invoke('inbox:unsubscribe', threadId),
   },
+  releases: {
+    listRepositoryReleases: (options: unknown) =>
+      ipcRenderer.invoke('releases:list', options),
+    createRelease: (options: unknown) =>
+      ipcRenderer.invoke('releases:create', options),
+    updateRelease: (owner: string, repo: string, releaseId: number, changes: unknown) =>
+      ipcRenderer.invoke('releases:update', owner, repo, releaseId, changes),
+    deleteRelease: (owner: string, repo: string, releaseId: number) =>
+      ipcRenderer.invoke('releases:delete', owner, repo, releaseId)
+  },
   repositories: {
     getViewerState: (owner: string, repo: string) =>
       ipcRenderer.invoke('repositories:get-viewer-state', owner, repo),
+    getNavigationCounts: (owner: string, repo: string) =>
+      ipcRenderer.invoke('repositories:get-navigation-counts', owner, repo),
     getOverview: (owner: string, repo: string) =>
       ipcRenderer.invoke('repositories:get-overview', owner, repo),
+    getContributorStats: (owner: string, repo: string) =>
+      ipcRenderer.invoke('repositories:get-contributor-stats', owner, repo),
     listFiles: (owner: string, repo: string, ref?: string | null) =>
       ipcRenderer.invoke('repositories:list-files', owner, repo, ref),
     listCommits: (owner: string, repo: string, ref?: string | null, page?: number, perPage?: number) =>
       ipcRenderer.invoke('repositories:list-commits', owner, repo, ref, page, perPage),
     listBranches: (owner: string, repo: string) =>
       ipcRenderer.invoke('repositories:list-branches', owner, repo),
+    listBranchesDetailed: (owner: string, repo: string, options?: unknown) =>
+      ipcRenderer.invoke('repositories:list-branches-detailed', owner, repo, options),
+    listTags: (owner: string, repo: string, options?: unknown) =>
+      ipcRenderer.invoke('repositories:list-tags', owner, repo, options),
+    createBranch: (owner: string, repo: string, name: string, fromRef: string) =>
+      ipcRenderer.invoke('repositories:create-branch', owner, repo, name, fromRef),
+    renameBranch: (owner: string, repo: string, name: string, newName: string) =>
+      ipcRenderer.invoke('repositories:rename-branch', owner, repo, name, newName),
+    deleteBranch: (owner: string, repo: string, name: string) =>
+      ipcRenderer.invoke('repositories:delete-branch', owner, repo, name),
+    createTag: (owner: string, repo: string, name: string, fromRef: string, message?: string | null) =>
+      ipcRenderer.invoke('repositories:create-tag', owner, repo, name, fromRef, message),
+    deleteTag: (owner: string, repo: string, name: string) =>
+      ipcRenderer.invoke('repositories:delete-tag', owner, repo, name),
     getCommit: (owner: string, repo: string, sha: string) =>
       ipcRenderer.invoke('repositories:get-commit', owner, repo, sha),
     getFilePreview: (owner: string, repo: string, path: string, ref?: string | null) =>
       ipcRenderer.invoke('repositories:get-file-preview', owner, repo, path, ref),
     setStarred: (owner: string, repo: string, starred: boolean) =>
       ipcRenderer.invoke('repositories:set-starred', owner, repo, starred),
-    setWatching: (owner: string, repo: string, watching: boolean) =>
-      ipcRenderer.invoke('repositories:set-watching', owner, repo, watching)
+    setSubscription: (owner: string, repo: string, subscription: string) =>
+      ipcRenderer.invoke('repositories:set-subscription', owner, repo, subscription),
+    fork: (owner: string, repo: string, options?: unknown) =>
+      ipcRenderer.invoke('repositories:fork', owner, repo, options)
   },
   search: {
     resolveGoto: (input: string) => ipcRenderer.invoke('search:resolve-goto', input),

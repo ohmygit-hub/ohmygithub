@@ -6,9 +6,14 @@ export type RepositoryTabId =
   | 'overview'
   | 'files'
   | 'commits'
+  | 'branches'
   | 'pullRequests'
   | 'issues'
   | 'actions'
+  | 'releases'
+  | 'contributors'
+  | 'packages'
+  | 'deployments'
   | 'settings'
 
 export type AccountTabId =

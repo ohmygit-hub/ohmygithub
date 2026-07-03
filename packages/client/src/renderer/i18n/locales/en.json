@@ -291,6 +291,26 @@
           "label": "Repository actions",
           "description": "Switch the active repository tab to Actions."
         },
+        "repositorySectionReleases": {
+          "label": "Repository releases",
+          "description": "Switch the active repository tab to Releases."
+        },
+        "repositorySectionBranches": {
+          "label": "Repository branches",
+          "description": "Switch the active repository tab to Branches."
+        },
+        "repositorySectionContributors": {
+          "label": "Repository contributors",
+          "description": "Switch the active repository tab to Contributors."
+        },
+        "repositorySectionPackages": {
+          "label": "Repository packages",
+          "description": "Switch the active repository tab to Packages."
+        },
+        "repositorySectionDeployments": {
+          "label": "Repository deployments",
+          "description": "Switch the active repository tab to Deployments."
+        },
         "repositorySectionSettings": {
           "label": "Repository settings",
           "description": "Switch the active repository tab to Settings."
@@ -482,12 +502,217 @@
         }
       }
     },
+    "deployments": {
+      "title": "Deployments",
+      "description": "Review deployments and manage environments for this repository.",
+      "environments": {
+        "title": "Environments",
+        "all": "All environments",
+        "delete": "Delete environment",
+        "selectAriaLabel": "Select environment",
+        "selectPlaceholder": "Select environment",
+        "selectSearchPlaceholder": "Search environments...",
+        "selectEmpty": "No environments found.",
+        "protection": {
+          "waitTimer": "Wait {minutes}m",
+          "requiredReviewers": "{count} reviewers",
+          "branchPolicy": "Branch policy"
+        },
+        "empty": {
+          "title": "No environments",
+          "description": "This repository does not have any deployment environments yet."
+        },
+        "error": {
+          "title": "Could not load environments",
+          "description": "GitHub environments could not be loaded. Check the connection and try again.",
+          "retry": "Retry"
+        }
+      },
+      "list": {
+        "title": "Deployments",
+        "meta": {
+          "created": "Created {date}"
+        },
+        "actions": {
+          "menu": "Deployment actions",
+          "viewStatuses": "View status history",
+          "openEnvironment": "Open environment",
+          "openLog": "Open log",
+          "markInactive": "Mark as inactive",
+          "markInactiveSuccess": "Deployment marked as inactive.",
+          "markInactiveError": "Could not mark the deployment as inactive.",
+          "delete": "Delete"
+        },
+        "statuses": {
+          "empty": "No status history yet.",
+          "error": "Could not load the status history."
+        },
+        "empty": {
+          "title": "No deployments",
+          "allDescription": "This repository does not have deployments yet.",
+          "environmentDescription": "{environment} does not have deployments yet.",
+          "missingRepositoryTitle": "No repository selected",
+          "missingRepositoryDescription": "Open a repository with an owner and name to load deployments."
+        },
+        "error": {
+          "title": "Could not load deployments",
+          "description": "GitHub deployments could not be loaded. Check the connection and try again.",
+          "retry": "Retry"
+        },
+        "pagination": {
+          "summary": "Page {page} of {pageCount} · {totalCount} deployments"
+        }
+      },
+      "statuses": {
+        "error": "Error",
+        "failure": "Failure",
+        "inactive": "Inactive",
+        "in_progress": "In progress",
+        "queued": "Queued",
+        "pending": "Pending",
+        "success": "Success"
+      },
+      "values": {
+        "unknown": "Unknown"
+      },
+      "deleteDeployment": {
+        "title": "Delete deployment",
+        "description": "Deployment {sha} will be permanently deleted. If it is still active, it will be marked as inactive first. This cannot be undone.",
+        "cancel": "Cancel",
+        "confirm": "Delete",
+        "success": "Deployment deleted.",
+        "error": "Could not delete the deployment."
+      },
+      "deleteEnvironment": {
+        "title": "Delete environment",
+        "description": "The {environment} environment will be permanently deleted, along with its protection rules and associated secrets. This cannot be undone.",
+        "cancel": "Cancel",
+        "confirm": "Delete",
+        "success": "Environment deleted.",
+        "error": "Could not delete the environment."
+      }
+    },
+    "packages": {
+      "title": "Packages",
+      "description": "Browse packages published from this repository and manage their versions.",
+      "visibility": {
+        "public": "Public",
+        "private": "Private",
+        "internal": "Internal"
+      },
+      "warnings": {
+        "failedTypes": "Some package types could not be loaded: {types}",
+        "truncated": "Results may be incomplete."
+      },
+      "row": {
+        "versionCount": "{count} versions",
+        "updated": "Updated {date}"
+      },
+      "actions": {
+        "menu": "Package actions",
+        "viewVersions": "View versions",
+        "deletePackage": "Delete package",
+        "deleteVersion": "Delete version"
+      },
+      "empty": {
+        "title": "No packages",
+        "description": "This repository does not have any packages yet.",
+        "missingRepositoryTitle": "No repository selected",
+        "missingRepositoryDescription": "Open a repository with an owner and name to load packages."
+      },
+      "error": {
+        "title": "Could not load packages",
+        "description": "GitHub packages could not be loaded. Check the connection and try again.",
+        "retry": "Retry",
+        "scopeTitle": "Missing permission",
+        "scopeDescription": "Loading packages requires the read:packages scope. Fine-grained personal access tokens are not supported by the Packages API — use a classic personal access token or reauthorize with OAuth."
+      },
+      "pagination": {
+        "summary": "Page {page} of {pageCount} · {totalCount} packages"
+      },
+      "versions": {
+        "back": "Back to packages",
+        "row": {
+          "moreTags": "+{count} more",
+          "created": "Created {date}"
+        },
+        "actions": {
+          "menu": "Version actions"
+        },
+        "empty": {
+          "title": "No versions",
+          "description": "This package does not have any versions yet."
+        },
+        "error": {
+          "title": "Could not load versions",
+          "description": "GitHub package versions could not be loaded. Check the connection and try again.",
+          "retry": "Retry"
+        },
+        "pagination": {
+          "summary": "Page {page} of {pageCount} · {totalCount} versions"
+        }
+      },
+      "deleteDialog": {
+        "packageTitle": "Delete package",
+        "packageDescription": "Package \"{name}\" and all of its versions will be permanently deleted.",
+        "versionTitle": "Delete version",
+        "versionDescription": "Version \"{name}\" will be permanently deleted.",
+        "irreversibleHint": "This cannot be undone. GitHub refuses to delete public packages with more than 5,000 downloads.",
+        "scopeError": "Deleting packages requires the delete:packages scope. Reauthorize with a token that includes it.",
+        "lastVersionHint": "If this is the last version of the package, delete the whole package instead.",
+        "cancel": "Cancel",
+        "confirm": "Delete",
+        "packageError": "Could not delete the package.",
+        "versionError": "Could not delete the version."
+      },
+      "toasts": {
+        "packageDeleted": "Package \"{name}\" deleted.",
+        "versionDeleted": "Version \"{name}\" deleted.",
+        "undo": "Undo",
+        "packageRestored": "Package \"{name}\" restored.",
+        "versionRestored": "Version \"{name}\" restored.",
+        "restoreError": "Could not restore. Try again from GitHub."
+      }
+    },
+    "fork": {
+      "title": "Fork repository",
+      "description": "Create a fork of {repo} under another owner.",
+      "ownerLabel": "Owner",
+      "ownerPlaceholder": "Select owner",
+      "nameLabel": "Repository name",
+      "defaultBranchOnly": "Copy the default branch only",
+      "cancel": "Cancel",
+      "submit": "Create fork",
+      "creating": "Forking...",
+      "success": "Forked to {repo}.",
+      "pending": "Fork {repo} is still being created. It will be available shortly.",
+      "error": "Could not fork the repository."
+    },
+    "watch": {
+      "menuLabel": "Notifications",
+      "participating": "Participating and {'@'}mentions",
+      "participatingDescription": "Only notify me for conversations I participate in or am {'@'}mentioned.",
+      "all": "All activity",
+      "allDescription": "Notify me of all conversations in this repository.",
+      "ignore": "Ignore",
+      "ignoreDescription": "Never notify me about this repository.",
+      "error": "Could not update the notification settings."
+    },
     "sections": {
       "actions": {
         "title": "Actions"
       },
       "commits": {
         "title": "Commits"
+      },
+      "contributors": {
+        "title": "Contributors"
+      },
+      "branches": {
+        "title": "Branches"
+      },
+      "deployments": {
+        "title": "Deployments"
       },
       "files": {
         "title": "Files"
@@ -499,11 +724,227 @@
         "description": "This placeholder will become the repository overview with branches, issues, and workflow entry points.",
         "title": "Overview"
       },
+      "packages": {
+        "title": "Packages"
+      },
       "pullRequests": {
         "title": "Pull Requests"
       },
+      "releases": {
+        "title": "Releases"
+      },
       "settings": {
         "title": "Settings"
+      }
+    },
+    "branches": {
+      "title": "Branches",
+      "description": "Browse and manage the branches and tags of this repository.",
+      "createBranch": "New branch",
+      "createTag": "New tag",
+      "tabs": {
+        "label": "Branches and tags",
+        "branches": "Branches",
+        "tags": "Tags"
+      },
+      "search": {
+        "branchesPlaceholder": "Filter branches...",
+        "tagsPlaceholder": "Filter tags..."
+      },
+      "badges": {
+        "default": "Default",
+        "protected": "Protected",
+        "annotated": "Annotated"
+      },
+      "meta": {
+        "updated": "updated {date}"
+      },
+      "compare": {
+        "ahead": "{count} ahead",
+        "behind": "{count} behind",
+        "hint": "Compared with the default branch"
+      },
+      "actions": {
+        "menu": "Actions",
+        "rename": "Rename",
+        "delete": "Delete"
+      },
+      "empty": {
+        "missingRepositoryTitle": "No repository selected",
+        "missingRepositoryDescription": "Open a repository to browse its branches and tags.",
+        "branchesTitle": "No branches",
+        "branchesDescription": "This repository has no branches yet.",
+        "tagsTitle": "No tags",
+        "tagsDescription": "This repository has no tags yet.",
+        "noMatchesTitle": "No matches",
+        "noMatchesDescription": "No branches or tags match the current filter."
+      },
+      "error": {
+        "title": "Failed to load",
+        "description": "Something went wrong while loading this list.",
+        "retry": "Retry"
+      },
+      "pagination": {
+        "branchesSummary": "Page {page} of {pageCount} · {totalCount} branches",
+        "tagsSummary": "Page {page} of {pageCount} · {totalCount} tags"
+      },
+      "dialogs": {
+        "cancel": "Cancel",
+        "createBranch": {
+          "title": "Create branch",
+          "description": "Create a new branch in {repo}.",
+          "nameLabel": "Branch name",
+          "namePlaceholder": "feature/my-branch",
+          "nameRequired": "Branch name is required.",
+          "sourceLabel": "Source branch",
+          "submit": "Create branch",
+          "error": "Failed to create the branch."
+        },
+        "renameBranch": {
+          "title": "Rename branch",
+          "description": "Rename the branch \"{name}\".",
+          "nameLabel": "New branch name",
+          "hint": "Open pull requests and branch protection rules are retargeted automatically.",
+          "submit": "Rename branch",
+          "error": "Failed to rename the branch."
+        },
+        "createTag": {
+          "title": "Create tag",
+          "description": "Create a new tag in {repo}.",
+          "nameLabel": "Tag name",
+          "namePlaceholder": "v1.0.0",
+          "nameRequired": "Tag name is required.",
+          "sourceLabel": "Source branch",
+          "messageLabel": "Message (optional)",
+          "messagePlaceholder": "Release notes for this tag",
+          "messageHint": "Adding a message creates an annotated tag; leaving it empty creates a lightweight tag.",
+          "submit": "Create tag",
+          "error": "Failed to create the tag."
+        },
+        "deleteRef": {
+          "branchTitle": "Delete branch",
+          "branchDescription": "This permanently deletes the branch \"{name}\". Open pull requests based on it will be closed.",
+          "tagTitle": "Delete tag",
+          "tagDescription": "This permanently deletes the tag \"{name}\".",
+          "confirm": "Delete",
+          "error": "Failed to delete."
+        }
+      },
+      "toasts": {
+        "branchCreated": "Branch \"{name}\" created.",
+        "branchRenamed": "Branch renamed to \"{name}\".",
+        "branchDeleted": "Branch \"{name}\" deleted.",
+        "tagCreated": "Tag \"{name}\" created.",
+        "tagDeleted": "Tag \"{name}\" deleted."
+      }
+    },
+    "releases": {
+      "title": "Releases",
+      "description": "Browse, publish, and manage the releases of this repository.",
+      "create": "New release",
+      "badges": {
+        "draft": "Draft",
+        "prerelease": "Pre-release",
+        "latest": "Latest"
+      },
+      "meta": {
+        "publishedAt": "published {date}",
+        "createdAt": "created {date}"
+      },
+      "noDescription": "No description provided.",
+      "assets": {
+        "title": "Assets",
+        "downloads": "{count} downloads",
+        "sourceZip": "Source code (zip)",
+        "sourceTarGz": "Source code (tar.gz)"
+      },
+      "actions": {
+        "edit": "Edit",
+        "publish": "Publish",
+        "delete": "Delete",
+        "openOnGitHub": "Open on GitHub",
+        "menu": "Release actions"
+      },
+      "form": {
+        "createTitle": "New release",
+        "editTitle": "Edit release",
+        "description": "Publish a release for {repo}.",
+        "tagLabel": "Tag",
+        "tagPlaceholder": "v1.0.0",
+        "tagRequired": "A tag name is required.",
+        "targetLabel": "Target branch",
+        "targetHint": "Only used when the tag does not exist yet.",
+        "titleLabel": "Title",
+        "titlePlaceholder": "Release title",
+        "bodyLabel": "Description",
+        "bodyPlaceholder": "Describe this release (Markdown supported)",
+        "draftLabel": "Save as draft",
+        "prereleaseLabel": "Mark as pre-release",
+        "cancel": "Cancel",
+        "create": "Create release",
+        "save": "Save changes",
+        "error": "Could not save the release."
+      },
+      "delete": {
+        "title": "Delete release",
+        "description": "The release for {tag} will be permanently deleted. This cannot be undone.",
+        "cancel": "Cancel",
+        "confirm": "Delete"
+      },
+      "toasts": {
+        "created": "Release created.",
+        "updated": "Release updated.",
+        "published": "Release published.",
+        "deleted": "Release deleted.",
+        "errorTitle": "Release action failed"
+      },
+      "empty": {
+        "title": "No releases yet",
+        "description": "Create a release to package and share software versions.",
+        "missingRepositoryTitle": "Repository unavailable",
+        "missingRepositoryDescription": "Open a repository to browse its releases."
+      },
+      "error": {
+        "title": "Could not load releases",
+        "description": "Something went wrong while loading the releases.",
+        "retry": "Retry"
+      },
+      "pagination": {
+        "summary": "Page {page}"
+      }
+    },
+    "contributors": {
+      "chartTitle": "Contributions to {branch}, excluding merge commits",
+      "chartTitleNoBranch": "Contributions, excluding merge commits",
+      "metric": {
+        "commits": "Commits",
+        "additions": "Additions",
+        "deletions": "Deletions"
+      },
+      "metricsLabel": "Contribution metric",
+      "tooltip": {
+        "commits": "{date}: {count} commits",
+        "additions": "{date}: {count} additions",
+        "deletions": "{date}: {count} deletions"
+      },
+      "card": {
+        "commits": "{count} commits"
+      },
+      "pending": {
+        "title": "Crunching the latest data",
+        "description": "GitHub is computing contributor statistics. This can take a moment for large repositories — retrying automatically.",
+        "retry": "Retry"
+      },
+      "error": {
+        "title": "Couldn't load contributors",
+        "description": "Something went wrong while loading contributor statistics.",
+        "retry": "Retry"
+      },
+      "empty": {
+        "title": "No contributions yet",
+        "description": "Contribution statistics will appear once commits land on the default branch.",
+        "missingRepositoryTitle": "Repository unavailable",
+        "missingRepositoryDescription": "Select a repository to view its contributors."
       }
     },
     "commits": {
@@ -1016,7 +1457,28 @@
       "reviewRequested": "requested review from {target}",
       "reviewed": "{state} this pull request",
       "unassigned": "removed {target} from assignees",
-      "unlabeled": "removed {label}"
+      "unlabeled": "removed {label}",
+      "locked": "locked this pull request",
+      "lockedWithReason": "locked this pull request as {reason}",
+      "unlocked": "unlocked this pull request",
+      "pinned": "pinned this pull request",
+      "unpinned": "unpinned this pull request",
+      "transferred": "transferred this pull request from {from}",
+      "markedAsDuplicate": "marked this as a duplicate of {source}",
+      "markedAsDuplicateAction": "marked this as a duplicate of",
+      "unmarkedAsDuplicate": "marked this as not a duplicate of {source}",
+      "unmarkedAsDuplicateAction": "marked this as not a duplicate of",
+      "deployed": "deployed this",
+      "deployedTo": "deployed this to {environment}",
+      "deploymentEnvironmentChanged": "changed the deployment environment to {environment}",
+      "convertedToDiscussion": "converted this to discussion {source}",
+      "convertedToDiscussionAction": "converted this to a discussion",
+      "addedToProject": "added this to {project}",
+      "addedToProjectGeneric": "added this to a project",
+      "removedFromProject": "removed this from {project}",
+      "removedFromProjectGeneric": "removed this from a project",
+      "projectStatusChanged": "moved this from {from} to {to} in {project}",
+      "projectStatusSet": "moved this to {to} in {project}"
     },
     "values": {
       "notAvailable": "Not available",

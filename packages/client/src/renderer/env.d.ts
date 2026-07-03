@@ -212,10 +212,21 @@ type GitHubWorkspaceGotoResult =
       url: string
     }
 
+type GitHubRepositorySubscription = 'participating' | 'all' | 'ignore'
+
 type GitHubRepositoryViewerState = {
   isStarred: boolean
   isWatching: boolean
+  subscription: GitHubRepositorySubscription
   starCount: number
+}
+
+type GitHubForkedRepository = {
+  owner: string
+  name: string
+  nameWithOwner: string
+  url: string
+  ready: boolean
 }
 
 type GitHubRepositoryVisibility = 'public' | 'private' | 'internal'
@@ -260,6 +271,7 @@ type GitHubRepositoryCustomProperty = {
 }
 
 type GitHubRepositoryOverviewCounts = {
+  commits: number | null
   stars: number
   watchers: number
   forks: number
@@ -270,6 +282,11 @@ type GitHubRepositoryOverviewCounts = {
   tags: number | null
   packages: number | null
 }
+
+type GitHubRepositoryNavigationCounts = Pick<
+  GitHubRepositoryOverviewCounts,
+  'commits' | 'openIssues' | 'openPullRequests'
+>
 
 type GitHubRepositoryOverview = {
   id: number
@@ -295,6 +312,33 @@ type GitHubRepositoryOverview = {
   customProperties: GitHubRepositoryCustomProperty[]
   missingScopes: string[]
   warnings: string[]
+}
+
+type GitHubContributorStatsAuthor = {
+  id: number
+  login: string
+  avatarUrl: string | null
+  type: string
+}
+
+type GitHubContributorStatsWeek = {
+  w: number
+  a: number
+  d: number
+  c: number
+}
+
+type GitHubRepositoryContributorStats = {
+  author: GitHubContributorStatsAuthor
+  total: number
+  weeks: GitHubContributorStatsWeek[]
+}
+
+type GitHubRepositoryContributorStatsResult = {
+  contributors: GitHubRepositoryContributorStats[]
+  firstWeek: number | null
+  lastWeek: number | null
+  hasLineStats: boolean
 }
 
 type GitHubRepositoryFileNodeType = 'tree' | 'file'
@@ -346,6 +390,125 @@ type GitHubRepositoryCommitPage = {
 type GitHubRepositoryBranch = {
   name: string
   commitSha: string
+}
+
+type GitHubBranchAssociatedPullRequest = {
+  number: number
+  title: string
+  url: string
+}
+
+type GitHubBranchListItem = {
+  name: string
+  commitSha: string
+  shortSha: string
+  committedDate: string | null
+  author: GitHubRepositoryCommitAuthor
+  aheadBy: number | null
+  behindBy: number | null
+  isDefault: boolean
+  isProtected: boolean
+  associatedPullRequest: GitHubBranchAssociatedPullRequest | null
+}
+
+type GitHubBranchPage = {
+  items: GitHubBranchListItem[]
+  totalCount: number
+  page: number
+  perPage: number
+  hasNextPage: boolean
+  defaultBranch: string | null
+}
+
+type GitHubTagListItem = {
+  name: string
+  commitSha: string
+  shortSha: string
+  date: string | null
+  message: string | null
+  isAnnotated: boolean
+}
+
+type GitHubTagPage = {
+  items: GitHubTagListItem[]
+  totalCount: number
+  page: number
+  perPage: number
+  hasNextPage: boolean
+}
+
+type GitHubListRefsOptions = {
+  query?: string | null
+  page?: number | null
+  perPage?: number | null
+  defaultBranch?: string | null
+}
+
+type GitHubCreatedRef = {
+  ref: string
+  sha: string
+}
+
+type GitHubReleaseAsset = {
+  id: number
+  name: string
+  size: number
+  downloadCount: number
+  contentType: string | null
+  browserDownloadUrl: string
+  updatedAt: string | null
+}
+
+type GitHubRelease = {
+  id: number
+  tagName: string
+  targetCommitish: string
+  name: string | null
+  body: string | null
+  draft: boolean
+  prerelease: boolean
+  createdAt: string | null
+  publishedAt: string | null
+  htmlUrl: string
+  author: GitHubActor | null
+  assets: GitHubReleaseAsset[]
+  tarballUrl: string | null
+  zipballUrl: string | null
+}
+
+type GitHubReleasePage = {
+  items: GitHubRelease[]
+  page: number
+  perPage: number
+  hasPreviousPage: boolean
+  hasNextPage: boolean
+}
+
+type ListRepositoryReleasesOptions = {
+  owner: string
+  repo: string
+  page?: number
+  perPage?: number
+}
+
+type CreateReleaseOptions = {
+  owner: string
+  repo: string
+  tagName: string
+  targetCommitish?: string | null
+  name?: string | null
+  body?: string | null
+  draft?: boolean
+  prerelease?: boolean
+}
+
+type UpdateReleaseChanges = {
+  tagName?: string
+  targetCommitish?: string | null
+  name?: string | null
+  body?: string | null
+  draft?: boolean
+  prerelease?: boolean
 }
 
 type GitHubCommitActor = {
@@ -567,6 +730,183 @@ type ListWorkflowRunJobsOptions = {
   repo: string
   runId: number
   filter?: 'latest' | 'all'
+}
+
+type GitHubDeploymentState =
+  | 'error'
+  | 'failure'
+  | 'inactive'
+  | 'in_progress'
+  | 'queued'
+  | 'pending'
+  | 'success'
+
+type GitHubDeploymentStatus = {
+  id: number
+  state: GitHubDeploymentState
+  description: string
+  environmentUrl: string | null
+  logUrl: string | null
+  creator: GitHubActor | null
+  createdAt: string
+}
+
+type GitHubDeployment = {
+  id: number
+  sha: string
+  ref: string
+  task: string
+  environment: string
+  description: string | null
+  transientEnvironment: boolean
+  productionEnvironment: boolean
+  creator: GitHubActor | null
+  latestStatus: GitHubDeploymentStatus | null
+  createdAt: string
+  updatedAt: string
+}
+
+type GitHubEnvironmentProtectionRule = {
+  id: number
+  type: string
+  waitTimer: number | null
+  reviewerCount: number | null
+}
+
+type GitHubEnvironment = {
+  id: number
+  name: string
+  htmlUrl: string | null
+  createdAt: string | null
+  updatedAt: string | null
+  protectionRules: GitHubEnvironmentProtectionRule[]
+}
+
+type GitHubDeploymentPage = {
+  items: GitHubDeployment[]
+  totalCount: number | null
+  page: number
+  perPage: number
+  hasNextPage: boolean
+}
+
+type GitHubEnvironmentPage = {
+  items: GitHubEnvironment[]
+  totalCount: number
+  page: number
+  perPage: number
+  hasNextPage: boolean
+}
+
+type ListRepositoryEnvironmentsOptions = {
+  owner: string
+  repo: string
+  page?: number
+  perPage?: number
+}
+
+type ListRepositoryDeploymentsOptions = {
+  owner: string
+  repo: string
+  environment?: string | null
+  ref?: string | null
+  sha?: string | null
+  task?: string | null
+  page?: number
+  perPage?: number
+}
+
+type ListDeploymentStatusesOptions = {
+  owner: string
+  repo: string
+  deploymentId: number
+}
+
+type DeploymentTargetOptions = {
+  owner: string
+  repo: string
+  deploymentId: number
+}
+
+type DeleteDeploymentOptions = {
+  owner: string
+  repo: string
+  deploymentId: number
+  deactivateFirst?: boolean
+}
+
+type DeleteEnvironmentOptions = {
+  owner: string
+  repo: string
+  environmentName: string
+}
+
+type GitHubPackageType = 'npm' | 'maven' | 'rubygems' | 'docker' | 'nuget' | 'container'
+type GitHubPackageVisibility = 'public' | 'private' | 'internal'
+
+type GitHubPackage = {
+  id: number
+  name: string
+  packageType: GitHubPackageType
+  visibility: GitHubPackageVisibility
+  versionCount: number
+  ownerLogin: string
+  htmlUrl: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+type GitHubPackageVersion = {
+  id: number
+  name: string
+  htmlUrl: string | null
+  description: string | null
+  containerTags: string[]
+  createdAt: string
+  updatedAt: string
+}
+
+type GitHubPackagePage = {
+  items: GitHubPackage[]
+  totalCount: number
+  page: number
+  perPage: number
+  hasNextPage: boolean
+  failedTypes: GitHubPackageType[]
+  truncated: boolean
+}
+
+type GitHubPackageVersionPage = {
+  items: GitHubPackageVersion[]
+  totalCount: number | null
+  page: number
+  perPage: number
+  hasNextPage: boolean
+}
+
+type ListRepositoryPackagesOptions = {
+  owner: string
+  repo: string
+  page?: number
+  perPage?: number
+}
+
+type ListPackageVersionsOptions = {
+  owner: string
+  packageType: GitHubPackageType
+  packageName: string
+  page?: number
+  perPage?: number
+}
+
+type PackageTargetOptions = {
+  owner: string
+  packageType: GitHubPackageType
+  packageName: string
+}
+
+type PackageVersionTargetOptions = PackageTargetOptions & {
+  versionId: number
 }
 
 type GitHubPullRequestState = 'draft' | 'merged' | 'open' | 'closed'
@@ -1123,10 +1463,18 @@ interface Window {
       listRepositoryWorkflowRuns: (options: ListRepositoryWorkflowRunsOptions) => Promise<GitHubActionRunPage>
       getWorkflowRun: (owner: string, repo: string, runId: number) => Promise<GitHubActionRun>
       listWorkflowRunJobs: (options: ListWorkflowRunJobsOptions) => Promise<GitHubActionJob[]>
-      getWorkflowJobLog: (owner: string, repo: string, jobId: number) => Promise<GitHubActionJobLog>
+      getWorkflowJobLog: (owner: string, repo: string, jobId: number, job?: WorkflowJobLogHint) => Promise<GitHubActionJobLog>
       rerunWorkflowRun: (owner: string, repo: string, runId: number) => Promise<void>
       rerunFailedWorkflowRunJobs: (owner: string, repo: string, runId: number) => Promise<void>
       rerunWorkflowJob: (owner: string, repo: string, jobId: number) => Promise<void>
+    }
+    deployments: {
+      listEnvironments: (options: ListRepositoryEnvironmentsOptions) => Promise<GitHubEnvironmentPage>
+      listDeployments: (options: ListRepositoryDeploymentsOptions) => Promise<GitHubDeploymentPage>
+      listStatuses: (options: ListDeploymentStatusesOptions) => Promise<GitHubDeploymentStatus[]>
+      markInactive: (options: DeploymentTargetOptions) => Promise<void>
+      deleteDeployment: (options: DeleteDeploymentOptions) => Promise<void>
+      deleteEnvironment: (options: DeleteEnvironmentOptions) => Promise<void>
     }
     issues: {
       listIssueCategory: (category: GitHubIssueCategory) => Promise<GitHubIssue[]>
@@ -1167,6 +1515,15 @@ interface Window {
       setIssueLock: (owner: string, repo: string, number: number, locked: boolean) => Promise<void>
       setIssuePinned: (issueId: string, pinned: boolean) => Promise<void>
       deleteIssue: (issueId: string) => Promise<void>
+      setReaction: (subjectId: string, content: GitHubReactionContent, reacted: boolean) => Promise<void>
+    }
+    packages: {
+      listPackages: (options: ListRepositoryPackagesOptions) => Promise<GitHubPackagePage>
+      listVersions: (options: ListPackageVersionsOptions) => Promise<GitHubPackageVersionPage>
+      deletePackage: (options: PackageTargetOptions) => Promise<void>
+      deleteVersion: (options: PackageVersionTargetOptions) => Promise<void>
+      restorePackage: (options: PackageTargetOptions) => Promise<void>
+      restoreVersion: (options: PackageVersionTargetOptions) => Promise<void>
     }
     pulls: {
       listPullRequestCategory: (category: GitHubPullRequestCategory) => Promise<GitHubPullRequest[]>
@@ -1238,9 +1595,22 @@ interface Window {
       markThreadAsDone: (threadId: string) => Promise<void>
       unsubscribe: (threadId: string) => Promise<void>
     }
+    releases: {
+      listRepositoryReleases: (options: ListRepositoryReleasesOptions) => Promise<GitHubReleasePage>
+      createRelease: (options: CreateReleaseOptions) => Promise<GitHubRelease>
+      updateRelease: (
+        owner: string,
+        repo: string,
+        releaseId: number,
+        changes: UpdateReleaseChanges
+      ) => Promise<GitHubRelease>
+      deleteRelease: (owner: string, repo: string, releaseId: number) => Promise<void>
+    }
     repositories: {
       getViewerState: (owner: string, repo: string) => Promise<GitHubRepositoryViewerState>
+      getNavigationCounts: (owner: string, repo: string) => Promise<GitHubRepositoryNavigationCounts>
       getOverview: (owner: string, repo: string) => Promise<GitHubRepositoryOverview>
+      getContributorStats: (owner: string, repo: string) => Promise<GitHubRepositoryContributorStatsResult>
       listFiles: (owner: string, repo: string, ref?: string | null) => Promise<GitHubRepositoryFileTree>
       listCommits: (
         owner: string,
@@ -1250,6 +1620,27 @@ interface Window {
         perPage?: number
       ) => Promise<GitHubRepositoryCommitPage>
       listBranches: (owner: string, repo: string) => Promise<GitHubRepositoryBranch[]>
+      listBranchesDetailed: (
+        owner: string,
+        repo: string,
+        options?: GitHubListRefsOptions
+      ) => Promise<GitHubBranchPage>
+      listTags: (
+        owner: string,
+        repo: string,
+        options?: Omit<GitHubListRefsOptions, 'defaultBranch'>
+      ) => Promise<GitHubTagPage>
+      createBranch: (owner: string, repo: string, name: string, fromRef: string) => Promise<GitHubCreatedRef>
+      renameBranch: (owner: string, repo: string, name: string, newName: string) => Promise<void>
+      deleteBranch: (owner: string, repo: string, name: string) => Promise<void>
+      createTag: (
+        owner: string,
+        repo: string,
+        name: string,
+        fromRef: string,
+        message?: string | null
+      ) => Promise<GitHubCreatedRef>
+      deleteTag: (owner: string, repo: string, name: string) => Promise<void>
       getCommit: (owner: string, repo: string, sha: string) => Promise<GitHubCommitDetail>
       getFilePreview: (
         owner: string,
@@ -1258,7 +1649,20 @@ interface Window {
         ref?: string | null
       ) => Promise<GitHubRepositoryFilePreview>
       setStarred: (owner: string, repo: string, starred: boolean) => Promise<void>
-      setWatching: (owner: string, repo: string, watching: boolean) => Promise<void>
+      setSubscription: (
+        owner: string,
+        repo: string,
+        subscription: GitHubRepositorySubscription
+      ) => Promise<void>
+      fork: (
+        owner: string,
+        repo: string,
+        options?: {
+          organization?: string | null
+          name?: string | null
+          defaultBranchOnly?: boolean
+        }
+      ) => Promise<GitHubForkedRepository>
     }
     search: {
       resolveGoto: (input: string) => Promise<GitHubWorkspaceGotoResult>

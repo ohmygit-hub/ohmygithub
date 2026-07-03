@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { WorkspaceTab } from '../workspace/types'
+import type { WorkspaceTab } from '@/pages/workspace/types'
 import type { RepositoryOverviewInfoItem, RepositorySection, RepositorySectionId } from './components/types'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -20,11 +20,13 @@ import {
   Globe,
   Eye,
   Package,
+  Rocket,
   Scale,
   Settings,
   Shield,
   Star,
   Tags,
+  Users,
 } from 'lucide-vue-next'
 import {
   Empty,
@@ -32,17 +34,28 @@ import {
   EmptyHeader,
   EmptyTitle,
 } from '@oh-my-github/ui'
-import { useRepositoryOverviewQuery } from '../../composables/github/use-repositories'
-import type { KeyboardShortcutCommandId } from '../../keyboard/shortcut-definitions'
-import { registerKeyboardShortcutHandler } from '../../keyboard/shortcut-runtime'
-import { createRepositoryWorkspaceUrl } from '../workspace/workspace-url'
+import {
+  useRepositoryNavigationCountsQuery,
+  useRepositoryOverviewQuery,
+} from '@/composables/github/use-repositories'
+import type { KeyboardShortcutCommandId } from '@/keyboard/shortcut-definitions'
+import { registerKeyboardShortcutHandler } from '@/keyboard/shortcut-runtime'
+import { createRepositoryWorkspaceUrl } from '@/pages/workspace/workspace-url'
 import RepositoryOverview from './components/overview/repository-overview.vue'
 import PullRequestsSection from './components/pulls/section.vue'
 import IssuesSection from './components/issues/section.vue'
 import FilesPanel from './components/files/files-panel.vue'
 import CommitsSection from './components/commits/section.vue'
 import RepositorySidebar from './components/repository-sidebar.vue'
+import RepositoryForkDialog from './components/repository-fork-dialog.vue'
+import { resolveRepositorySidebarCounts } from './components/repository-section-counts'
 import ActionsSection from './components/actions/section.vue'
+import ReleasesSection from './components/releases/section.vue'
+import BranchesSection from './components/branches/section.vue'
+import ContributorsSection from './components/contributors/section.vue'
+import PackagesSection from './components/packages/section.vue'
+import DeploymentsSection from './components/deployments/section.vue'
+import { useToast } from '@/composables/use-toast'
 
 const props = defineProps<{
   isActive: boolean
@@ -57,18 +70,25 @@ const repositorySections: readonly RepositorySection[] = [
   { id: 'overview', icon: Book },
   { id: 'files', icon: Folder },
   { id: 'commits', icon: GitCommitHorizontal },
+  { id: 'branches', icon: GitBranch },
   { id: 'pullRequests', icon: GitPullRequest },
   { id: 'issues', icon: CircleDot },
   { id: 'actions', icon: Activity },
+  { id: 'releases', icon: Tags },
+  { id: 'contributors', icon: Users },
+  { id: 'packages', icon: Package },
+  { id: 'deployments', icon: Rocket },
   { id: 'settings', icon: Settings },
 ]
 
 type RepositoryActionId = 'star' | 'watch'
 
 const { t } = useI18n()
+const toast = useToast()
 const route = useRoute()
 const router = useRouter()
 const activeSection = ref<RepositorySectionId>(props.tab.repositorySection ?? 'overview')
+const isForkDialogOpen = ref(false)
 const activeDocumentKind = ref<GitHubRepositoryDocumentKind>('readme')
 const viewerState = ref<GitHubRepositoryViewerState | null>(null)
 const isViewerStateLoading = ref(false)
@@ -79,9 +99,14 @@ const sectionShortcutIds: Record<RepositorySectionId, KeyboardShortcutCommandId>
   overview: 'repository.section.overview',
   files: 'repository.section.files',
   commits: 'repository.section.commits',
+  branches: 'repository.section.branches',
   pullRequests: 'repository.section.pullRequests',
   issues: 'repository.section.issues',
   actions: 'repository.section.actions',
+  releases: 'repository.section.releases',
+  contributors: 'repository.section.contributors',
+  packages: 'repository.section.packages',
+  deployments: 'repository.section.deployments',
   settings: 'repository.section.settings',
 }
 
@@ -89,12 +114,16 @@ const owner = computed(() => props.tab.owner ?? '')
 const repository = computed(() => props.tab.repo ?? props.tab.title)
 const activeSectionTitle = computed(() => t(`repository.sections.${activeSection.value}.title`))
 const hasRepositoryIdentity = computed(() => Boolean(owner.value && repository.value))
+const navigationCountsQuery = useRepositoryNavigationCountsQuery(owner, repository, hasRepositoryIdentity)
 const overviewQuery = useRepositoryOverviewQuery(owner, repository, hasRepositoryIdentity)
 const overview = computed(() => overviewQuery.data.value ?? null)
+const repositorySidebarCounts = computed(() =>
+  resolveRepositorySidebarCounts(navigationCountsQuery.data.value ?? null, overview.value?.counts ?? null)
+)
 const isOverviewLoading = computed(() => overviewQuery.isLoading.value)
 const hasOverviewError = computed(() => Boolean(overviewQuery.error.value))
 const isStarred = computed(() => viewerState.value?.isStarred ?? false)
-const isWatching = computed(() => viewerState.value?.isWatching ?? false)
+const subscription = computed<GitHubRepositorySubscription>(() => viewerState.value?.subscription ?? 'participating')
 const starCount = computed(() => viewerState.value?.starCount ?? overview.value?.counts.stars ?? null)
 const formattedStarCount = computed(() => {
   if (starCount.value === null) return '...'
@@ -102,13 +131,16 @@ const formattedStarCount = computed(() => {
   return new Intl.NumberFormat().format(starCount.value)
 })
 const starLabel = computed(() => t(isStarred.value ? 'repository.actions.starred' : 'repository.actions.star'))
-const watchLabel = computed(() => t(isWatching.value ? 'repository.actions.watching' : 'repository.actions.watch'))
+const watchLabel = computed(() =>
+  t(subscription.value === 'all' ? 'repository.actions.watching' : 'repository.actions.watch')
+)
 const starButtonDisabled = computed(() =>
   !hasRepositoryIdentity.value || isViewerStateLoading.value || Boolean(pendingRepositoryAction.value)
 )
 const watchButtonDisabled = computed(() =>
   !hasRepositoryIdentity.value || isViewerStateLoading.value || Boolean(pendingRepositoryAction.value)
 )
+const forkButtonDisabled = computed(() => !hasRepositoryIdentity.value)
 const repositoryStatusItems = computed(() => {
   const currentOverview = overview.value
   if (!currentOverview) return []
@@ -364,7 +396,8 @@ async function toggleStarred(): Promise<void> {
     await window.ohMyGithub.repositories.setStarred(owner.value, repository.value, nextStarred)
     viewerState.value = {
       isStarred: nextStarred,
-      isWatching: isWatching.value,
+      isWatching: subscription.value === 'all',
+      subscription: subscription.value,
       starCount: Math.max(0, (starCount.value ?? 0) + (nextStarred ? 1 : -1)),
     }
   } catch {
@@ -374,24 +407,43 @@ async function toggleStarred(): Promise<void> {
   }
 }
 
-async function toggleWatching(): Promise<void> {
+async function setSubscription(nextSubscription: GitHubRepositorySubscription): Promise<void> {
   if (!hasRepositoryIdentity.value || pendingRepositoryAction.value || !window.ohMyGithub?.repositories) return
+  if (nextSubscription === subscription.value) return
 
-  const nextWatching = !isWatching.value
   pendingRepositoryAction.value = 'watch'
 
   try {
-    await window.ohMyGithub.repositories.setWatching(owner.value, repository.value, nextWatching)
+    await window.ohMyGithub.repositories.setSubscription(owner.value, repository.value, nextSubscription)
     viewerState.value = {
       isStarred: isStarred.value,
-      isWatching: nextWatching,
+      isWatching: nextSubscription === 'all',
+      subscription: nextSubscription,
       starCount: starCount.value ?? 0,
     }
   } catch {
+    toast.error(t('repository.watch.error'))
     void loadRepositoryViewerState()
   } finally {
     pendingRepositoryAction.value = null
   }
+}
+
+function openForkDialog(): void {
+  if (!hasRepositoryIdentity.value) return
+  isForkDialogOpen.value = true
+}
+
+function handleForked(fork: GitHubForkedRepository): void {
+  isForkDialogOpen.value = false
+
+  if (fork.ready) {
+    toast.success(t('repository.fork.success', { repo: fork.nameWithOwner }))
+    void router.push(createRepositoryWorkspaceUrl(fork.owner, fork.name))
+    return
+  }
+
+  toast.info(t('repository.fork.pending', { repo: fork.nameWithOwner }))
 }
 
 watch(
@@ -430,20 +482,30 @@ watch(
   <section class="flex h-full min-h-[34rem] gap-3 bg-background p-3">
     <RepositorySidebar
       :active-section="activeSection"
+      :fork-button-disabled="forkButtonDisabled"
       :formatted-star-count="formattedStarCount"
       :is-starred="isStarred"
-      :is-watching="isWatching"
       :owner="owner"
       :repository="repository"
+      :repository-counts="repositorySidebarCounts"
       :sections="repositorySections"
       :star-button-disabled="starButtonDisabled"
       :star-label="starLabel"
+      :subscription="subscription"
       :watch-button-disabled="watchButtonDisabled"
       :watch-label="watchLabel"
+      @fork="openForkDialog"
       @open-owner="openOwner"
+      @set-subscription="setSubscription"
       @toggle-starred="toggleStarred"
-      @toggle-watching="toggleWatching"
       @update:active-section="setActiveSection"
+    />
+
+    <RepositoryForkDialog
+      v-model:open="isForkDialogOpen"
+      :owner="owner"
+      :repository="repository"
+      @forked="handleForked"
     />
 
     <main class="min-w-0 flex-1 overflow-auto px-3">
@@ -477,6 +539,13 @@ watch(
           :repo="repository"
         />
 
+        <BranchesSection
+          v-else-if="activeSection === 'branches'"
+          :default-branch="overview?.defaultBranch ?? null"
+          :owner="owner"
+          :repo="repository"
+        />
+
         <PullRequestsSection
           v-else-if="activeSection === 'pullRequests'"
           :owner="owner"
@@ -491,6 +560,34 @@ watch(
 
         <ActionsSection
           v-else-if="activeSection === 'actions'"
+          :is-active="isActive"
+          :owner="owner"
+          :repo="repository"
+        />
+
+        <ReleasesSection
+          v-else-if="activeSection === 'releases'"
+          :default-branch="overview?.defaultBranch ?? null"
+          :owner="owner"
+          :repo="repository"
+        />
+
+        <ContributorsSection
+          v-else-if="activeSection === 'contributors'"
+          :default-branch="overview?.defaultBranch ?? null"
+          :owner="owner"
+          :repo="repository"
+        />
+
+        <PackagesSection
+          v-else-if="activeSection === 'packages'"
+          :is-active="isActive"
+          :owner="owner"
+          :repo="repository"
+        />
+
+        <DeploymentsSection
+          v-else-if="activeSection === 'deployments'"
           :is-active="isActive"
           :owner="owner"
           :repo="repository"

@@ -1,6 +1,11 @@
 import type {
   CreateIssueCommentOptions,
   CreatePullRequestCommentOptions,
+  CreateReleaseOptions,
+  DeleteDeploymentOptions,
+  DeleteEnvironmentOptions,
+  DeleteReleaseOptions,
+  DeploymentTargetOptions,
   AccountContributionsOptions,
   GetIssueDetailOptions,
   GetPullRequestDetailOptions,
@@ -19,24 +24,39 @@ import type {
   GitHubActionStep,
   GitHubActionWorkflow,
   GitHubClient,
+  GitHubDeployment,
+  GitHubDeploymentPage,
+  GitHubDeploymentState,
+  GitHubDeploymentStatus,
+  GitHubEnvironment,
+  GitHubEnvironmentPage,
   GitHubIssue,
   GitHubIssueSearchResult,
   GitHubIssueComment,
   GitHubIssueDetail,
   GitHubOrganization,
+  GitHubPackage,
+  GitHubPackagePage,
+  GitHubPackageType,
+  GitHubPackageVersion,
+  GitHubPackageVersionPage,
   GitHubPullRequest,
   GitHubPullRequestComment,
   GitHubPullRequestDetail,
   GitHubPullRequestSearchResult,
+  GitHubRelease,
+  GitHubReleasePage,
   GitHubCommitDetail,
   GitHubCommitFile,
   GitHubRepository,
   GitHubRepositoryBranch,
   GitHubRepositoryCommit,
   GitHubRepositoryCommitPage,
+  GitHubRepositoryContributorStatsResult,
   GitHubRepositoryFileNode,
   GitHubRepositoryFilePreview,
   GitHubRepositoryFileTree,
+  GitHubRepositoryNavigationCounts,
   GitHubRepositoryOverview,
   GitHubRepositoryReferenceResolution,
   GitHubRepositoryViewerState,
@@ -45,12 +65,32 @@ import type {
   GitHubWorkspaceSearchResult,
   GitHubWorkspaceItem,
   ListAccountRepositoriesOptions,
+  ListDeploymentStatusesOptions,
   ListIssueCategoryOptions,
+  ListPackageVersionsOptions,
   ListPullRequestCategoryOptions,
   ListPullRequestCommitsOptions,
+  ListRepositoryDeploymentsOptions,
+  ListRepositoryEnvironmentsOptions,
+  ListRepositoryPackagesOptions,
+  ListRepositoryReleasesOptions,
   ListRepositoryWorkspaceItemsOptions,
   ListRepositoryWorkflowRunsOptions,
   ListWorkflowRunJobsOptions,
+  CreateRepositoryBranchOptions,
+  CreateRepositoryTagOptions,
+  DeleteRepositoryBranchOptions,
+  DeleteRepositoryTagOptions,
+  GitHubBranchListItem,
+  GitHubBranchPage,
+  GitHubCreatedRef,
+  GitHubTagListItem,
+  GitHubTagPage,
+  ListRepositoryBranchesDetailedOptions,
+  ListRepositoryTagsOptions,
+  PackageTargetOptions,
+  PackageVersionTargetOptions,
+  RenameRepositoryBranchOptions,
   RepositoryBranchesOptions,
   RepositoryCommitOptions,
   RepositoryCommitsOptions,
@@ -65,7 +105,10 @@ import type {
   SearchWorkspaceOptions,
   SetAccountFollowedOptions,
   SetRepositoryStarredOptions,
-  SetRepositoryWatchingOptions,
+  SetRepositorySubscriptionOptions,
+  UpdateReleaseOptions,
+  ForkRepositoryOptions,
+  GitHubForkedRepository,
   GitHubActor,
   GitHubIssueMilestone,
   GitHubLabel
@@ -334,6 +377,366 @@ for (const runs of Object.values(runsByRepository)) {
   }
 }
 
+const environmentsByRepository: Record<string, GitHubEnvironment[]> = {
+  'oh-my-github/client': createMockEnvironments('oh-my-github', 'client'),
+  'oh-my-github/api': createMockEnvironments('oh-my-github', 'api'),
+  'oh-my-github/ui': createMockEnvironments('oh-my-github', 'ui'),
+  'vuejs/core': createMockEnvironments('vuejs', 'core'),
+}
+
+const deploymentsByRepository: Record<string, GitHubDeployment[]> = Object.fromEntries(
+  Object.entries(environmentsByRepository).map(([repository, environments]) => {
+    const [owner, repo] = repository.split('/')
+    return [repository, createMockDeployments(owner, repo, environments)]
+  })
+)
+
+const statusesByDeployment = new Map<number, GitHubDeploymentStatus[]>()
+
+for (const deployments of Object.values(deploymentsByRepository)) {
+  for (const deployment of deployments) {
+    statusesByDeployment.set(deployment.id, createMockDeploymentStatusHistory(deployment))
+  }
+}
+
+const releasesByRepository = new Map<string, GitHubRelease[]>()
+let nextMockReleaseId = 9000
+
+function createMockReleaseAssets(repository: string, tag: string, count: number) {
+  return Array.from({ length: count }, (_, index) => ({
+    id: nextMockReleaseId += 1,
+    name: index === 0 ? `${tag}-darwin-arm64.dmg` : `${tag}-win-x64.exe`,
+    size: 24 * 1024 * 1024 + index * 3 * 1024 * 1024,
+    downloadCount: 128 - index * 40,
+    contentType: 'application/octet-stream',
+    browserDownloadUrl: `https://github.com/${repository}/releases/download/${tag}/asset-${index}`,
+    updatedAt: '2026-05-20T10:00:00Z',
+  }))
+}
+
+function createMockReleases(owner: string, repo: string): GitHubRelease[] {
+  const repository = `${owner}/${repo}`
+  const entries: Array<Partial<GitHubRelease> & { tagName: string }> = [
+    { tagName: 'v2.1.0', name: 'v2.1.0 (draft)', draft: true, body: '## Unreleased\n- WIP changes', publishedAt: null },
+    { tagName: 'v2.0.0-beta.1', name: 'v2.0.0 Beta 1', prerelease: true, body: '## Beta\n- Preview features' },
+    { tagName: 'v1.2.0', name: 'v1.2.0', body: '## Features\n- Added releases panel\n\n## Fixes\n- Assorted fixes' },
+    { tagName: 'v1.1.0', name: 'v1.1.0', body: '## Features\n- Improved sidebar' },
+    { tagName: 'v1.0.0', name: 'v1.0.0', body: 'First stable release' },
+  ]
+
+  return entries.map((entry, index) => ({
+    id: nextMockReleaseId += 1,
+    tagName: entry.tagName,
+    targetCommitish: 'main',
+    name: entry.name ?? entry.tagName,
+    body: entry.body ?? null,
+    draft: entry.draft ?? false,
+    prerelease: entry.prerelease ?? false,
+    createdAt: `2026-0${Math.min(9, 6 - index)}-01T09:00:00Z`,
+    publishedAt: entry.draft ? null : entry.publishedAt ?? `2026-0${Math.min(9, 6 - index)}-02T09:00:00Z`,
+    htmlUrl: `https://github.com/${repository}/releases/tag/${entry.tagName}`,
+    author: { login: 'octocat', avatarUrl: 'https://avatars.githubusercontent.com/u/583231?v=4' },
+    assets: createMockReleaseAssets(repository, entry.tagName, entry.draft ? 0 : (index % 3)),
+    tarballUrl: `https://api.github.com/repos/${repository}/tarball/${entry.tagName}`,
+    zipballUrl: `https://api.github.com/repos/${repository}/zipball/${entry.tagName}`,
+  }))
+}
+
+function getMockReleases(options: RepositoryOptions): GitHubRelease[] {
+  const key = repositoryKey(options)
+  let releases = releasesByRepository.get(key)
+
+  if (!releases) {
+    releases = createMockReleases(options.owner, options.repo)
+    releasesByRepository.set(key, releases)
+  }
+
+  return releases
+}
+
+interface MockPackageRecord extends GitHubPackage {
+  repository: { owner: string; name: string }
+}
+
+const packagesByRepository = new Map<string, MockPackageRecord[]>()
+const deletedPackagesByRepository = new Map<string, MockPackageRecord[]>()
+const packageVersionsByPackageId = new Map<number, GitHubPackageVersion[]>()
+const deletedPackageVersionsByPackageId = new Map<number, GitHubPackageVersion[]>()
+let nextMockPackageId = 8000
+
+function createMockPackages(owner: string, repo: string): MockPackageRecord[] {
+  const repository = { owner, name: repo }
+
+  return [
+    {
+      id: nextMockPackageId += 1,
+      name: `${repo}-server`,
+      packageType: 'npm',
+      visibility: 'public',
+      versionCount: 3,
+      ownerLogin: owner,
+      htmlUrl: `https://github.com/${owner}/${repo}/pkgs/npm/${repo}-server`,
+      createdAt: '2026-04-01T09:00:00Z',
+      updatedAt: '2026-06-20T09:00:00Z',
+      repository,
+    },
+    {
+      id: nextMockPackageId += 1,
+      name: repo,
+      packageType: 'docker',
+      visibility: 'private',
+      versionCount: 3,
+      ownerLogin: owner,
+      htmlUrl: `https://github.com/${owner}/${repo}/pkgs/container/${repo}`,
+      createdAt: '2026-03-01T09:00:00Z',
+      updatedAt: '2026-06-25T09:00:00Z',
+      repository,
+    },
+    {
+      id: nextMockPackageId += 1,
+      name: `${repo}-runtime`,
+      packageType: 'container',
+      visibility: 'public',
+      versionCount: 2,
+      ownerLogin: owner,
+      htmlUrl: `https://github.com/${owner}/${repo}/pkgs/container/${repo}-runtime`,
+      createdAt: '2026-02-01T09:00:00Z',
+      updatedAt: '2026-06-28T09:00:00Z',
+      repository,
+    },
+  ]
+}
+
+function createMockPackageVersions(pkg: MockPackageRecord): GitHubPackageVersion[] {
+  if (pkg.packageType === 'container') {
+    return [
+      {
+        id: pkg.id * 10 + 1,
+        name: 'sha256:mockdigest01',
+        htmlUrl: `${pkg.htmlUrl}/1`,
+        description: null,
+        containerTags: ['latest', 'v1.2.0'],
+        createdAt: '2026-06-28T09:00:00Z',
+        updatedAt: '2026-06-28T09:00:00Z',
+      },
+      {
+        id: pkg.id * 10 + 2,
+        name: 'sha256:mockdigest02',
+        htmlUrl: `${pkg.htmlUrl}/2`,
+        description: null,
+        containerTags: ['v1.1.0'],
+        createdAt: '2026-05-15T09:00:00Z',
+        updatedAt: '2026-05-15T09:00:00Z',
+      },
+    ]
+  }
+
+  return [
+    {
+      id: pkg.id * 10 + 1,
+      name: '1.2.0',
+      htmlUrl: null,
+      description: 'Latest release',
+      containerTags: [],
+      createdAt: '2026-06-20T09:00:00Z',
+      updatedAt: '2026-06-20T09:00:00Z',
+    },
+    {
+      id: pkg.id * 10 + 2,
+      name: '1.1.0',
+      htmlUrl: null,
+      description: null,
+      containerTags: [],
+      createdAt: '2026-05-10T09:00:00Z',
+      updatedAt: '2026-05-10T09:00:00Z',
+    },
+    {
+      id: pkg.id * 10 + 3,
+      name: '1.0.0',
+      htmlUrl: null,
+      description: null,
+      containerTags: [],
+      createdAt: '2026-04-01T09:00:00Z',
+      updatedAt: '2026-04-01T09:00:00Z',
+    },
+  ]
+}
+
+function getMockPackages(options: RepositoryOptions): MockPackageRecord[] {
+  const key = repositoryKey(options)
+  let packages = packagesByRepository.get(key)
+
+  if (!packages) {
+    packages = createMockPackages(options.owner, options.repo)
+    packagesByRepository.set(key, packages)
+
+    for (const pkg of packages) {
+      packageVersionsByPackageId.set(pkg.id, createMockPackageVersions(pkg))
+    }
+  }
+
+  return packages
+}
+
+function toGitHubPackage(pkg: MockPackageRecord): GitHubPackage {
+  const { repository: _repository, ...rest } = pkg
+
+  return rest
+}
+
+function locateMockPackage(
+  owner: string,
+  packageType: GitHubPackageType,
+  packageName: string,
+): { key: string; pkg: MockPackageRecord } | null {
+  for (const [key, packages] of packagesByRepository.entries()) {
+    const pkg = packages.find((item) =>
+      item.ownerLogin.toLowerCase() === owner.toLowerCase()
+      && item.packageType === packageType
+      && item.name === packageName)
+
+    if (pkg) return { key, pkg }
+  }
+
+  return null
+}
+
+function findMockPackageRecord(owner: string, packageType: GitHubPackageType, packageName: string): MockPackageRecord {
+  const located = locateMockPackage(owner, packageType, packageName)
+
+  if (!located) {
+    throw new Error('Package not found')
+  }
+
+  return located.pkg
+}
+
+const MOCK_AUTHOR = {
+  login: 'octocat',
+  name: 'The Octocat',
+  avatarUrl: 'https://avatars.githubusercontent.com/u/583231?v=4',
+}
+
+function createMockBranches(owner: string, repo: string): GitHubBranchListItem[] {
+  return [
+    {
+      name: 'main',
+      commitSha: `${repo}-main`,
+      shortSha: `${repo}-main`.slice(0, 7),
+      committedDate: '2026-06-28T10:00:00Z',
+      author: MOCK_AUTHOR,
+      aheadBy: 0,
+      behindBy: 0,
+      isDefault: true,
+      isProtected: true,
+      associatedPullRequest: null,
+    },
+    {
+      name: 'develop',
+      commitSha: `${repo}-develop`,
+      shortSha: `${repo}-develop`.slice(0, 7),
+      committedDate: '2026-06-25T15:30:00Z',
+      author: MOCK_AUTHOR,
+      aheadBy: 2,
+      behindBy: 1,
+      isDefault: false,
+      isProtected: false,
+      associatedPullRequest: {
+        number: 12,
+        title: 'Develop integration branch',
+        url: `https://github.com/${owner}/${repo}/pull/12`,
+      },
+    },
+    {
+      name: 'feature/login',
+      commitSha: `${repo}-feature-login`,
+      shortSha: `${repo}-feature-login`.slice(0, 7),
+      committedDate: '2026-06-20T08:45:00Z',
+      author: { login: 'hubot', name: 'Hubot', avatarUrl: null },
+      aheadBy: 5,
+      behindBy: 3,
+      isDefault: false,
+      isProtected: false,
+      associatedPullRequest: null,
+    },
+  ]
+}
+
+function createMockTags(repo: string): GitHubTagListItem[] {
+  return [
+    {
+      name: 'v1.2.0',
+      commitSha: `${repo}-v1.2.0`,
+      shortSha: `${repo}-v1.2.0`.slice(0, 7),
+      date: '2026-06-01T09:00:00Z',
+      message: 'Release v1.2.0',
+      isAnnotated: true,
+    },
+    {
+      name: 'v1.1.0',
+      commitSha: `${repo}-v1.1.0`,
+      shortSha: `${repo}-v1.1.0`.slice(0, 7),
+      date: '2026-05-01T09:00:00Z',
+      message: null,
+      isAnnotated: false,
+    },
+    {
+      name: 'v1.0.0',
+      commitSha: `${repo}-v1.0.0`,
+      shortSha: `${repo}-v1.0.0`.slice(0, 7),
+      date: '2026-04-01T09:00:00Z',
+      message: 'First stable release',
+      isAnnotated: true,
+    },
+  ]
+}
+
+function getMockBranches(options: RepositoryOptions): GitHubBranchListItem[] {
+  const key = repositoryKey(options)
+  let branches = branchesByRepository.get(key)
+
+  if (!branches) {
+    branches = createMockBranches(options.owner, options.repo)
+    branchesByRepository.set(key, branches)
+  }
+
+  return branches
+}
+
+function getMockTags(options: RepositoryOptions): GitHubTagListItem[] {
+  const key = repositoryKey(options)
+  let tags = tagsByRepository.get(key)
+
+  if (!tags) {
+    tags = createMockTags(options.repo)
+    tagsByRepository.set(key, tags)
+  }
+
+  return tags
+}
+
+function paginateMockRefs<T extends { name: string }>(
+  entries: T[],
+  options: { query?: string; page?: number; perPage?: number }
+): { items: T[]; totalCount: number; page: number; perPage: number; hasNextPage: boolean } {
+  const query = options.query?.trim().toLowerCase()
+  const filtered = query ? entries.filter((entry) => entry.name.toLowerCase().includes(query)) : entries
+  const page = Math.max(1, Math.floor(options.page ?? 1))
+  const perPage = Math.max(1, Math.min(50, Math.floor(options.perPage ?? 20)))
+  const start = (page - 1) * perPage
+  const items = filtered.slice(start, start + perPage)
+
+  return {
+    items,
+    totalCount: filtered.length,
+    page,
+    perPage,
+    hasNextPage: start + items.length < filtered.length,
+  }
+}
+
+const branchesByRepository = new Map<string, GitHubBranchListItem[]>()
+const tagsByRepository = new Map<string, GitHubTagListItem[]>()
 const viewerStateByRepository = new Map<string, GitHubRepositoryViewerState>()
 const followedAccounts = new Set(['octocat'])
 const mockIssueCommentsByIssue = new Map<string, GitHubIssueComment[]>()
@@ -898,12 +1301,28 @@ export class MockGitHubClient implements GitHubClient {
     return
   }
 
+  async setReaction(): Promise<void> {
+    return
+  }
+
   async getRepositoryViewerState(options: RepositoryOptions): Promise<GitHubRepositoryViewerState> {
     return readRepositoryViewerState(options)
   }
 
+  async getRepositoryNavigationCounts(): Promise<GitHubRepositoryNavigationCounts> {
+    return {
+      commits: 238,
+      openIssues: 7,
+      openPullRequests: 3,
+    }
+  }
+
   async getRepositoryOverview(options: RepositoryOptions): Promise<GitHubRepositoryOverview> {
     return createMockRepositoryOverview(options)
+  }
+
+  async getRepositoryContributorStats(): Promise<GitHubRepositoryContributorStatsResult> {
+    return createMockRepositoryContributorStats()
   }
 
   async listRepositoryFiles(options: RepositoryFilesOptions): Promise<GitHubRepositoryFileTree> {
@@ -932,10 +1351,101 @@ export class MockGitHubClient implements GitHubClient {
   }
 
   async listRepositoryBranches(options: RepositoryBranchesOptions): Promise<GitHubRepositoryBranch[]> {
-    return [
-      { name: 'main', commitSha: `${options.repo}-main` },
-      { name: 'develop', commitSha: `${options.repo}-develop` },
-    ]
+    return getMockBranches(options).map((branch) => ({
+      name: branch.name,
+      commitSha: branch.commitSha,
+    }))
+  }
+
+  async listRepositoryBranchesDetailed(options: ListRepositoryBranchesDetailedOptions): Promise<GitHubBranchPage> {
+    return {
+      ...paginateMockRefs(getMockBranches(options), options),
+      defaultBranch: options.defaultBranch ?? 'main',
+    }
+  }
+
+  async listRepositoryTags(options: ListRepositoryTagsOptions): Promise<GitHubTagPage> {
+    return paginateMockRefs(getMockTags(options), options)
+  }
+
+  async createRepositoryBranch(options: CreateRepositoryBranchOptions): Promise<GitHubCreatedRef> {
+    const name = options.name.trim()
+    const fromRef = options.fromRef.trim()
+    if (!name) {
+      throw new Error('Branch name is required')
+    }
+
+    const branches = getMockBranches(options)
+    if (branches.some((branch) => branch.name === name)) {
+      throw new Error(`Branch "${name}" already exists`)
+    }
+
+    const base = branches.find((branch) => branch.name === fromRef)
+    if (!base) {
+      throw new Error(`Unable to resolve ref "heads/${fromRef}"`)
+    }
+
+    branches.push({
+      ...base,
+      name,
+      isDefault: false,
+      isProtected: false,
+      aheadBy: 0,
+      behindBy: 0,
+      associatedPullRequest: null,
+    })
+
+    return { ref: `refs/heads/${name}`, sha: base.commitSha }
+  }
+
+  async renameRepositoryBranch(options: RenameRepositoryBranchOptions): Promise<void> {
+    const branch = getMockBranches(options).find((entry) => entry.name === options.name.trim())
+    if (!branch) {
+      throw new Error(`Branch "${options.name}" not found`)
+    }
+
+    branch.name = options.newName.trim()
+  }
+
+  async deleteRepositoryBranch(options: DeleteRepositoryBranchOptions): Promise<void> {
+    const key = repositoryKey(options)
+    const branches = getMockBranches(options)
+    branchesByRepository.set(key, branches.filter((branch) => branch.name !== options.name.trim()))
+  }
+
+  async createRepositoryTag(options: CreateRepositoryTagOptions): Promise<GitHubCreatedRef> {
+    const name = options.name.trim()
+    if (!name) {
+      throw new Error('Tag name is required')
+    }
+
+    const tags = getMockTags(options)
+    if (tags.some((tag) => tag.name === name)) {
+      throw new Error(`Tag "${name}" already exists`)
+    }
+
+    const base = getMockBranches(options).find((branch) => branch.name === options.fromRef.trim())
+    if (!base) {
+      throw new Error(`Unable to resolve ref "heads/${options.fromRef}"`)
+    }
+
+    const message = options.message?.trim() || null
+    tags.unshift({
+      name,
+      commitSha: base.commitSha,
+      shortSha: base.commitSha.slice(0, 7),
+      date: '2026-07-01T09:00:00Z',
+      message,
+      isAnnotated: Boolean(message),
+    })
+
+    return { ref: `refs/tags/${name}`, sha: base.commitSha }
+  }
+
+  async deleteRepositoryTag(options: DeleteRepositoryTagOptions): Promise<void> {
+    const key = repositoryKey(options)
+    const tags = getMockTags(options)
+    tagsByRepository.set(key, tags.filter((tag) => tag.name !== options.name.trim()))
   }
 
   async getRepositoryCommit(options: RepositoryCommitOptions): Promise<GitHubCommitDetail> {
@@ -978,11 +1488,25 @@ export class MockGitHubClient implements GitHubClient {
     })
   }
 
-  async setRepositoryWatching(options: SetRepositoryWatchingOptions): Promise<void> {
+  async setRepositorySubscription(options: SetRepositorySubscriptionOptions): Promise<void> {
     viewerStateByRepository.set(repositoryKey(options), {
       ...readRepositoryViewerState(options),
-      isWatching: options.watching,
+      isWatching: options.subscription === 'all',
+      subscription: options.subscription,
     })
+  }
+
+  async forkRepository(options: ForkRepositoryOptions): Promise<GitHubForkedRepository> {
+    const owner = options.organization?.trim() || 'octocat'
+    const name = options.name?.trim() || options.repo
+
+    return {
+      owner,
+      name,
+      nameWithOwner: `${owner}/${name}`,
+      url: `https://github.com/${owner}/${name}`,
+      ready: true,
+    }
   }
 
   async listRepositoryWorkflows(options: RepositoryOptions): Promise<GitHubActionWorkflow[]> {
@@ -1059,6 +1583,274 @@ export class MockGitHubClient implements GitHubClient {
     markJobRerunning(run, job)
   }
 
+  async listRepositoryEnvironments(options: ListRepositoryEnvironmentsOptions): Promise<GitHubEnvironmentPage> {
+    const page = Math.max(1, Math.floor(options.page ?? 1))
+    const perPage = Math.max(1, Math.min(100, Math.floor(options.perPage ?? 20)))
+    const environments = environmentsByRepository[repositoryKey(options)] ?? []
+    const offset = (page - 1) * perPage
+
+    return {
+      items: environments.slice(offset, offset + perPage),
+      totalCount: environments.length,
+      page,
+      perPage,
+      hasNextPage: offset + perPage < environments.length,
+    }
+  }
+
+  async listRepositoryDeployments(options: ListRepositoryDeploymentsOptions): Promise<GitHubDeploymentPage> {
+    const page = Math.max(1, Math.floor(options.page ?? 1))
+    const perPage = Math.max(1, Math.min(100, Math.floor(options.perPage ?? 20)))
+    const environment = options.environment?.trim() || null
+    const ref = options.ref?.trim() || null
+    const sha = options.sha?.trim() || null
+    const task = options.task?.trim() || null
+    const deployments = (deploymentsByRepository[repositoryKey(options)] ?? [])
+      .filter((deployment) => !environment || deployment.environment === environment)
+      .filter((deployment) => !ref || deployment.ref === ref)
+      .filter((deployment) => !sha || deployment.sha === sha)
+      .filter((deployment) => !task || deployment.task === task)
+    const offset = (page - 1) * perPage
+
+    return {
+      items: deployments.slice(offset, offset + perPage),
+      totalCount: null,
+      page,
+      perPage,
+      hasNextPage: offset + perPage < deployments.length,
+    }
+  }
+
+  async listDeploymentStatuses(options: ListDeploymentStatusesOptions): Promise<GitHubDeploymentStatus[]> {
+    return statusesByDeployment.get(options.deploymentId) ?? []
+  }
+
+  async markDeploymentInactive(options: DeploymentTargetOptions): Promise<void> {
+    const deployment = findMockDeployment(options)
+    const inactiveStatus: GitHubDeploymentStatus = {
+      id: deployment.id * 10 + 9,
+      state: 'inactive',
+      description: '',
+      environmentUrl: deployment.latestStatus?.environmentUrl ?? null,
+      logUrl: deployment.latestStatus?.logUrl ?? null,
+      creator: { login: 'acbox', avatarUrl: 'https://avatars.githubusercontent.com/u/9919?s=80&v=4' },
+      createdAt: new Date().toISOString(),
+    }
+
+    deployment.latestStatus = inactiveStatus
+    statusesByDeployment.set(deployment.id, [inactiveStatus, ...(statusesByDeployment.get(deployment.id) ?? [])])
+  }
+
+  async deleteDeployment(options: DeleteDeploymentOptions): Promise<void> {
+    const key = repositoryKey(options)
+    const deployments = deploymentsByRepository[key] ?? []
+    const deployment = deployments.find((item) => item.id === options.deploymentId)
+
+    if (!deployment) {
+      throw new Error('Deployment not found')
+    }
+
+    const isOnlyDeployment = deployments.length === 1
+    const isInactive = deployment.latestStatus?.state === 'inactive'
+
+    if (!options.deactivateFirst && !isInactive && !isOnlyDeployment) {
+      throw new Error('Deployment is still active. Deactivate it before deleting, or pass deactivateFirst.')
+    }
+
+    if (options.deactivateFirst) {
+      await this.markDeploymentInactive(options)
+    }
+
+    deploymentsByRepository[key] = deployments.filter((item) => item.id !== options.deploymentId)
+    statusesByDeployment.delete(options.deploymentId)
+  }
+
+  async deleteEnvironment(options: DeleteEnvironmentOptions): Promise<void> {
+    const key = repositoryKey(options)
+
+    environmentsByRepository[key] = (environmentsByRepository[key] ?? [])
+      .filter((environment) => environment.name !== options.environmentName)
+  }
+
+  async listRepositoryReleases(options: ListRepositoryReleasesOptions): Promise<GitHubReleasePage> {
+    const page = Math.max(1, Math.floor(options.page ?? 1))
+    const perPage = Math.max(1, Math.min(100, Math.floor(options.perPage ?? 20)))
+    const releases = getMockReleases(options)
+    const offset = (page - 1) * perPage
+
+    return {
+      items: releases.slice(offset, offset + perPage),
+      page,
+      perPage,
+      hasPreviousPage: page > 1,
+      hasNextPage: offset + perPage < releases.length,
+    }
+  }
+
+  async createRelease(options: CreateReleaseOptions): Promise<GitHubRelease> {
+    const tagName = options.tagName.trim()
+    if (!tagName) {
+      throw new Error('Release tag name is required')
+    }
+
+    const releases = getMockReleases(options)
+    const release: GitHubRelease = {
+      id: nextMockReleaseId += 1,
+      tagName,
+      targetCommitish: options.targetCommitish ?? 'main',
+      name: options.name ?? null,
+      body: options.body ?? null,
+      draft: options.draft ?? false,
+      prerelease: options.prerelease ?? false,
+      createdAt: new Date().toISOString(),
+      publishedAt: options.draft ? null : new Date().toISOString(),
+      htmlUrl: `https://github.com/${repositoryKey(options)}/releases/tag/${tagName}`,
+      author: { login: 'octocat' },
+      assets: [],
+      tarballUrl: null,
+      zipballUrl: null,
+    }
+
+    releases.unshift(release)
+    return release
+  }
+
+  async updateRelease(options: UpdateReleaseOptions): Promise<GitHubRelease> {
+    const release = getMockReleases(options).find((item) => item.id === options.releaseId)
+    if (!release) {
+      throw new Error('Release not found')
+    }
+
+    if (options.tagName?.trim()) {
+      release.tagName = options.tagName.trim()
+    }
+    if (options.targetCommitish) {
+      release.targetCommitish = options.targetCommitish
+    }
+    if (options.name != null) {
+      release.name = options.name
+    }
+    if (options.body != null) {
+      release.body = options.body
+    }
+    if (options.prerelease !== undefined) {
+      release.prerelease = options.prerelease
+    }
+    if (options.draft !== undefined) {
+      if (release.draft && !options.draft) {
+        release.publishedAt = new Date().toISOString()
+      }
+      release.draft = options.draft
+    }
+
+    return release
+  }
+
+  async deleteRelease(options: DeleteReleaseOptions): Promise<void> {
+    const releases = getMockReleases(options)
+    const index = releases.findIndex((item) => item.id === options.releaseId)
+
+    if (index === -1) {
+      throw new Error('Release not found')
+    }
+
+    releases.splice(index, 1)
+  }
+
+  async listRepositoryPackages(options: ListRepositoryPackagesOptions): Promise<GitHubPackagePage> {
+    const page = Math.max(1, Math.floor(options.page ?? 1))
+    const perPage = Math.max(1, Math.min(100, Math.floor(options.perPage ?? 20)))
+    const packages = getMockPackages(options)
+    const sorted = [...packages].sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : a.updatedAt > b.updatedAt ? -1 : 0))
+    const totalCount = sorted.length
+    const offset = (page - 1) * perPage
+
+    return {
+      items: sorted.slice(offset, offset + perPage).map((pkg) => toGitHubPackage(pkg)),
+      totalCount,
+      page,
+      perPage,
+      hasNextPage: page * perPage < totalCount,
+      failedTypes: [],
+      truncated: false,
+    }
+  }
+
+  async listPackageVersions(options: ListPackageVersionsOptions): Promise<GitHubPackageVersionPage> {
+    const page = Math.max(1, Math.floor(options.page ?? 1))
+    const perPage = Math.max(1, Math.min(100, Math.floor(options.perPage ?? 30)))
+    const pkg = findMockPackageRecord(options.owner, options.packageType, options.packageName)
+    const versions = packageVersionsByPackageId.get(pkg.id) ?? []
+    const offset = (page - 1) * perPage
+    const items = versions.slice(offset, offset + perPage)
+
+    return {
+      items,
+      totalCount: null,
+      page,
+      perPage,
+      hasNextPage: items.length === perPage,
+    }
+  }
+
+  async deletePackage(options: PackageTargetOptions): Promise<void> {
+    const located = locateMockPackage(options.owner, options.packageType, options.packageName)
+
+    if (!located) {
+      throw new Error('Package not found')
+    }
+
+    const { key, pkg } = located
+    packagesByRepository.set(key, (packagesByRepository.get(key) ?? []).filter((item) => item.id !== pkg.id))
+    deletedPackagesByRepository.set(key, [...(deletedPackagesByRepository.get(key) ?? []), pkg])
+  }
+
+  async restorePackage(options: PackageTargetOptions): Promise<void> {
+    for (const [key, deleted] of deletedPackagesByRepository.entries()) {
+      const pkg = deleted.find((item) =>
+        item.ownerLogin.toLowerCase() === options.owner.toLowerCase()
+        && item.packageType === options.packageType
+        && item.name === options.packageName)
+
+      if (pkg) {
+        deletedPackagesByRepository.set(key, deleted.filter((item) => item.id !== pkg.id))
+        packagesByRepository.set(key, [...(packagesByRepository.get(key) ?? []), pkg])
+        return
+      }
+    }
+
+    throw new Error('Deleted package not found')
+  }
+
+  async deletePackageVersion(options: PackageVersionTargetOptions): Promise<void> {
+    const pkg = findMockPackageRecord(options.owner, options.packageType, options.packageName)
+    const versions = packageVersionsByPackageId.get(pkg.id) ?? []
+    const version = versions.find((item) => item.id === options.versionId)
+
+    if (!version) {
+      throw new Error('Package version not found')
+    }
+
+    packageVersionsByPackageId.set(pkg.id, versions.filter((item) => item.id !== options.versionId))
+    deletedPackageVersionsByPackageId.set(pkg.id, [
+      ...(deletedPackageVersionsByPackageId.get(pkg.id) ?? []),
+      version,
+    ])
+  }
+
+  async restorePackageVersion(options: PackageVersionTargetOptions): Promise<void> {
+    const pkg = findMockPackageRecord(options.owner, options.packageType, options.packageName)
+    const deleted = deletedPackageVersionsByPackageId.get(pkg.id) ?? []
+    const version = deleted.find((item) => item.id === options.versionId)
+
+    if (!version) {
+      throw new Error('Deleted package version not found')
+    }
+
+    deletedPackageVersionsByPackageId.set(pkg.id, deleted.filter((item) => item.id !== options.versionId))
+    packageVersionsByPackageId.set(pkg.id, [version, ...(packageVersionsByPackageId.get(pkg.id) ?? [])])
+  }
+
   async listNotifications(): Promise<GitHubWorkspaceItem[]> {
     return items
   }
@@ -1124,6 +1916,7 @@ function readRepositoryViewerState(options: RepositoryOptions): GitHubRepository
   return viewerStateByRepository.get(repositoryKey(options)) ?? {
     isStarred: false,
     isWatching: false,
+    subscription: 'participating',
     starCount: mockRepositoryStarCount(options),
   }
 }
@@ -1415,6 +2208,45 @@ function mockContributionColor(count: number): string {
   return '#39d353'
 }
 
+function createMockRepositoryContributorStats(): GitHubRepositoryContributorStatsResult {
+  const weekSeconds = 7 * 24 * 60 * 60
+  const lastWeek = Math.floor(Date.UTC(2026, 5, 28) / 1000)
+  const weekCount = 52
+  const firstWeek = lastWeek - (weekCount - 1) * weekSeconds
+  const logins = ['octocat', 'hubot', 'monalisa', 'nanobot', 'railgun', 'sailboat', 'teapot', 'zenith']
+
+  const contributors = logins.map((login, index) => {
+    const weeks = []
+    let total = 0
+    for (let weekIndex = 0; weekIndex < weekCount; weekIndex += 1) {
+      const commits = (weekIndex + index * 3) % (index + 4) === 0 ? ((weekIndex + index) % 5) + 1 : 0
+      if (commits === 0) continue
+      total += commits
+      weeks.push({
+        w: firstWeek + weekIndex * weekSeconds,
+        a: commits * (12 + index),
+        d: commits * (4 + index),
+        c: commits,
+      })
+    }
+
+    return {
+      author: {
+        id: 9000 + index,
+        login,
+        avatarUrl: null,
+        type: 'User',
+      },
+      total,
+      weeks,
+    }
+  })
+
+  contributors.sort((left, right) => right.total - left.total)
+
+  return { contributors, firstWeek, lastWeek, hasLineStats: true }
+}
+
 function createMockRepositoryOverview(options: RepositoryOptions): GitHubRepositoryOverview {
   const key = repositoryKey(options)
   const viewerState = readRepositoryViewerState(options)
@@ -1447,6 +2279,7 @@ function createMockRepositoryOverview(options: RepositoryOptions): GitHubReposit
       url: `https://api.github.com/repos/${key}/license`,
     },
     counts: {
+      commits: 238,
       stars: viewerState.starCount,
       watchers: 12,
       forks: 184,
