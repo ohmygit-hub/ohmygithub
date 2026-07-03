@@ -1,6 +1,6 @@
 {
   "name": "oh-my-github",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "private": true,
   "description": "A faster GitHub workspace for notifications, pull requests, reviews, and actions.",
   "packageManager": "pnpm@11.7.0",
