@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
 import MarkdownRender, { enableKatex, enableMermaid, setCustomComponents } from 'markstream-vue'
-import { useSettingsStore } from '../../stores/settings'
-import MermaidRenderer from '../mermaid/mermaid-renderer.vue'
-import MarkdownCodeBlock from '../markdown/markdown-code-block.vue'
-import MarkdownImage from '../markdown/markdown-image.vue'
+import { useSettingsStore } from '@/stores/settings'
+import MermaidRenderer from '@/components/mermaid/mermaid-renderer.vue'
+import MarkdownCodeBlock from '@/components/markdown/markdown-code-block.vue'
+import MarkdownImage from '@/components/markdown/markdown-image.vue'
+import { unwrapSubWrappedBadges } from '@/components/markdown/markdown-content'
 import GitHubMarkdownLink from './github-markdown-link.vue'
 import { GITHUB_MARKDOWN_CONTEXT_KEY } from './github-markdown-context'
 import GitHubMarkdownText from './github-markdown-text.vue'
@@ -35,6 +36,7 @@ const props = withDefaults(defineProps<{
 const settings = useSettingsStore()
 const isDark = computed(() => settings.isDark)
 const markdownRoot = ref<HTMLElement | null>(null)
+const renderableContent = computed(() => unwrapSubWrappedBadges(props.content))
 const markdownContext = computed(() => ({
   owner: props.owner,
   repo: props.repo,
@@ -124,7 +126,7 @@ onBeforeUnmount(() => {
       code-renderer="shiki"
       :code-block-props="{ showHeader: false, showCopyButton: false }"
       custom-id="oh-my-github-github-rich-content"
-      :content="props.content"
+      :content="renderableContent"
       :defer-nodes-until-visible="false"
       :fade="false"
       :final="props.final"

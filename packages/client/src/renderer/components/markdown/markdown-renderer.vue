@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import MarkdownRender, { enableKatex, enableMermaid, setCustomComponents } from 'markstream-vue'
-import { useSettingsStore } from '../../stores/settings'
-import GitHubMarkdownLink from '../github/github-markdown-link.vue'
-import MermaidRenderer from '../mermaid/mermaid-renderer.vue'
+import { useSettingsStore } from '@/stores/settings'
+import GitHubMarkdownLink from '@/components/github/github-markdown-link.vue'
+import MermaidRenderer from '@/components/mermaid/mermaid-renderer.vue'
 import MarkdownCodeBlock from './markdown-code-block.vue'
 import MarkdownImage from './markdown-image.vue'
+import { unwrapSubWrappedBadges } from './markdown-content'
 
 const RICH_CONTENT_MARKDOWN_ID = 'oh-my-github-rich-content'
 
@@ -28,6 +29,7 @@ const props = withDefaults(defineProps<{
 const settings = useSettingsStore()
 const isDark = computed(() => settings.isDark)
 const markdownRoot = ref<HTMLElement | null>(null)
+const renderableContent = computed(() => unwrapSubWrappedBadges(props.content))
 
 let imageDimensionObserver: MutationObserver | null = null
 let pendingImageDimensionFrame: number | null = null
@@ -107,7 +109,7 @@ onBeforeUnmount(() => {
     class="rich-content-markdown min-w-0"
   >
     <MarkdownRender
-      :content="props.content"
+      :content="renderableContent"
       :fade="false"
       :final="props.final"
       :is-dark="isDark"
