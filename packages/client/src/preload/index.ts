@@ -28,8 +28,8 @@ const api = {
       ipcRenderer.invoke('actions:get-run', owner, repo, runId),
     listWorkflowRunJobs: (options: unknown) =>
       ipcRenderer.invoke('actions:list-run-jobs', options),
-    getWorkflowJobLog: (owner: string, repo: string, jobId: number) =>
-      ipcRenderer.invoke('actions:get-job-log', owner, repo, jobId),
+    getWorkflowJobLog: (owner: string, repo: string, jobId: number, job?: unknown) =>
+      ipcRenderer.invoke('actions:get-job-log', owner, repo, jobId, job),
     rerunWorkflowRun: (owner: string, repo: string, runId: number) =>
       ipcRenderer.invoke('actions:rerun-run', owner, repo, runId),
     rerunFailedWorkflowRunJobs: (owner: string, repo: string, runId: number) =>

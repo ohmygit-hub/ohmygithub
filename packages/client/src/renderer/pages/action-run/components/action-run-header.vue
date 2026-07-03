@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { RefreshCw, RotateCcw, Workflow } from 'lucide-vue-next'
-import { Badge, Button, Skeleton, Spinner } from '@oh-my-github/ui'
-import ActionStatusBadge from '../../../components/actions/action-status-badge.vue'
+import { RefreshCw, RotateCcw } from 'lucide-vue-next'
+import { Button, Skeleton, Spinner } from '@oh-my-github/ui'
+import ActionStatusBadge from '@/components/actions/action-status-badge.vue'
 
 const props = defineProps<{
   canRerunFailedJobs: boolean
@@ -35,14 +35,6 @@ const subtitle = computed(() => `${props.owner}/${props.repo}`)
   <header class="border-b border-border bg-background px-5 py-4">
     <div class="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
       <div class="grid min-w-0 gap-2">
-        <Badge
-          class="justify-self-start"
-          variant="secondary"
-        >
-          <Workflow class="size-3" />
-          {{ t('actions.detail.eyebrow') }}
-        </Badge>
-
         <div class="grid min-w-0 gap-1">
           <Skeleton
             v-if="isLoading && !run"

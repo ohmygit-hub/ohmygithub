@@ -3,11 +3,15 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Clock3, Server } from 'lucide-vue-next'
 import { Badge, Empty, EmptyDescription, EmptyHeader, EmptyTitle } from '@oh-my-github/ui'
-import ActionStatusBadge from '../../../components/actions/action-status-badge.vue'
-import ActionStatusIcon from '../../../components/actions/action-status-icon.vue'
+import ActionStatusBadge from '@/components/actions/action-status-badge.vue'
+import ActionStatusIcon from '@/components/actions/action-status-icon.vue'
 
 const props = defineProps<{
   job: GitHubActionJob | null
+}>()
+
+const emit = defineEmits<{
+  selectStep: [stepNumber: number]
 }>()
 
 const { t } = useI18n()
@@ -92,10 +96,12 @@ function durationLabel(startedAt: string | null, completedAt: string | null): st
       </div>
 
       <div class="divide-y divide-border rounded-lg border border-border bg-background/60">
-        <div
+        <button
           v-for="step in job.steps"
           :key="`${step.number}:${step.name}`"
-          class="grid grid-cols-[auto_minmax(0,1fr)_auto] gap-3 px-3 py-2"
+          class="grid w-full grid-cols-[auto_minmax(0,1fr)_auto] gap-3 px-3 py-2 text-left transition-colors hover:bg-muted/40 focus-visible:bg-muted/40 focus-visible:outline-none"
+          type="button"
+          @click="emit('selectStep', step.number)"
         >
           <ActionStatusIcon
             class="mt-0.5"
@@ -122,7 +128,7 @@ function durationLabel(startedAt: string | null, completedAt: string | null): st
             </div>
           </div>
           <Clock3 class="mt-0.5 size-3.5 text-muted-foreground" />
-        </div>
+        </button>
       </div>
     </div>
 

@@ -6,6 +6,7 @@ import type {
   GitHubActionConclusion,
   GitHubActionJob,
   GitHubActionJobLog,
+  GitHubActionJobLogStep,
   GitHubActionRun,
   GitHubActionRunPage,
   GitHubActionRunStatus,
@@ -18,6 +19,7 @@ import type {
   RepositoryOptions,
   RerunWorkflowJobOptions,
   RerunWorkflowRunOptions,
+  WorkflowJobLogHint,
 } from '../types'
 
 interface WorkflowResponse {
@@ -214,6 +216,11 @@ export class ActionsApi {
   }
 
   async getWorkflowJobLog(options: GetWorkflowJobLogOptions): Promise<GitHubActionJobLog> {
+    if (options.job?.status === 'completed') {
+      const archiveLog = await this.getWorkflowJobLogFromArchive(options, options.job)
+      if (archiveLog) return archiveLog
+    }
+
     try {
       const response = await this.octokit.request('GET /repos/{owner}/{repo}/actions/jobs/{job_id}/logs', {
         owner: options.owner,
@@ -260,25 +267,42 @@ export class ActionsApi {
 
       if (!runId || !jobName) return null
 
+      return await this.getWorkflowJobLogFromArchive(options, {
+        runId,
+        runAttempt,
+        name: jobName,
+        status: null,
+      })
+    } catch {
+      return null
+    }
+  }
+
+  private async getWorkflowJobLogFromArchive(
+    options: GetWorkflowJobLogOptions,
+    job: WorkflowJobLogHint,
+  ): Promise<GitHubActionJobLog | null> {
+    try {
       const archiveResponse = await this.octokit.request(
         'GET /repos/{owner}/{repo}/actions/runs/{run_id}/attempts/{attempt_number}/logs',
         {
           owner: options.owner,
           repo: options.repo,
-          run_id: runId,
-          attempt_number: runAttempt,
+          run_id: job.runId,
+          attempt_number: job.runAttempt,
         },
       )
       const files = extractZipTextFiles(archiveResponse.data)
-      const content = findJobLogArchiveContent(files, jobName)
+      const archive = findJobLogArchiveContent(files, job.name)
 
-      if (!content) return null
+      if (!archive) return null
 
       return {
         jobId: options.jobId,
-        content,
+        content: archive.content,
         fetchedAt: new Date().toISOString(),
         isAvailable: true,
+        ...(archive.steps ? { steps: archive.steps } : {}),
       }
     } catch {
       return null
@@ -575,33 +599,50 @@ function readZipFileContent(
   }
 }
 
-function findJobLogArchiveContent(files: ZipTextFile[], jobName: string): string | null {
+interface JobLogArchive {
+  content: string
+  steps?: GitHubActionJobLogStep[]
+}
+
+function findJobLogArchiveContent(files: ZipTextFile[], jobName: string): JobLogArchive | null {
   const normalizedJobName = normalizeLogArchiveName(jobName)
+  const stepFiles = files
+    .filter((file) => {
+      const separatorIndex = file.name.indexOf('/')
+      if (separatorIndex < 0) return false
+
+      const fileName = file.name.slice(separatorIndex + 1)
+
+      return normalizeLogArchiveName(file.name.slice(0, separatorIndex)) === normalizedJobName
+        && /^\d+_.+\.txt$/.test(fileName)
+    })
+    .sort((left, right) => archiveStepOrder(left.name) - archiveStepOrder(right.name))
+
+  if (stepFiles.length) {
+    const steps = stepFiles.map((file) => {
+      const fileName = file.name.split('/').pop() ?? file.name
+      const numberMatch = /^(\d+)_/.exec(fileName)
+
+      return {
+        number: numberMatch ? Number(numberMatch[1]) : null,
+        title: stripLogArchiveJobPrefix(stripTextExtension(fileName)),
+        content: file.content.trimEnd(),
+      }
+    })
+
+    return {
+      content: steps.map((step) => step.content).filter(Boolean).join('\n'),
+      steps,
+    }
+  }
+
   const fullJobLog = files.find((file) =>
     !file.name.includes('/')
     && file.name.endsWith('.txt')
     && normalizeLogArchiveName(stripLogArchiveJobPrefix(stripTextExtension(file.name))) === normalizedJobName
   )
 
-  if (fullJobLog) return fullJobLog.content
-
-  const stepFiles = files
-    .filter((file) => normalizeLogArchiveName(file.name.split('/')[0] ?? '') === normalizedJobName)
-    .sort((left, right) => archiveStepOrder(left.name) - archiveStepOrder(right.name))
-
-  if (!stepFiles.length) return null
-
-  return stepFiles
-    .map((file) => {
-      const title = stripLogArchiveJobPrefix(stripTextExtension(file.name.split('/').pop() ?? file.name))
-
-      return [
-        `##[group]${title}`,
-        file.content.trimEnd(),
-        '##[endgroup]',
-      ].join('\n')
-    })
-    .join('\n')
+  return fullJobLog ? { content: fullJobLog.content } : null
 }
 
 function archiveStepOrder(path: string): number {

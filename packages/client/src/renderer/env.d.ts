@@ -709,11 +709,25 @@ type GitHubActionJob = {
   steps: GitHubActionStep[]
 }
 
+type GitHubActionJobLogStep = {
+  number: number | null
+  title: string
+  content: string
+}
+
 type GitHubActionJobLog = {
   jobId: number
   content: string
   fetchedAt: string
   isAvailable: boolean
+  steps?: GitHubActionJobLogStep[]
+}
+
+type WorkflowJobLogHint = {
+  runId: number
+  runAttempt: number
+  name: string
+  status: GitHubActionRunStatus | null
 }
 
 type ListRepositoryWorkflowRunsOptions = {

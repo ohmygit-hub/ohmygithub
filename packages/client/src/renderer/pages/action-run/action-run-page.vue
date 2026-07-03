@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { WorkspaceTab } from '../workspace/types'
+import type { WorkspaceTab } from '@/pages/workspace/types'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
@@ -15,9 +15,9 @@ import {
   useWorkflowJobLogQuery,
   useWorkflowRunJobsQuery,
   useWorkflowRunQuery,
-} from '../../composables/github/use-actions'
-import { useToast } from '../../composables/use-toast'
-import { createActionRunWorkspaceUrl } from '../workspace/workspace-url'
+} from '@/composables/github/use-actions'
+import { useToast } from '@/composables/use-toast'
+import { createActionRunWorkspaceUrl } from '@/pages/workspace/workspace-url'
 import { useActionRunLiveRefresh } from './composables/use-action-run-live-refresh'
 import ActionRunHeader from './components/action-run-header.vue'
 import ActionRunJobLog from './components/action-run-job-log.vue'
@@ -38,6 +38,7 @@ const { t } = useI18n()
 const toast = useToast()
 
 const selectedJobId = ref<number | null>(null)
+const logCard = ref<InstanceType<typeof ActionRunJobLog> | null>(null)
 const rerunningRunMode = ref<'all' | 'failed' | null>(null)
 const rerunningJobId = ref<number | null>(null)
 
@@ -49,17 +50,19 @@ const selectedJobIdForQuery = computed(() => selectedJobId.value ?? 0)
 
 const runQuery = useWorkflowRunQuery(owner, repo, runId, hasIdentity)
 const jobsQuery = useWorkflowRunJobsQuery(owner, repo, runId, hasIdentity)
-const logQuery = useWorkflowJobLogQuery(
-  owner,
-  repo,
-  selectedJobIdForQuery,
-  () => hasIdentity.value && Boolean(selectedJobId.value),
-)
 
 const run = computed(() => runQuery.data.value ?? null)
 const jobs = computed(() => jobsQuery.data.value ?? [])
 const selectedJob = computed(() =>
   jobs.value.find((job) => job.id === selectedJobId.value) ?? null
+)
+
+const logQuery = useWorkflowJobLogQuery(
+  owner,
+  repo,
+  selectedJobIdForQuery,
+  () => hasIdentity.value && Boolean(selectedJobId.value),
+  selectedJob,
 )
 const log = computed(() => logQuery.data.value ?? null)
 const hasRunError = computed(() => Boolean(runQuery.error.value))
@@ -124,6 +127,10 @@ watch(
     }
   },
 )
+
+function scrollToLogStep(stepNumber: number): void {
+  logCard.value?.scrollToStep(stepNumber)
+}
 
 function selectJob(jobId: number): void {
   selectedJobId.value = jobId
@@ -281,9 +288,13 @@ function resolveErrorMessage(error: unknown): string {
               :run="run"
             />
 
-            <ActionRunJobSteps :job="selectedJob" />
+            <ActionRunJobSteps
+              :job="selectedJob"
+              @select-step="scrollToLogStep"
+            />
 
             <ActionRunJobLog
+              ref="logCard"
               :has-error="hasLogError"
               :is-loading="isLogLoading"
               :is-streaming="liveRefresh.isStreamingLog.value"

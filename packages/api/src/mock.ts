@@ -1889,6 +1889,18 @@ function findMockWorkflowJob(options: RerunWorkflowJobOptions): { run: GitHubAct
   throw new Error('Workflow job not found')
 }
 
+function findMockDeployment(options: DeploymentTargetOptions): GitHubDeployment {
+  for (const deployments of Object.values(deploymentsByRepository)) {
+    const deployment = deployments.find((item) => item.id === options.deploymentId)
+
+    if (deployment) {
+      return deployment
+    }
+  }
+
+  throw new Error('Deployment not found')
+}
+
 function markRunRerunning(run: GitHubActionRun): void {
   run.status = 'queued'
   run.conclusion = null
@@ -2681,6 +2693,100 @@ function createMockActionLog(run: GitHubActionRun, job: GitHubActionJob): string
       ? '2026-06-30T09:01:00.000Z Command still running...'
       : `2026-06-30T09:02:00.000Z Job finished with ${job.conclusion ?? 'no conclusion'}`,
   ].join('\n')
+}
+
+function createMockEnvironments(owner: string, repo: string): GitHubEnvironment[] {
+  const key = `${owner}/${repo}`
+  const base = Math.abs(Array.from(key).reduce((sum, character) => sum + character.charCodeAt(0), 0))
+
+  return [
+    {
+      id: base + 201,
+      name: 'production',
+      htmlUrl: `https://github.com/${key}/deployments/activity_log?environment=production`,
+      createdAt: new Date(Date.UTC(2026, 3, 1, 8)).toISOString(),
+      updatedAt: new Date(Date.UTC(2026, 5, 20, 8)).toISOString(),
+      protectionRules: [
+        { id: base + 1, type: 'wait_timer', waitTimer: 30, reviewerCount: null },
+        { id: base + 2, type: 'required_reviewers', waitTimer: null, reviewerCount: 2 },
+      ],
+    },
+    {
+      id: base + 202,
+      name: 'staging',
+      htmlUrl: `https://github.com/${key}/deployments/activity_log?environment=staging`,
+      createdAt: new Date(Date.UTC(2026, 3, 1, 8)).toISOString(),
+      updatedAt: new Date(Date.UTC(2026, 5, 18, 8)).toISOString(),
+      protectionRules: [],
+    },
+  ]
+}
+
+function createMockDeployments(
+  owner: string,
+  repo: string,
+  environments: GitHubEnvironment[],
+): GitHubDeployment[] {
+  const key = `${owner}/${repo}`
+  const now = Date.UTC(2026, 5, 30, 9)
+  const states: GitHubDeploymentState[] = ['success', 'failure', 'in_progress', 'queued']
+  const commitShas = [
+    'aaaaaaa000000000000000000000000000000000',
+    'bbbbbbb000000000000000000000000000000000',
+    'ccccccc000000000000000000000000000000000',
+    'ddddddd000000000000000000000000000000000',
+  ]
+
+  return states.map((state, index) => {
+    const environment = environments[index % environments.length]
+    const id = environment.id * 100 + index + 1
+    const actorLogin = index % 2 === 0 ? 'acbox' : 'maya'
+    const createdAt = new Date(now - index * 60 * 60 * 1000).toISOString()
+    const updatedAt = new Date(now - index * 60 * 60 * 1000 + 5 * 60 * 1000).toISOString()
+    const creator = { login: actorLogin, avatarUrl: `https://github.com/${actorLogin}.png?size=64` }
+
+    return {
+      id,
+      sha: commitShas[index] ?? mockSha(`${key}:deployment:${id}`).padEnd(40, '0').slice(0, 40),
+      ref: index % 2 === 0 ? 'main' : `release/${index}`,
+      task: 'deploy',
+      environment: environment.name,
+      description: null,
+      transientEnvironment: false,
+      productionEnvironment: environment.name === 'production',
+      creator,
+      latestStatus: {
+        id: id * 10,
+        state,
+        description: state === 'failure' ? 'Deployment failed health check' : '',
+        environmentUrl: `https://${environment.name}.${repo}.example.dev`,
+        logUrl: `https://github.com/${key}/actions/runs/${id}`,
+        creator,
+        createdAt: updatedAt,
+      },
+      createdAt,
+      updatedAt,
+    }
+  })
+}
+
+function createMockDeploymentStatusHistory(deployment: GitHubDeployment): GitHubDeploymentStatus[] {
+  const latest = deployment.latestStatus
+  if (!latest) return []
+
+  if (latest.state === 'queued' || latest.state === 'pending') {
+    return [latest]
+  }
+
+  const inProgress: GitHubDeploymentStatus = {
+    ...latest,
+    id: latest.id - 1,
+    state: 'in_progress',
+    description: '',
+    createdAt: deployment.createdAt,
+  }
+
+  return [latest, inProgress]
 }
 
 function createMockRepositories(owner: string, names: string[]): GitHubRepository[] {

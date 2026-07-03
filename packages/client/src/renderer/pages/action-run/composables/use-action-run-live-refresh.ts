@@ -35,7 +35,15 @@ export function useActionRunLiveRefresh(options: {
 
   watch(
     () => [toValue(options.isActive), isSelectedJobLive.value, toValue(options.selectedJob)?.id ?? null] as const,
-    restartLogPolling,
+    (current, previous) => {
+      restartLogPolling()
+
+      // Refetch once after the job completes so the final per-step log from
+      // the run archive replaces the streamed text.
+      if (shouldRefetchCompletedLog(previous, current)) {
+        options.refetchLog()
+      }
+    },
     { immediate: true },
   )
 
@@ -84,4 +92,16 @@ export function useActionRunLiveRefresh(options: {
     isSelectedJobLive,
     isStreamingLog,
   }
+}
+
+export function shouldRefetchCompletedLog(
+  previous: readonly [boolean, boolean, number | null] | undefined,
+  current: readonly [boolean, boolean, number | null],
+): boolean {
+  if (!previous) return false
+
+  const [, wasLive, previousJobId] = previous
+  const [isActive, isLive, jobId] = current
+
+  return isActive && wasLive && !isLive && jobId !== null && jobId === previousJobId
 }

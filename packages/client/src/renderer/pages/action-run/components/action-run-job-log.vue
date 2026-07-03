@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { RefreshCw, Radio } from 'lucide-vue-next'
 import {
@@ -11,9 +11,9 @@ import {
   EmptyTitle,
   Skeleton,
 } from '@oh-my-github/ui'
-import ShikiCode from '../../../components/code/shiki-code.vue'
-import ActionStatusBadge from '../../../components/actions/action-status-badge.vue'
-import { splitActionJobLogIntoSections } from '../action-run-log-sections'
+import ShikiCode from '@/components/code/shiki-code.vue'
+import ActionStatusBadge from '@/components/actions/action-status-badge.vue'
+import { buildActionRunLogSections } from '@/pages/action-run/action-run-log-sections'
 
 const props = defineProps<{
   hasError: boolean
@@ -29,8 +29,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-const content = computed(() => props.log?.content.trimEnd() ?? '')
-const sections = computed(() => splitActionJobLogIntoSections(content.value, props.job?.steps ?? []))
+const sections = computed(() => buildActionRunLogSections(props.log, props.job?.steps ?? []))
 const isLogUnavailable = computed(() => props.log && !props.log.isAvailable)
 const fetchedAt = computed(() => {
   if (!props.log?.fetchedAt) return null
@@ -45,10 +44,22 @@ const fetchedAt = computed(() => {
 function sectionLineCount(content: string): number {
   return content ? content.split(/\r?\n/).length : 0
 }
+
+const rootEl = ref<HTMLElement | null>(null)
+
+function scrollToStep(stepNumber: number): void {
+  const target = rootEl.value?.querySelector(`[data-step-number="${stepNumber}"]`)
+  target?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+
+defineExpose({ scrollToStep })
 </script>
 
 <template>
-  <section class="grid min-h-[18rem] grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-xl border border-border bg-card">
+  <section
+    ref="rootEl"
+    class="grid min-h-[18rem] grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-xl border border-border bg-card"
+  >
     <div class="flex min-w-0 items-center justify-between gap-3 border-b border-border px-4 py-3">
       <div class="grid min-w-0 gap-0.5">
         <h2 class="select-none text-title font-semibold text-foreground">
@@ -143,7 +154,8 @@ function sectionLineCount(content: string): number {
         <section
           v-for="section in sections"
           :key="section.id"
-          class="grid gap-0"
+          class="grid scroll-mt-2 gap-0"
+          :data-step-number="section.step?.number"
         >
           <div class="flex min-w-0 items-center justify-between gap-3 bg-muted/30 px-4 py-2">
             <div class="flex min-w-0 items-center gap-2">

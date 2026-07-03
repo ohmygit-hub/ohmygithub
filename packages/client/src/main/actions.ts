@@ -1,7 +1,9 @@
 import {
   createGitHubApi,
+  type GitHubActionRunStatus,
   type ListRepositoryWorkflowRunsOptions,
   type ListWorkflowRunJobsOptions,
+  type WorkflowJobLogHint,
 } from '@oh-my-github/api'
 import { ipcMain } from 'electron'
 import { getAuthenticatedAccessToken } from './auth'
@@ -20,8 +22,8 @@ export function registerActionsIpc(): void {
   ipcMain.handle('actions:list-run-jobs', (_event, options: ListWorkflowRunJobsOptions) =>
     listWorkflowRunJobs(options)
   )
-  ipcMain.handle('actions:get-job-log', (_event, owner: string, repo: string, jobId: number) =>
-    getWorkflowJobLog(owner, repo, jobId)
+  ipcMain.handle('actions:get-job-log', (_event, owner: string, repo: string, jobId: number, job?: unknown) =>
+    getWorkflowJobLog(owner, repo, jobId, job)
   )
   ipcMain.handle('actions:rerun-run', (_event, owner: string, repo: string, runId: number) =>
     rerunWorkflowRun(owner, repo, runId)
@@ -75,13 +77,14 @@ async function listWorkflowRunJobs(options: ListWorkflowRunJobsOptions) {
   })
 }
 
-async function getWorkflowJobLog(owner: string, repo: string, jobId: number) {
+async function getWorkflowJobLog(owner: string, repo: string, jobId: number, job?: unknown) {
   const repository = normalizeRepository(owner, repo)
   const api = await createAuthenticatedGitHubApi()
 
   return api.actions.getWorkflowJobLog({
     ...repository,
     jobId: normalizePositiveInteger(jobId, 1),
+    job: normalizeJobLogHint(job),
   })
 }
 
@@ -126,6 +129,26 @@ function normalizeRepository(owner: string, repo: string) {
   return {
     owner: normalizedOwner,
     repo: normalizedRepo,
+  }
+}
+
+function normalizeJobLogHint(value: unknown): WorkflowJobLogHint | undefined {
+  if (!value || typeof value !== 'object') return undefined
+
+  const hint = value as Partial<WorkflowJobLogHint>
+  const name = typeof hint.name === 'string' ? hint.name.trim() : ''
+
+  if (!name || typeof hint.runId !== 'number' || !Number.isInteger(hint.runId) || hint.runId <= 0) {
+    return undefined
+  }
+
+  return {
+    runId: hint.runId,
+    runAttempt: typeof hint.runAttempt === 'number' && Number.isInteger(hint.runAttempt) && hint.runAttempt > 0
+      ? hint.runAttempt
+      : 1,
+    name,
+    status: typeof hint.status === 'string' ? hint.status as GitHubActionRunStatus : null,
   }
 }
 

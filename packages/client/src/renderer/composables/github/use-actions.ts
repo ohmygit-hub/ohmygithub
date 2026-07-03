@@ -129,6 +129,7 @@ export function useWorkflowJobLogQuery(
   repo: MaybeRefOrGetter<string>,
   jobId: MaybeRefOrGetter<number>,
   enabled: MaybeRefOrGetter<boolean>,
+  job?: MaybeRefOrGetter<GitHubActionJob | null>,
 ) {
   return useQuery<GitHubActionJobLog>({
     key: () => ['github', 'actions', 'workflow-job-log', toValue(owner), toValue(repo), toValue(jobId)],
@@ -151,9 +152,25 @@ export function useWorkflowJobLogQuery(
         throw new Error('GitHub actions bridge is unavailable')
       }
 
-      return window.ohMyGithub.actions.getWorkflowJobLog(toValue(owner), toValue(repo), toValue(jobId))
+      return window.ohMyGithub.actions.getWorkflowJobLog(
+        toValue(owner),
+        toValue(repo),
+        toValue(jobId),
+        createWorkflowJobLogHint(toValue(job) ?? null, toValue(jobId)),
+      )
     },
   })
+}
+
+function createWorkflowJobLogHint(job: GitHubActionJob | null, jobId: number): WorkflowJobLogHint | undefined {
+  if (!job || job.id !== jobId) return undefined
+
+  return {
+    runId: job.runId,
+    runAttempt: job.runAttempt,
+    name: job.name,
+    status: job.status,
+  }
 }
 
 export function useCommitActionRunsQuery(

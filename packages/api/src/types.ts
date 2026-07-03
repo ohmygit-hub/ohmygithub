@@ -1479,6 +1479,14 @@ export interface ListWorkflowRunJobsOptions extends GetWorkflowRunOptions {
 
 export interface GetWorkflowJobLogOptions extends RepositoryOptions {
   jobId: number
+  job?: WorkflowJobLogHint
+}
+
+export interface WorkflowJobLogHint {
+  runId: number
+  runAttempt: number
+  name: string
+  status: GitHubActionRunStatus | null
 }
 
 export interface RerunWorkflowRunOptions extends GetWorkflowRunOptions {
@@ -1488,6 +1496,37 @@ export interface RerunWorkflowRunOptions extends GetWorkflowRunOptions {
 export interface RerunWorkflowJobOptions extends GetWorkflowJobLogOptions {
   enableDebugLogging?: boolean
   enableDebugger?: boolean
+}
+
+export interface ListRepositoryEnvironmentsOptions extends RepositoryOptions {
+  page?: number
+  perPage?: number
+}
+
+export interface ListRepositoryDeploymentsOptions extends RepositoryOptions {
+  environment?: string | null
+  ref?: string | null
+  sha?: string | null
+  task?: string | null
+  page?: number
+  perPage?: number
+}
+
+export interface ListDeploymentStatusesOptions extends RepositoryOptions {
+  deploymentId: number
+}
+
+export interface DeploymentTargetOptions extends RepositoryOptions {
+  deploymentId: number
+}
+
+export interface DeleteDeploymentOptions extends RepositoryOptions {
+  deploymentId: number
+  deactivateFirst?: boolean
+}
+
+export interface DeleteEnvironmentOptions extends RepositoryOptions {
+  environmentName: string
 }
 
 export interface SearchWorkspaceOptions {
