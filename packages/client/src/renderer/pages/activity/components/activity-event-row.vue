@@ -29,7 +29,7 @@ function openPart(url: string | null): void {
 
 <template>
   <div
-    class="group flex cursor-pointer items-start gap-3 border-b border-border px-4 py-2.5 transition-colors hover:bg-muted/50"
+    class="group flex cursor-pointer items-start gap-3 rounded-lg border border-border bg-card px-4 py-3 transition-colors hover:border-muted-foreground/40"
     role="button"
     tabindex="0"
     @click="openTarget"
@@ -77,7 +77,7 @@ function openPart(url: string | null): void {
       </span>
       <ActivityFeedCard
         v-if="presentation.card"
-        class="mt-1.5"
+        class="mt-2"
         :card="presentation.card"
         :repo-cards="repoCards"
       />

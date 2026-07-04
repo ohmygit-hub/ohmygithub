@@ -90,90 +90,97 @@ async function loadMore(): Promise<void> {
 
 <template>
   <section class="flex min-h-full flex-col bg-background">
-    <header class="grid gap-3 border-b border-border px-6 py-4">
-      <h1 class="select-none text-heading font-semibold text-foreground">
-        {{ t('workspace.activity.title') }}
-      </h1>
+    <header class="border-b border-border px-6 py-4">
+      <div class="mx-auto grid w-full max-w-3xl gap-3">
+        <h1 class="select-none text-heading font-semibold text-foreground">
+          {{ t('workspace.activity.title') }}
+        </h1>
 
-      <div class="flex flex-wrap items-center gap-2">
-        <Badge
-          v-for="key in ACTIVITY_FILTER_KEYS"
-          :key="key"
-          :variant="filter === key ? 'info' : 'secondary'"
-          class="cursor-pointer"
-          @click="toggleFilter(key)"
-        >
-          {{ t(`workspace.activity.filters.${key}`) }}
-        </Badge>
+        <div class="flex flex-wrap items-center gap-2">
+          <Badge
+            v-for="key in ACTIVITY_FILTER_KEYS"
+            :key="key"
+            :variant="filter === key ? 'info' : 'secondary'"
+            class="cursor-pointer"
+            @click="toggleFilter(key)"
+          >
+            {{ t(`workspace.activity.filters.${key}`) }}
+          </Badge>
+        </div>
       </div>
     </header>
 
     <ScrollArea class="flex-1">
-      <div
-        v-if="isLoading"
-        class="grid gap-2 p-4"
-      >
-        <Skeleton
-          v-for="index in 8"
-          :key="index"
-          class="h-10 w-full rounded-md"
-        />
-      </div>
-
-      <div
-        v-else-if="hasError"
-        class="grid place-items-center gap-3 p-10 text-center"
-      >
-        <p class="text-label text-muted-foreground">{{ t('workspace.activity.error.title') }}</p>
-        <Button
-          variant="secondary"
-          size="sm"
-          @click="refresh"
+      <div class="mx-auto w-full max-w-3xl px-6 py-4">
+        <div
+          v-if="isLoading"
+          class="grid gap-3"
         >
-          {{ t('workspace.activity.error.retry') }}
-        </Button>
-      </div>
-
-      <Empty
-        v-else-if="groups.length === 0"
-        class="p-10"
-      >
-        <EmptyHeader>
-          <ActivityIcon class="size-6 text-muted-foreground" />
-          <EmptyTitle>{{ t('workspace.activity.empty.title') }}</EmptyTitle>
-          <EmptyDescription>{{ t('workspace.activity.empty.description') }}</EmptyDescription>
-        </EmptyHeader>
-      </Empty>
-
-      <div v-else>
-        <template
-          v-for="group in groups"
-          :key="group.id"
-        >
-          <ActivityEventRow
-            v-if="group.kind === 'single'"
-            :event="group.events[0]"
-            :repo-cards="repoCards"
+          <Skeleton
+            v-for="index in 6"
+            :key="index"
+            class="h-24 w-full rounded-lg"
           />
-          <ActivityGroupRow
-            v-else
-            :group="group"
-            :repo-cards="repoCards"
-          />
-        </template>
+        </div>
 
         <div
-          v-if="hasMore"
-          class="flex justify-center p-4"
+          v-else-if="hasError"
+          class="grid place-items-center gap-3 p-10 text-center"
         >
+          <p class="text-label text-muted-foreground">{{ t('workspace.activity.error.title') }}</p>
           <Button
             variant="secondary"
             size="sm"
-            :disabled="isLoadingMore"
-            @click="loadMore"
+            @click="refresh"
           >
-            {{ isLoadingMore ? t('workspace.activity.loadingMore') : t('workspace.activity.loadMore') }}
+            {{ t('workspace.activity.error.retry') }}
           </Button>
+        </div>
+
+        <Empty
+          v-else-if="groups.length === 0"
+          class="p-10"
+        >
+          <EmptyHeader>
+            <ActivityIcon class="size-6 text-muted-foreground" />
+            <EmptyTitle>{{ t('workspace.activity.empty.title') }}</EmptyTitle>
+            <EmptyDescription>{{ t('workspace.activity.empty.description') }}</EmptyDescription>
+          </EmptyHeader>
+        </Empty>
+
+        <div
+          v-else
+          class="grid gap-3"
+        >
+          <template
+            v-for="group in groups"
+            :key="group.id"
+          >
+            <ActivityEventRow
+              v-if="group.kind === 'single'"
+              :event="group.events[0]"
+              :repo-cards="repoCards"
+            />
+            <ActivityGroupRow
+              v-else
+              :group="group"
+              :repo-cards="repoCards"
+            />
+          </template>
+
+          <div
+            v-if="hasMore"
+            class="flex justify-center py-1"
+          >
+            <Button
+              variant="secondary"
+              size="sm"
+              :disabled="isLoadingMore"
+              @click="loadMore"
+            >
+              {{ isLoadingMore ? t('workspace.activity.loadingMore') : t('workspace.activity.loadMore') }}
+            </Button>
+          </div>
         </div>
       </div>
     </ScrollArea>

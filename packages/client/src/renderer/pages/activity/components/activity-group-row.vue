@@ -31,9 +31,9 @@ function onRowClick(): void {
 </script>
 
 <template>
-  <div class="border-b border-border">
+  <div class="rounded-lg border border-border bg-card transition-colors hover:border-muted-foreground/40">
     <div
-      class="group flex cursor-pointer items-center gap-3 px-4 py-2.5 transition-colors hover:bg-muted/50"
+      class="group flex cursor-pointer items-center gap-3 px-4 py-3"
       role="button"
       tabindex="0"
       @click="onRowClick"
@@ -83,7 +83,7 @@ function onRowClick(): void {
 
     <div
       v-if="presentation.card"
-      class="pb-2.5 pl-12 pr-4"
+      class="pb-3 pl-12 pr-4"
     >
       <ActivityFeedCard
         :card="presentation.card"
@@ -93,7 +93,7 @@ function onRowClick(): void {
 
     <div
       v-if="expanded && presentation.expandable"
-      class="grid gap-1.5 pb-2.5 pl-12 pr-4"
+      class="grid gap-2 pb-3 pl-12 pr-4"
     >
       <ActivityFeedCard
         v-for="child in presentation.children"

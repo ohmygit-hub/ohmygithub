@@ -29,8 +29,8 @@ function open(): void {
 
 <template>
   <div
-    class="grid gap-1.5 rounded-lg border border-border bg-card p-3 transition-colors"
-    :class="card.url ? 'cursor-pointer hover:border-muted-foreground/40' : ''"
+    class="grid gap-1.5 rounded-md border border-border bg-muted/30 p-3 transition-colors"
+    :class="card.url ? 'cursor-pointer hover:bg-muted/60' : ''"
     :role="card.url ? 'button' : undefined"
     @click.stop="open"
   >
