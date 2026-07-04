@@ -823,12 +823,22 @@ function persistPinnedOrganizationLogins(logins: string[]): void {
 </template>
 
 <style scoped>
+/*
+ * macOS uses `titleBarStyle: 'hiddenInset'`, so the traffic-light controls float
+ * over the top-left of the sidebar; this spacer reserves that inset and keeps the
+ * area draggable. Windows/Linux use a native title bar, so the inset would be
+ * dead whitespace — collapse it there and only apply it on macOS.
+ */
 .workspace-titlebar-spacer {
+  height: 0;
+}
+
+:global(html[data-platform="mac"]) .workspace-titlebar-spacer {
   height: 2.25rem;
   -webkit-app-region: drag;
 }
 
-.workspace-titlebar-spacer[data-fullscreen="true"] {
+:global(html[data-platform="mac"]) .workspace-titlebar-spacer[data-fullscreen="true"] {
   height: 0.25rem;
 }
 
