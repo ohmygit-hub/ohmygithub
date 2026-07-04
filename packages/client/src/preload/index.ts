@@ -215,6 +215,24 @@ const api = {
     listGitignoreTemplates: () => ipcRenderer.invoke('repositories:list-gitignore-templates'),
     listLicenses: () => ipcRenderer.invoke('repositories:list-licenses')
   },
+  repositorySettings: {
+    getGeneral: (owner: string, repo: string) =>
+      ipcRenderer.invoke('repository-settings:get-general', owner, repo),
+    updateGeneral: (owner: string, repo: string, input: unknown) =>
+      ipcRenderer.invoke('repository-settings:update-general', owner, repo, input),
+    replaceTopics: (owner: string, repo: string, names: string[]) =>
+      ipcRenderer.invoke('repository-settings:replace-topics', owner, repo, names),
+    setDiscussions: (repositoryNodeId: string, enabled: boolean) =>
+      ipcRenderer.invoke('repository-settings:set-discussions', repositoryNodeId, enabled),
+    setSponsorships: (repositoryNodeId: string, enabled: boolean) =>
+      ipcRenderer.invoke('repository-settings:set-sponsorships', repositoryNodeId, enabled),
+    setImmutableReleases: (owner: string, repo: string, enabled: boolean) =>
+      ipcRenderer.invoke('repository-settings:set-immutable-releases', owner, repo, enabled),
+    transfer: (owner: string, repo: string, newOwner: string, newName?: string) =>
+      ipcRenderer.invoke('repository-settings:transfer', owner, repo, newOwner, newName),
+    deleteRepository: (owner: string, repo: string) =>
+      ipcRenderer.invoke('repository-settings:delete', owner, repo)
+  },
   search: {
     resolveGoto: (input: string) => ipcRenderer.invoke('search:resolve-goto', input),
     resolveRepositoryReference: (options: unknown) =>

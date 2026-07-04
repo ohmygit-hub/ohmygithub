@@ -566,6 +566,64 @@ type GitHubRepositoryOverview = {
   warnings: string[]
 }
 
+type GitHubSquashMergeCommitTitle = 'PR_TITLE' | 'COMMIT_OR_PR_TITLE'
+type GitHubSquashMergeCommitMessage = 'PR_BODY' | 'COMMIT_MESSAGES' | 'BLANK'
+type GitHubMergeCommitTitle = 'PR_TITLE' | 'MERGE_MESSAGE'
+type GitHubMergeCommitMessage = 'PR_BODY' | 'PR_TITLE' | 'BLANK'
+
+type GitHubRepositoryGeneralSettings = {
+  repositoryNodeId: string
+  name: string
+  description: string | null
+  homepage: string | null
+  visibility: 'public' | 'private'
+  isArchived: boolean
+  isTemplate: boolean
+  webCommitSignoffRequired: boolean
+  defaultBranch: string | null
+  topics: string[]
+  hasIssues: boolean
+  hasWiki: boolean
+  hasProjects: boolean
+  hasDiscussions: boolean
+  hasSponsorships: boolean | null
+  allowMergeCommit: boolean
+  allowSquashMerge: boolean
+  allowRebaseMerge: boolean
+  allowAutoMerge: boolean
+  deleteBranchOnMerge: boolean
+  allowUpdateBranch: boolean
+  squashMergeCommitTitle: GitHubSquashMergeCommitTitle | null
+  squashMergeCommitMessage: GitHubSquashMergeCommitMessage | null
+  mergeCommitTitle: GitHubMergeCommitTitle | null
+  mergeCommitMessage: GitHubMergeCommitMessage | null
+  immutableReleases: boolean | null
+}
+
+type UpdateRepositoryGeneralSettingsInput = {
+  name?: string
+  description?: string
+  homepage?: string
+  visibility?: 'public' | 'private'
+  archived?: boolean
+  isTemplate?: boolean
+  webCommitSignoffRequired?: boolean
+  defaultBranch?: string
+  hasIssues?: boolean
+  hasWiki?: boolean
+  hasProjects?: boolean
+  allowMergeCommit?: boolean
+  allowSquashMerge?: boolean
+  allowRebaseMerge?: boolean
+  allowAutoMerge?: boolean
+  deleteBranchOnMerge?: boolean
+  allowUpdateBranch?: boolean
+  squashMergeCommitTitle?: GitHubSquashMergeCommitTitle
+  squashMergeCommitMessage?: GitHubSquashMergeCommitMessage
+  mergeCommitTitle?: GitHubMergeCommitTitle
+  mergeCommitMessage?: GitHubMergeCommitMessage
+}
+
 type GitHubContributorStatsAuthor = {
   id: number
   login: string
@@ -2071,6 +2129,20 @@ interface Window {
       }) => Promise<GitHubCreatedRepository>
       listGitignoreTemplates: () => Promise<string[]>
       listLicenses: () => Promise<GitHubLicenseTemplate[]>
+    }
+    repositorySettings: {
+      getGeneral: (owner: string, repo: string) => Promise<GitHubRepositoryGeneralSettings>
+      updateGeneral: (
+        owner: string,
+        repo: string,
+        input: UpdateRepositoryGeneralSettingsInput
+      ) => Promise<void>
+      replaceTopics: (owner: string, repo: string, names: string[]) => Promise<void>
+      setDiscussions: (repositoryNodeId: string, enabled: boolean) => Promise<void>
+      setSponsorships: (repositoryNodeId: string, enabled: boolean) => Promise<void>
+      setImmutableReleases: (owner: string, repo: string, enabled: boolean) => Promise<void>
+      transfer: (owner: string, repo: string, newOwner: string, newName?: string) => Promise<void>
+      deleteRepository: (owner: string, repo: string) => Promise<void>
     }
     search: {
       resolveGoto: (input: string) => Promise<GitHubWorkspaceGotoResult>

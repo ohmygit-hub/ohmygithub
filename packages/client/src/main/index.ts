@@ -17,6 +17,7 @@ import { registerPackagesIpc } from './packages'
 import { registerPullsIpc } from './pulls'
 import { registerReleasesIpc } from './releases'
 import { registerRepositoriesIpc } from './repositories'
+import { registerRepositorySettingsIpc } from './repository-settings'
 import { registerSearchIpc } from './search'
 import { registerUserSettingsIpc } from './user-settings'
 import { registerUpdatesIpc } from './updates'
@@ -152,6 +153,7 @@ void app.whenReady().then(() => {
   registerPullsIpc()
   registerReleasesIpc()
   registerRepositoriesIpc()
+  registerRepositorySettingsIpc()
   registerSearchIpc()
   registerUserSettingsIpc()
   registerUpdatesIpc()
