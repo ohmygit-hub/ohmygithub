@@ -1,6 +1,6 @@
 import type { MaybeRefOrGetter } from 'vue'
 import { toValue } from 'vue'
-import { useQuery } from '@pinia/colada'
+import { useQuery, useQueryCache } from '@pinia/colada'
 
 export function usePullRequestCategoryQuery(
   category: MaybeRefOrGetter<GitHubPullRequestCategory>,
@@ -273,6 +273,24 @@ export async function mergePullRequest(
   }
 
   return window.ohMyGithub.pulls.mergePullRequest(owner, repo, pullRequestNumber, options)
+}
+
+// PR list surfaces are cached under several key prefixes, and merge/close/reopen
+// happen on the detail page while those lists are unmounted (not "active"). The
+// default invalidateQueries only refetches active entries, so we force
+// refetchActive: 'all' to refresh the unmounted list caches too — otherwise the
+// merged PR keeps showing as open until a manual retry.
+export function usePullRequestListInvalidation() {
+  const queryCache = useQueryCache()
+
+  return {
+    invalidatePullRequestLists(owner: string, repo: string): void {
+      void queryCache.invalidateQueries({ key: ['github', 'pull-request-category'] }, 'all')
+      void queryCache.invalidateQueries({ key: ['github', 'viewer-pull-requests'] }, 'all')
+      void queryCache.invalidateQueries({ key: ['github', 'repository-pull-requests', owner, repo] }, 'all')
+      void queryCache.invalidateQueries({ key: ['github', 'repository-pull-request-search', owner, repo] }, 'all')
+    },
+  }
 }
 
 export async function submitPullRequestReview(

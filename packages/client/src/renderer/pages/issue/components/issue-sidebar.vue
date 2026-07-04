@@ -31,6 +31,7 @@ import {
 import {
   updateIssue,
   useAssignableUsersQuery,
+  useIssueListInvalidation,
   useRepositoryLabelsQuery,
   useRepositoryMilestonesQuery,
 } from '@/composables/github/use-issues'
@@ -58,6 +59,7 @@ interface LinkedPullRequestReference {
 }
 
 const { t } = useI18n()
+const { invalidateIssueLists } = useIssueListInvalidation()
 
 const assignees = computed(() => props.issue.assignees ?? [])
 const labels = computed(() => normalizeLabels(props.issue.labels))
@@ -144,6 +146,7 @@ async function applyIssueUpdate(
   try {
     await updateIssue(props.issue.owner, props.issue.repo, props.issue.number, changes)
     await props.refetch()
+    invalidateIssueLists(props.issue.owner, props.issue.repo)
   } finally {
     isSavingField.value = false
     if (pendingIds) pendingIds.value = []

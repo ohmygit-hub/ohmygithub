@@ -147,6 +147,31 @@ part of "clean," not a separate concern.
 - **One root cause often wears two faces.** The slug label and the widened sidebar were the
   same bug. When two oddities appear together on the same action, hunt one upstream cause
   before patching each symptom in place.
+- **A mutation must invalidate every list that shows what it changed — a detail refetch is not
+  enough.** This was the biggest invisible bug we shipped: merging a PR (or closing an issue,
+  re-running a workflow, starring a repo) updated only the *detail* query via `props.refetch()`,
+  so the user went back to the list and the item still showed its old state — frozen, sometimes
+  for minutes, sometimes until a manual retry. Two Pinia Colada facts make this a trap:
+  1. **`queryCache.invalidateQueries(filters)` only refetches *active* (currently-mounted)
+     queries by default.** A mutation done on a detail page leaves the list page unmounted, so
+     the default does nothing but mark it stale. You must pass `refetchActive: 'all'` —
+     `invalidateQueries({ key }, 'all')` — to refresh the unmounted list caches too.
+  2. **Our repo list queries set `refetchOnMount: false`** (search/pagination lists:
+     `repository-pull-request-search`, `repository-issue-search`, `workflow-runs`,
+     `account-*`). Marking them stale is *not* enough — they won't refetch on navigate-back
+     either. Only an explicit `'all'` invalidation unfreezes them.
+  The house pattern is a `use…ListInvalidation()` composable (see `usePullRequestListInvalidation`,
+  `useIssueListInvalidation`, `useActionRunListInvalidation`, `useAccountListInvalidation`) that
+  invalidates the list key *prefixes* with `'all'`, called from the mutation handler right after
+  the write. The one case where a bare `.refetch()` is fine is when the mutation and its list live
+  in the **same mounted component** (releases/packages dialogs, branch/tag ops) — then the list
+  *is* active and the default refetch reaches it. When in doubt, use the `'all'` invalidation.
+- **Server state that evolves on its own needs polling, not just invalidation.** A running
+  workflow/deployment goes in-progress→completed on GitHub's side with no user action here, so a
+  list showing it must poll while any row is live (mirror `actions/section.vue`: an interval gated
+  on `isActive && hasLiveRuns`, torn down in `onBeforeUnmount`). Beware the coupling: `hasLiveRuns`
+  is derived from the cache, so a stale "all completed" cache silently disables polling — the
+  invalidation fix above is what lets polling restart after a re-run re-queues a finished run.
 
 ## The design language in one breath
 

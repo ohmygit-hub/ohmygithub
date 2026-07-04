@@ -38,6 +38,7 @@ import {
   useRepositoryNavigationCountsQuery,
   useRepositoryOverviewQuery,
 } from '@/composables/github/use-repositories'
+import { useAccountListInvalidation } from '@/composables/github/use-accounts'
 import { createRepositoryWorkspaceUrl } from '@/pages/workspace/workspace-url'
 import RepositoryOverview from './components/overview/repository-overview.vue'
 import PullRequestsSection from './components/pulls/section.vue'
@@ -84,6 +85,7 @@ type RepositoryActionId = 'star' | 'watch'
 const { t } = useI18n()
 const toast = useToast()
 const router = useRouter()
+const { invalidateStarredRepositories, invalidateOwnedRepositories } = useAccountListInvalidation()
 const activeSection = ref<RepositorySectionId>(props.tab.repositorySection ?? 'overview')
 const isForkDialogOpen = ref(false)
 const activeDocumentKind = ref<GitHubRepositoryDocumentKind>('readme')
@@ -356,6 +358,7 @@ async function toggleStarred(): Promise<void> {
       subscription: subscription.value,
       starCount: Math.max(0, (starCount.value ?? 0) + (nextStarred ? 1 : -1)),
     }
+    invalidateStarredRepositories()
   } catch {
     void loadRepositoryViewerState()
   } finally {
@@ -395,6 +398,7 @@ function handleForked(fork: GitHubForkedRepository): void {
 
   if (fork.ready) {
     toast.success(t('repository.fork.success', { repo: fork.nameWithOwner }))
+    invalidateOwnedRepositories(fork.owner)
     void router.push(createRepositoryWorkspaceUrl(fork.owner, fork.name))
     return
   }

@@ -26,6 +26,7 @@ import {
   setIssuePinned,
   setIssueSubscription,
   updateIssue,
+  useIssueListInvalidation,
 } from '@/composables/github/use-issues'
 
 const props = defineProps<{
@@ -37,6 +38,7 @@ const emit = defineEmits<{ refetch: [] }>()
 
 const { t } = useI18n()
 const router = useRouter()
+const { invalidateIssueLists } = useIssueListInvalidation()
 
 const issueNumber = computed(() => `#${props.issue.number}`)
 const createdAt = computed(() => formatDate(props.issue.createdAt))
@@ -106,6 +108,7 @@ async function confirmDelete(): Promise<void> {
     await deleteIssue(nodeId.value)
     isDeleteDialogOpen.value = false
     emit('refetch')
+    invalidateIssueLists(props.issue.owner, props.issue.repo)
   } finally {
     isBusy.value = false
   }
@@ -149,6 +152,7 @@ async function saveTitle(): Promise<void> {
     })
     cancelTitleEdit()
     emit('refetch')
+    invalidateIssueLists(props.issue.owner, props.issue.repo)
   } catch {
     titleError.value = t('issue.edit.titleError')
   } finally {

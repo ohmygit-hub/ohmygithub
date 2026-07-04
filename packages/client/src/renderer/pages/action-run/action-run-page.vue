@@ -12,6 +12,7 @@ import {
   rerunFailedWorkflowRunJobs,
   rerunWorkflowJob,
   rerunWorkflowRun,
+  useActionRunListInvalidation,
   useWorkflowJobLogQuery,
   useWorkflowRunJobsQuery,
   useWorkflowRunQuery,
@@ -47,6 +48,8 @@ const repo = computed(() => props.tab.repo ?? '')
 const runId = computed(() => props.tab.runId ?? 0)
 const hasIdentity = computed(() => Boolean(owner.value && repo.value && runId.value > 0))
 const selectedJobIdForQuery = computed(() => selectedJobId.value ?? 0)
+
+const { invalidateActionRunLists } = useActionRunListInvalidation()
 
 const runQuery = useWorkflowRunQuery(owner, repo, runId, hasIdentity)
 const jobsQuery = useWorkflowRunJobsQuery(owner, repo, runId, hasIdentity)
@@ -224,6 +227,8 @@ async function refetchActionRun(): Promise<void> {
     jobsQuery.refetch(),
     selectedJobId.value ? logQuery.refetch() : Promise.resolve(),
   ])
+  // Reruns re-queue this run; refresh the (unmounted) run lists that show it.
+  invalidateActionRunLists(owner.value, repo.value)
 }
 
 function resolveErrorMessage(error: unknown): string {

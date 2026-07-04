@@ -1,6 +1,6 @@
 import type { MaybeRefOrGetter } from 'vue'
 import { toValue } from 'vue'
-import { useQuery } from '@pinia/colada'
+import { useQuery, useQueryCache } from '@pinia/colada'
 
 export interface CommitActionRun {
   jobs: GitHubActionJob[]
@@ -254,6 +254,23 @@ export async function rerunWorkflowJob(
   assertActionsBridge()
 
   await window.ohMyGithub.actions.rerunWorkflowJob(owner, repo, jobId)
+}
+
+// Reruns happen on the action-run detail route while the run lists are unmounted,
+// so refetching only the detail queries leaves them stale. Worse, the runs list
+// polling is gated on hasLiveRuns derived from the (stale, all-completed) cache,
+// so it never restarts on its own. Force refetchActive:'all' to refresh the
+// unmounted run-list caches. See usePullRequestListInvalidation for the shape.
+export function useActionRunListInvalidation() {
+  const queryCache = useQueryCache()
+
+  return {
+    invalidateActionRunLists(owner: string, repo: string): void {
+      void queryCache.invalidateQueries({ key: ['github', 'actions', 'workflow-runs', owner, repo] }, 'all')
+      void queryCache.invalidateQueries({ key: ['github', 'actions', 'commit-runs', owner, repo] }, 'all')
+      void queryCache.invalidateQueries({ key: ['github', 'deployments', 'runs', owner, repo] }, 'all')
+    },
+  }
 }
 
 function isValidRepositoryRun(

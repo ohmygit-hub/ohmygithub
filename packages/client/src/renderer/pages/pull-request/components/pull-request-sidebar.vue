@@ -48,6 +48,7 @@ import {
   mergePullRequest,
   requestPullRequestReviewers,
   updatePullRequest,
+  usePullRequestListInvalidation,
 } from '@/composables/github/use-pull-requests'
 import {
   useAssignableUsersQuery,
@@ -80,6 +81,7 @@ interface DateItem {
 }
 
 const { t } = useI18n()
+const { invalidatePullRequestLists } = usePullRequestListInvalidation()
 
 const isSavingField = ref(false)
 const assigneePickerOpen = ref(false)
@@ -379,6 +381,7 @@ async function confirmMerge(): Promise<void> {
     bypassRules.value = false
     setMergeDialogOpen(false, 'merge-success')
     void props.refetch()
+    invalidatePullRequestLists(props.pullRequest.owner, props.pullRequest.repo)
   } catch {
     mergeDialogError.value = canBypassRules.value && bypassRules.value
       ? t('pullRequest.merge.bypassError')
@@ -397,6 +400,7 @@ async function closeCurrentPullRequest(): Promise<void> {
   try {
     await closePullRequest(props.pullRequest.owner, props.pullRequest.repo, props.pullRequest.number)
     void props.refetch()
+    invalidatePullRequestLists(props.pullRequest.owner, props.pullRequest.repo)
   } catch {
     actionError.value = t('pullRequest.merge.closeError')
   } finally {
@@ -418,6 +422,7 @@ async function markReadyForReview(): Promise<void> {
       props.pullRequest.nodeId,
     )
     void props.refetch()
+    invalidatePullRequestLists(props.pullRequest.owner, props.pullRequest.repo)
   } catch {
     actionError.value = t('pullRequest.merge.readyError')
   } finally {

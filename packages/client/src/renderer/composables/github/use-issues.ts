@@ -1,6 +1,6 @@
 import type { MaybeRefOrGetter } from 'vue'
 import { toValue } from 'vue'
-import { useQuery } from '@pinia/colada'
+import { useQuery, useQueryCache } from '@pinia/colada'
 
 export function useIssueCategoryQuery(
   category: MaybeRefOrGetter<GitHubIssueCategory>,
@@ -256,4 +256,21 @@ export async function deleteIssue(issueId: string): Promise<void> {
   }
 
   return window.ohMyGithub.issues.deleteIssue(issueId)
+}
+
+// Issue mutations (close/reopen/title/labels/assignees/delete) happen on the
+// detail page while the issue lists are unmounted, so a bare detail refetch
+// leaves them stale — and `repository-issue-search` has refetchOnMount:false, so
+// it stays frozen even on navigate-back. Force refetchActive:'all' to refresh the
+// unmounted list caches too. See usePullRequestListInvalidation for the same shape.
+export function useIssueListInvalidation() {
+  const queryCache = useQueryCache()
+
+  return {
+    invalidateIssueLists(owner: string, repo: string): void {
+      void queryCache.invalidateQueries({ key: ['github', 'issue-category'] }, 'all')
+      void queryCache.invalidateQueries({ key: ['github', 'repository-issues', owner, repo] }, 'all')
+      void queryCache.invalidateQueries({ key: ['github', 'repository-issue-search', owner, repo] }, 'all')
+    },
+  }
 }
