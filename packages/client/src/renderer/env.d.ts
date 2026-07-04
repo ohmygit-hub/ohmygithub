@@ -1458,6 +1458,24 @@ type WindowControlsState = {
   isFullScreen: boolean
 }
 
+type UpdateStatus =
+  | 'idle'
+  | 'checking'
+  | 'up-to-date'
+  | 'available'
+  | 'downloading'
+  | 'downloaded'
+  | 'error'
+  | 'unavailable'
+
+type UpdateState = {
+  status: UpdateStatus
+  currentVersion: string
+  latestVersion: string | null
+  progress: number | null
+  error: string | null
+}
+
 type StoredWorkspaceBookmarkFolder = {
   id: string
   title: string
@@ -1772,12 +1790,11 @@ interface Window {
     }
     updates: {
       getInfo: () => Promise<{ version: string; platform: string }>
-      checkForUpdate: () => Promise<{
-        currentVersion: string
-        latestVersion: string | null
-        hasUpdate: boolean
-        configured: boolean
-      }>
+      getState: () => Promise<UpdateState>
+      checkForUpdate: () => Promise<UpdateState>
+      downloadUpdate: () => Promise<UpdateState>
+      installUpdate: () => Promise<UpdateState>
+      onStatusChange: (listener: (state: UpdateState) => void) => () => void
     }
     windowControls: {
       getState: () => Promise<WindowControlsState>

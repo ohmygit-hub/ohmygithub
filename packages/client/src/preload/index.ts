@@ -217,7 +217,21 @@ const api = {
   },
   updates: {
     getInfo: () => ipcRenderer.invoke('app:get-info'),
-    checkForUpdate: () => ipcRenderer.invoke('updates:check')
+    getState: () => ipcRenderer.invoke('updates:get-state'),
+    checkForUpdate: () => ipcRenderer.invoke('updates:check'),
+    downloadUpdate: () => ipcRenderer.invoke('updates:download'),
+    installUpdate: () => ipcRenderer.invoke('updates:install'),
+    onStatusChange: (listener: (state: unknown) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, state: unknown): void => {
+        listener(state)
+      }
+
+      ipcRenderer.on('updates:state-change', handler)
+
+      return () => {
+        ipcRenderer.removeListener('updates:state-change', handler)
+      }
+    }
   },
   windowControls: {
     getState: () => ipcRenderer.invoke('window:get-state'),

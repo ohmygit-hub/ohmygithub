@@ -179,7 +179,12 @@
       "feedback": "反馈",
       "latestVersion": "最新版本：{version}",
       "madeBy": "由 {author} 用 ❤️ 倾情打造",
-      "telegram": "Telegram"
+      "restartToUpdate": "重启以更新",
+      "retryUpdate": "重试更新",
+      "telegram": "Telegram",
+      "upToDate": "已是最新",
+      "updateChecking": "正在检查更新",
+      "updateDownloading": "正在下载 {progress}%"
     },
     "appearance": {
       "codeFontFamily": "代码字体",

@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import { Download, MessageSquare, RefreshCw } from 'lucide-vue-next'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { Download, MessageSquare, RefreshCw, RotateCcw } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 import { Button } from '@oh-my-github/ui'
 import TelegramIcon from '@/components/icons/telegram-icon.vue'
 import { getShortcutPlatform } from '@/keyboard/shortcut-accelerator'
 import liquidLogo from '../../../../../../../../assets/liquid-glass-icon.png'
 import shadowLogo from '../../../../../../../../assets/shadow-icon.png'
+import { resolveUpdateButtonState } from './update-button-state'
 
 const AUTHOR_PROFILE_URL = 'https://github.com/sheepbox8646'
 const TELEGRAM_URL = 'https://t.me/ohmygithub'
@@ -20,35 +21,68 @@ const logo = getShortcutPlatform().isMac ? liquidLogo : shadowLogo
 const year = new Date().getFullYear()
 
 const version = ref('')
-const latestVersion = ref<string | null>(null)
-const hasUpdate = ref(false)
-const checking = ref(false)
+const updateState = ref<UpdateState>({
+  status: 'idle',
+  currentVersion: '',
+  latestVersion: null,
+  progress: null,
+  error: null,
+})
+let stopUpdateStatusListener: (() => void) | undefined
 
-const checkButtonLabel = computed(() =>
-  hasUpdate.value ? t('settings.about.downloadUpdate') : t('settings.about.checkForUpdate'),
+const updateButtonState = computed(() => resolveUpdateButtonState(updateState.value))
+const updateButtonLabel = computed(() =>
+  t(updateButtonState.value.labelKey, updateButtonState.value.labelParams ?? {}),
 )
-
-onMounted(async () => {
-  const info = await window.ohMyGithub.updates.getInfo()
-  version.value = info.version
+const updateButtonIcon = computed(() => {
+  switch (updateButtonState.value.icon) {
+    case 'download':
+      return Download
+    case 'restart':
+      return RotateCcw
+    case 'refresh':
+      return RefreshCw
+  }
 })
 
-async function handleCheckOrDownload(): Promise<void> {
-  if (checking.value) return
+onMounted(async () => {
+  stopUpdateStatusListener = window.ohMyGithub.updates.onStatusChange((state) => {
+    updateState.value = state
+  })
 
-  // Once an update is found the button becomes "Download Update" — wired to a
-  // placeholder for now.
-  if (hasUpdate.value) return
+  const [info, state] = await Promise.all([
+    window.ohMyGithub.updates.getInfo(),
+    window.ohMyGithub.updates.getState(),
+  ])
+  version.value = info.version
+  updateState.value = state
+})
 
-  checking.value = true
+onUnmounted(() => {
+  stopUpdateStatusListener?.()
+})
+
+async function handleUpdateButtonClick(): Promise<void> {
+  switch (updateButtonState.value.action) {
+    case 'check':
+      updateState.value = await window.ohMyGithub.updates.checkForUpdate()
+      break
+    case 'download':
+      updateState.value = await window.ohMyGithub.updates.downloadUpdate()
+      break
+    case 'install':
+      updateState.value = await window.ohMyGithub.updates.installUpdate()
+      break
+    case 'none':
+      break
+  }
+}
+
+async function safeHandleUpdateButtonClick(): Promise<void> {
   try {
-    const result = await window.ohMyGithub.updates.checkForUpdate()
-    latestVersion.value = result.latestVersion
-    hasUpdate.value = result.hasUpdate
+    await handleUpdateButtonClick()
   } catch (error) {
-    console.error('Failed to check for updates', error)
-  } finally {
-    checking.value = false
+    console.error('Failed to update app', error)
   }
 }
 
@@ -81,23 +115,26 @@ function openFeedback(): void {
         </h2>
         <p class="select-none text-caption text-muted-foreground">
           {{ t('settings.about.currentVersion', { version }) }}
-          <template v-if="hasUpdate && latestVersion">
-            · {{ t('settings.about.latestVersion', { version: latestVersion }) }}
+          <template v-if="updateState.latestVersion && updateState.status !== 'up-to-date'">
+            · {{ t('settings.about.latestVersion', { version: updateState.latestVersion }) }}
           </template>
         </p>
       </div>
 
       <div class="flex items-center justify-center gap-3">
         <Button
-          :variant="hasUpdate ? 'default' : 'outline'"
-          :loading="checking"
-          @click="handleCheckOrDownload"
+          :variant="updateButtonState.variant"
+          :disabled="updateButtonState.disabled"
+          :loading="updateButtonState.loading"
+          loading-mode="manual"
+          @click="safeHandleUpdateButtonClick"
         >
           <component
-            :is="hasUpdate ? Download : RefreshCw"
+            :is="updateButtonIcon"
             class="size-4"
+            :class="updateButtonState.loading ? 'animate-spin' : undefined"
           />
-          {{ checkButtonLabel }}
+          {{ updateButtonLabel }}
         </Button>
 
         <Button

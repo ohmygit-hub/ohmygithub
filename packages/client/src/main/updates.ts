@@ -1,94 +1,193 @@
-import { app, ipcMain } from 'electron'
+import { app, BrowserWindow, ipcMain } from 'electron'
+import electronUpdater from 'electron-updater'
+import type { ProgressInfo, UpdateInfo } from 'electron-updater'
+import {
+  createInitialUpdateState,
+  reduceUpdateState,
+  type UpdateState,
+  type UpdateStateEvent,
+} from './updates-state'
 
 export interface AppInfo {
   version: string
   platform: NodeJS.Platform
 }
 
-export interface UpdateCheckResult {
-  currentVersion: string
-  latestVersion: string | null
-  hasUpdate: boolean
-  /** False when no update feed URL was configured at build time (e.g. in dev). */
-  configured: boolean
-}
-
 // Injected at build time from the `R2_PUBLIC_BASE_URL` env via electron.vite
-// config `define`. Empty when unset (local dev), in which case update checks
-// are a graceful no-op.
-const UPDATE_FEED_BASE_URL = (process.env.R2_PUBLIC_BASE_URL ?? '').trim()
+// config `define`. The public production feed is also the fallback so installed
+// builds can update even if the build-time env was omitted.
+const DEFAULT_UPDATE_FEED_BASE_URL = 'https://resource.oh-my-github.app'
+const UPDATE_FEED_BASE_URL = (process.env.R2_PUBLIC_BASE_URL ?? DEFAULT_UPDATE_FEED_BASE_URL).trim()
+const { autoUpdater } = electronUpdater
+
+let updateState = createInitialUpdateState(app.getVersion())
+let updaterConfigured = false
+let updaterListenersRegistered = false
+let startupCheckScheduled = false
 
 export function registerUpdatesIpc(): void {
+  configureAutoUpdater()
+
   ipcMain.handle('app:get-info', (): AppInfo => ({
     version: app.getVersion(),
     platform: process.platform,
   }))
+  ipcMain.handle('updates:get-state', () => getUpdateState())
   ipcMain.handle('updates:check', () => checkForUpdate())
+  ipcMain.handle('updates:download', () => downloadUpdate())
+  ipcMain.handle('updates:install', () => installUpdate())
+
+  scheduleStartupUpdateCheck()
 }
 
-async function checkForUpdate(): Promise<UpdateCheckResult> {
-  const currentVersion = app.getVersion()
+function getUpdateState(): UpdateState {
+  return updateState
+}
 
+async function checkForUpdate(): Promise<UpdateState> {
   if (!UPDATE_FEED_BASE_URL) {
-    return { currentVersion, latestVersion: null, hasUpdate: false, configured: false }
+    return setUpdateState({
+      type: 'unavailable',
+      error: 'No update feed URL is configured.',
+    })
   }
 
-  const manifestUrl = new URL(manifestFileName(), ensureTrailingSlash(UPDATE_FEED_BASE_URL))
-  const response = await fetch(manifestUrl, { cache: 'no-cache' })
-  if (!response.ok) {
-    throw new Error(`Update check failed: ${response.status} ${response.statusText}`)
+  configureAutoUpdater()
+
+  if (!autoUpdater.isUpdaterActive()) {
+    return setUpdateState({
+      type: 'unavailable',
+      error: 'Updater is not available for this build.',
+    })
   }
 
-  const latestVersion = parseManifestVersion(await response.text())
+  setUpdateState({ type: 'checking' })
 
-  return {
-    currentVersion,
-    latestVersion,
-    hasUpdate: latestVersion ? isNewer(latestVersion, currentVersion) : false,
-    configured: true,
+  try {
+    const result = await autoUpdater.checkForUpdates()
+    if (!result) {
+      return setUpdateState({
+        type: 'unavailable',
+        error: 'Updater is not available for this build.',
+      })
+    }
+
+    // electron-updater emits the stateful events above; these fallbacks keep the
+    // IPC result useful if a provider returns without emitting for any reason.
+    if (updateState.status === 'checking') {
+      setUpdateState(
+        result.isUpdateAvailable
+          ? { type: 'available', latestVersion: result.updateInfo.version }
+          : { type: 'not-available', latestVersion: result.updateInfo.version },
+      )
+    }
+  } catch (error) {
+    setUpdateState({ type: 'error', error })
+  }
+
+  return updateState
+}
+
+async function downloadUpdate(): Promise<UpdateState> {
+  configureAutoUpdater()
+
+  if (!autoUpdater.isUpdaterActive()) {
+    return setUpdateState({
+      type: 'unavailable',
+      error: 'Updater is not available for this build.',
+    })
+  }
+
+  if (updateState.status === 'downloaded') {
+    return updateState
+  }
+
+  if (updateState.status !== 'available') {
+    return updateState
+  }
+
+  try {
+    await autoUpdater.downloadUpdate()
+  } catch (error) {
+    setUpdateState({ type: 'error', error })
+  }
+
+  return updateState
+}
+
+function installUpdate(): UpdateState {
+  if (updateState.status === 'downloaded') {
+    autoUpdater.quitAndInstall(false, true)
+  }
+  return updateState
+}
+
+function configureAutoUpdater(): void {
+  if (!updaterConfigured) {
+    autoUpdater.autoDownload = false
+    autoUpdater.autoInstallOnAppQuit = false
+    autoUpdater.forceDevUpdateConfig = !app.isPackaged
+    autoUpdater.setFeedURL({
+      provider: 'generic',
+      url: ensureTrailingSlash(UPDATE_FEED_BASE_URL),
+    })
+    updaterConfigured = true
+  }
+
+  if (updaterListenersRegistered) return
+
+  autoUpdater.on('checking-for-update', () => {
+    setUpdateState({ type: 'checking' })
+  })
+  autoUpdater.on('update-available', (info) => {
+    setUpdateState({ type: 'available', latestVersion: updateVersion(info) })
+  })
+  autoUpdater.on('update-not-available', (info) => {
+    setUpdateState({ type: 'not-available', latestVersion: updateVersion(info) })
+  })
+  autoUpdater.on('download-progress', (progress) => {
+    setUpdateState({ type: 'download-progress', percent: progressPercent(progress) })
+  })
+  autoUpdater.on('update-downloaded', (event) => {
+    setUpdateState({ type: 'downloaded', latestVersion: updateVersion(event) })
+  })
+  autoUpdater.on('error', (error) => {
+    setUpdateState({ type: 'error', error })
+  })
+
+  updaterListenersRegistered = true
+}
+
+function scheduleStartupUpdateCheck(): void {
+  if (startupCheckScheduled) return
+  startupCheckScheduled = true
+
+  setTimeout(() => {
+    void checkForUpdate()
+  }, 3_000)
+}
+
+function setUpdateState(event: UpdateStateEvent): UpdateState {
+  updateState = reduceUpdateState(updateState, event)
+  broadcastUpdateState()
+  return updateState
+}
+
+function broadcastUpdateState(): void {
+  for (const window of BrowserWindow.getAllWindows()) {
+    if (window.isDestroyed()) continue
+    window.webContents.send('updates:state-change', updateState)
   }
 }
 
-// electron-builder emits a per-platform manifest alongside the artifacts.
-function manifestFileName(): string {
-  switch (process.platform) {
-    case 'darwin':
-      return 'latest-mac.yml'
-    case 'linux':
-      return 'latest-linux.yml'
-    default:
-      return 'latest.yml'
-  }
+function updateVersion(info: UpdateInfo): string {
+  return info.version
+}
+
+function progressPercent(progress: ProgressInfo): number {
+  return progress.percent
 }
 
 function ensureTrailingSlash(value: string): string {
   return value.endsWith('/') ? value : `${value}/`
-}
-
-// The manifest is YAML; we only need the top-level `version:` line, so a scan
-// avoids pulling in a YAML parser.
-function parseManifestVersion(manifest: string): string | null {
-  const match = /^version:\s*(.+)$/m.exec(manifest)
-  if (!match) return null
-  return match[1].trim().replace(/^["']|["']$/g, '') || null
-}
-
-// Compares numeric release cores (major.minor.patch); prerelease suffixes are
-// ignored, which is fine for the "is there a newer stable build" check.
-function isNewer(latest: string, current: string): boolean {
-  const a = toReleaseCore(latest)
-  const b = toReleaseCore(current)
-  for (let i = 0; i < 3; i++) {
-    if (a[i] > b[i]) return true
-    if (a[i] < b[i]) return false
-  }
-  return false
-}
-
-function toReleaseCore(version: string): [number, number, number] {
-  const [major = 0, minor = 0, patch = 0] = version
-    .split('-')[0]
-    .split('.')
-    .map((part) => Number.parseInt(part, 10) || 0)
-  return [major, minor, patch]
 }

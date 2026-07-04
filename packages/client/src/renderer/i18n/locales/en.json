@@ -179,7 +179,12 @@
       "feedback": "Feedback",
       "latestVersion": "Latest Version: {version}",
       "madeBy": "Made with ❤️ by {author}",
-      "telegram": "Telegram"
+      "restartToUpdate": "Restart to Update",
+      "retryUpdate": "Retry Update",
+      "telegram": "Telegram",
+      "upToDate": "Up to Date",
+      "updateChecking": "Checking for Update",
+      "updateDownloading": "Downloading {progress}%"
     },
     "appearance": {
       "codeFontFamily": "Code font",

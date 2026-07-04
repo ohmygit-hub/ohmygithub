@@ -16,8 +16,7 @@
 //   - With `R2_PUBLIC_BASE_URL` set, injects a generic publish provider so electron-builder
 //     emits the update manifest (latest*.yml) and bakes app-update.yml pointing at R2.
 //     `-p never` keeps it local: generic providers are never network-published, so the files
-//     are only generated — the publish workflow uploads them to R2. There is no in-app
-//     auto-updater; the manifest is there for a future manual "check for updates".
+//     are only generated — the publish workflow uploads them to R2 for in-app updates.
 
 import { spawnSync } from 'node:child_process'
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
