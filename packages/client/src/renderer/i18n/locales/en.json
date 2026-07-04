@@ -2423,9 +2423,44 @@
     "eyebrow": "Not Found",
     "title": "Could not find \"{input}\""
   },
+  "newRepository": {
+    "title": "Create a new repository",
+    "description": "A repository contains all project files, including the revision history.",
+    "fields": {
+      "owner": "Owner",
+      "name": "Repository name",
+      "namePlaceholder": "my-new-repo",
+      "description": "Description (optional)",
+      "visibility": "Visibility",
+      "public": "Public",
+      "publicHint": "Anyone on the internet can see this repository.",
+      "private": "Private",
+      "privateHint": "You choose who can see and commit to this repository.",
+      "initReadme": "Initialize this repository with a README",
+      "gitignore": ".gitignore template",
+      "license": "License",
+      "none": "None"
+    },
+    "validation": {
+      "nameRequired": "Repository name is required.",
+      "nameInvalid": "Repository names can only contain letters, numbers, hyphens, underscores, and periods."
+    },
+    "templatesError": "Failed to load templates. You can still create the repository without them.",
+    "actions": {
+      "create": "Create repository"
+    },
+    "toasts": {
+      "created": "Created {name}",
+      "createFailed": "Failed to create repository"
+    }
+  },
   "app": {
     "eyebrow": "GitHub App",
     "description": "App details are not supported yet. This is a placeholder page.",
     "viewOnGitHub": "View on GitHub"
+  },
+  "userSearch": {
+    "empty": "No matching users",
+    "searching": "Searching users…"
   }
 }
