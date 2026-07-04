@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { BellOff, Eye, GitFork, Star } from 'lucide-vue-next'
+import { BellOff, Eye, GitFork, Settings, Star } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 import {
   Button,
@@ -13,11 +13,17 @@ import {
   DropdownMenuTrigger,
 } from '@oh-my-github/ui'
 import SectionSidebar from '@/components/navigation/section-sidebar.vue'
+import type { SectionSidebarItem } from '@/components/navigation/section-sidebar.vue'
 import {
   createRepositorySectionCountLabel,
   type RepositorySectionCounts,
 } from './repository-section-counts'
-import type { RepositorySection, RepositorySectionId } from './types'
+import {
+  REPOSITORY_SETTINGS_PARENT_ID,
+  REPOSITORY_SETTINGS_SECTION_IDS,
+  type RepositorySection,
+  type RepositorySectionId,
+} from './types'
 
 const props = defineProps<{
   activeSection: RepositorySectionId
@@ -28,6 +34,7 @@ const props = defineProps<{
   repository: string
   repositoryCounts: RepositorySectionCounts | null
   sections: readonly RepositorySection[]
+  showSettings: boolean
   starButtonDisabled: boolean
   starLabel: string
   subscription: GitHubRepositorySubscription
@@ -47,18 +54,38 @@ const { t } = useI18n()
 
 const subscriptionOptions: readonly GitHubRepositorySubscription[] = ['participating', 'all', 'ignore']
 
-const sidebarItems = computed(() =>
-  props.sections.map((section) => ({
+const sidebarItems = computed<SectionSidebarItem[]>(() => {
+  const items: SectionSidebarItem[] = props.sections.map((section) => ({
     id: section.id,
     countLabel: createRepositorySectionCountLabel(section.id, props.repositoryCounts),
     icon: section.icon,
     label: t(`repository.sections.${section.id}.title`),
   }))
-)
+
+  if (props.showSettings) {
+    items.push({
+      id: REPOSITORY_SETTINGS_PARENT_ID,
+      icon: Settings,
+      label: t('repository.sections.settings.title'),
+      defaultExpanded: true,
+      children: REPOSITORY_SETTINGS_SECTION_IDS.map((id) => ({
+        id,
+        label: t(`repository.sections.${id}.title`),
+      })),
+    })
+  }
+
+  return items
+})
 
 const watchIcon = computed(() => (props.subscription === 'ignore' ? BellOff : Eye))
 
 function updateActiveSection(id: string): void {
+  if (id === REPOSITORY_SETTINGS_PARENT_ID) {
+    emit('update:activeSection', 'settingsGeneral')
+    return
+  }
+
   emit('update:activeSection', id as RepositorySectionId)
 }
 

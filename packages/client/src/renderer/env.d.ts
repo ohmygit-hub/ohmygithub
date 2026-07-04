@@ -551,6 +551,7 @@ type GitHubRepositoryOverview = {
   isFork: boolean
   isArchived: boolean
   isTemplate: boolean
+  viewerCanAdminister: boolean
   defaultBranch: string | null
   primaryLanguage: string | null
   languages: GitHubRepositoryLanguage[]

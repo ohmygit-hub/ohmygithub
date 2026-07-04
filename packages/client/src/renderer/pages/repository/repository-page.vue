@@ -22,8 +22,8 @@ import {
   Package,
   Rocket,
   Scale,
-  Settings,
   Shield,
+  Sparkles,
   Star,
   Tags,
   Users,
@@ -51,9 +51,12 @@ import { resolveRepositorySidebarCounts } from './components/repository-section-
 import ActionsSection from './components/actions/section.vue'
 import ReleasesSection from './components/releases/section.vue'
 import BranchesSection from './components/branches/section.vue'
+import EngagementSection from './components/engagement/section.vue'
 import ContributorsSection from './components/contributors/section.vue'
 import PackagesSection from './components/packages/section.vue'
 import DeploymentsSection from './components/deployments/section.vue'
+import SettingsSection from './components/settings/section.vue'
+import { isRepositorySettingsSection } from './components/types'
 import { useToast } from '@/composables/use-toast'
 
 const props = defineProps<{
@@ -74,10 +77,10 @@ const repositorySections: readonly RepositorySection[] = [
   { id: 'issues', icon: CircleDot },
   { id: 'actions', icon: Activity },
   { id: 'releases', icon: Tags },
+  { id: 'engagement', icon: Sparkles },
   { id: 'contributors', icon: Users },
   { id: 'packages', icon: Package },
   { id: 'deployments', icon: Rocket },
-  { id: 'settingsGeneral', icon: Settings },
 ]
 
 type RepositoryActionId = 'star' | 'watch'
@@ -105,6 +108,7 @@ const repositorySidebarCounts = computed(() =>
   resolveRepositorySidebarCounts(navigationCountsQuery.data.value ?? null, overview.value?.counts ?? null)
 )
 const isOverviewLoading = computed(() => overviewQuery.isLoading.value)
+const canAdministerRepository = computed(() => overview.value?.viewerCanAdminister ?? false)
 const hasOverviewError = computed(() => Boolean(overviewQuery.error.value))
 const isStarred = computed(() => viewerState.value?.isStarred ?? false)
 const subscription = computed<GitHubRepositorySubscription>(() => viewerState.value?.subscription ?? 'participating')
@@ -449,6 +453,7 @@ watch(
       :repository="repository"
       :repository-counts="repositorySidebarCounts"
       :sections="repositorySections"
+      :show-settings="canAdministerRepository"
       :star-button-disabled="starButtonDisabled"
       :star-label="starLabel"
       :subscription="subscription"
@@ -534,6 +539,13 @@ watch(
           :repo="repository"
         />
 
+        <EngagementSection
+          v-else-if="activeSection === 'engagement'"
+          :counts="overview?.counts ?? null"
+          :owner="owner"
+          :repo="repository"
+        />
+
         <ContributorsSection
           v-else-if="activeSection === 'contributors'"
           :default-branch="overview?.defaultBranch ?? null"
@@ -551,6 +563,13 @@ watch(
         <DeploymentsSection
           v-else-if="activeSection === 'deployments'"
           :is-active="isActive"
+          :owner="owner"
+          :repo="repository"
+        />
+
+        <SettingsSection
+          v-else-if="isRepositorySettingsSection(activeSection)"
+          :category="activeSection"
           :owner="owner"
           :repo="repository"
         />
