@@ -7,9 +7,11 @@ import { ChevronDown, ChevronRight } from 'lucide-vue-next'
 import GithubActorLink from '@/components/github/github-actor-link.vue'
 import { formatRelativeTime } from '@/components/conversation/format'
 import { presentFeedGroup } from '../activity-helpers'
+import ActivityFeedCard from './activity-feed-card.vue'
 
 const props = defineProps<{
   group: ActivityFeedGroup
+  repoCards?: Map<string, GitHubFeedRepoCard | null>
 }>()
 
 const { locale } = useI18n()
@@ -25,10 +27,6 @@ function onRowClick(): void {
   } else if (presentation.value.targetUrl) {
     void router.push(presentation.value.targetUrl)
   }
-}
-
-function openChild(url: string | null): void {
-  if (url) void router.push(url)
 }
 </script>
 
@@ -84,21 +82,25 @@ function openChild(url: string | null): void {
     </div>
 
     <div
-      v-if="expanded && presentation.expandable"
-      class="grid gap-0.5 pb-2 pl-14 pr-4"
+      v-if="presentation.card"
+      class="pb-2.5 pl-12 pr-4"
     >
-      <button
+      <ActivityFeedCard
+        :card="presentation.card"
+        :repo-cards="repoCards"
+      />
+    </div>
+
+    <div
+      v-if="expanded && presentation.expandable"
+      class="grid gap-1.5 pb-2.5 pl-12 pr-4"
+    >
+      <ActivityFeedCard
         v-for="child in presentation.children"
         :key="child.id"
-        class="flex w-full items-center gap-2 rounded-sm px-2 py-1 text-left text-label text-foreground transition-colors hover:bg-muted/50"
-        type="button"
-        @click="openChild(child.part.url)"
-      >
-        <span class="min-w-0 truncate font-medium">{{ child.part.label }}</span>
-        <span class="ml-auto shrink-0 text-caption text-muted-foreground">
-          {{ formatRelativeTime(child.createdAt, { locale: locale }) }}
-        </span>
-      </button>
+        :card="{ kind: 'repo', repoFullName: child.part.label, url: child.part.url }"
+        :repo-cards="repoCards"
+      />
     </div>
   </div>
 </template>

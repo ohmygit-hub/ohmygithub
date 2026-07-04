@@ -24,3 +24,9 @@ export function useActivityFeedQuery() {
 export async function fetchActivityFeedPage(page: number): Promise<GitHubFeedEventPage> {
   return requireActivityBridge().listReceivedEvents({ page })
 }
+
+export async function fetchActivityRepoCards(
+  fullNames: string[],
+): Promise<Record<string, GitHubFeedRepoCard | null>> {
+  return requireActivityBridge().getRepositoryCards(fullNames)
+}

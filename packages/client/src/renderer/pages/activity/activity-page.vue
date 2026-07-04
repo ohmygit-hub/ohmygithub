@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import type { WorkspaceTab } from '@/pages/workspace/types'
 import type { ActivityFilterKey } from './activity-helpers'
-import { computed, ref } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Badge, Button, Empty, EmptyDescription, EmptyHeader, EmptyTitle, ScrollArea, Skeleton } from '@oh-my-github/ui'
 import { Activity as ActivityIcon } from 'lucide-vue-next'
-import { fetchActivityFeedPage, useActivityFeedQuery } from '@/composables/github/use-activity'
+import { fetchActivityFeedPage, fetchActivityRepoCards, useActivityFeedQuery } from '@/composables/github/use-activity'
 import { useToast } from '@/composables/use-toast'
 import {
   ACTIVITY_FILTER_KEYS,
+  collectRepoCardNames,
   groupFeedEvents,
   matchesActivityFilter,
   mergeFeedEvents,
@@ -42,6 +43,26 @@ const hasMore = computed(() => {
   const lastPage = extraPages.value[extraPages.value.length - 1] ?? feedQuery.data.value
   return lastPage?.hasMore ?? false
 })
+
+// 仓库卡数据是渐进增强：按需批量补拉，失败静默降级为纯名字卡片
+const repoCards = reactive(new Map<string, GitHubFeedRepoCard | null>())
+const pendingCardNames = new Set<string>()
+
+watch(events, async (list) => {
+  const missing = collectRepoCardNames(list)
+    .filter((name) => !repoCards.has(name) && !pendingCardNames.has(name))
+  if (missing.length === 0) return
+
+  for (const name of missing) pendingCardNames.add(name)
+  try {
+    const cards = await fetchActivityRepoCards(missing)
+    for (const name of missing) repoCards.set(name, cards[name] ?? null)
+  } catch {
+    // 保留 pending 之外的状态即可；下次事件列表变化会重试缺失项
+  } finally {
+    for (const name of missing) pendingCardNames.delete(name)
+  }
+}, { immediate: true })
 
 function toggleFilter(key: ActivityFilterKey): void {
   filter.value = filter.value === key ? null : key
@@ -132,10 +153,12 @@ async function loadMore(): Promise<void> {
           <ActivityEventRow
             v-if="group.kind === 'single'"
             :event="group.events[0]"
+            :repo-cards="repoCards"
           />
           <ActivityGroupRow
             v-else
             :group="group"
+            :repo-cards="repoCards"
           />
         </template>
 

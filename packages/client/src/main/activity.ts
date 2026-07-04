@@ -11,6 +11,14 @@ export function registerActivityIpc(): void {
   ipcMain.handle('activity:list-received-events', (_event, options?: ListReceivedEventsIpcOptions) =>
     listReceivedEvents(options),
   )
+  ipcMain.handle('activity:get-repository-cards', (_event, fullNames: string[]) =>
+    getRepositoryCards(fullNames),
+  )
+}
+
+async function getRepositoryCards(fullNames: string[]) {
+  const api = await createAuthenticatedGitHubApi()
+  return api.activity.getRepositoryCards(Array.isArray(fullNames) ? fullNames : [])
 }
 
 async function listReceivedEvents(options?: ListReceivedEventsIpcOptions) {

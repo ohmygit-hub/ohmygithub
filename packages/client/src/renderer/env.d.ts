@@ -1349,17 +1349,17 @@ type GitHubFeedEventPayload =
   | { kind: 'fork'; forkFullName: string | null }
   | { kind: 'create'; refType: 'repository' | 'branch' | 'tag'; ref: string | null }
   | { kind: 'delete'; refType: 'branch' | 'tag'; ref: string }
-  | { kind: 'push'; branch: string; commitCount: number }
-  | { kind: 'release'; tagName: string; releaseName: string | null }
+  | { kind: 'push'; branch: string; commitCount: number; commitMessages: string[] }
+  | { kind: 'release'; tagName: string; releaseName: string | null; excerpt: string | null }
   | { kind: 'public' }
   | { kind: 'member'; memberLogin: string | null }
-  | { kind: 'issue'; action: string; number: number; title: string }
-  | { kind: 'issue-comment'; number: number | null; title: string; isPullRequest: boolean }
-  | { kind: 'pull-request'; action: string; number: number; title: string; merged: boolean }
-  | { kind: 'pull-request-review'; number: number | null; title: string }
-  | { kind: 'pull-request-review-comment'; number: number | null; title: string }
-  | { kind: 'commit-comment'; commitSha: string | null }
-  | { kind: 'discussion'; title: string | null }
+  | { kind: 'issue'; action: string; number: number; title: string; excerpt: string | null }
+  | { kind: 'issue-comment'; number: number | null; title: string; isPullRequest: boolean; excerpt: string | null }
+  | { kind: 'pull-request'; action: string; number: number; title: string; merged: boolean; excerpt: string | null }
+  | { kind: 'pull-request-review'; number: number | null; title: string; excerpt: string | null }
+  | { kind: 'pull-request-review-comment'; number: number | null; title: string; excerpt: string | null }
+  | { kind: 'commit-comment'; commitSha: string | null; excerpt: string | null }
+  | { kind: 'discussion'; title: string | null; excerpt: string | null }
   | { kind: 'wiki'; pageCount: number }
   | { kind: 'sponsorship' }
   | { kind: 'unknown'; type: string }
@@ -1377,6 +1377,14 @@ type GitHubFeedEventPage = {
   events: GitHubFeedEvent[]
   page: number
   hasMore: boolean
+}
+
+type GitHubFeedRepoCard = {
+  fullName: string
+  description: string | null
+  stars: number
+  language: string | null
+  languageColor: string | null
 }
 
 type GitHubPullRequest = {
@@ -2045,6 +2053,7 @@ interface Window {
     }
     activity: {
       listReceivedEvents: (options?: { page?: number }) => Promise<GitHubFeedEventPage>
+      getRepositoryCards: (fullNames: string[]) => Promise<Record<string, GitHubFeedRepoCard | null>>
     }
     releases: {
       listRepositoryReleases: (options: ListRepositoryReleasesOptions) => Promise<GitHubReleasePage>

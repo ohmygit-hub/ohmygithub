@@ -153,6 +153,8 @@ const api = {
   activity: {
     listReceivedEvents: (options?: { page?: number }) =>
       ipcRenderer.invoke('activity:list-received-events', options),
+    getRepositoryCards: (fullNames: string[]) =>
+      ipcRenderer.invoke('activity:get-repository-cards', fullNames),
   },
   releases: {
     listRepositoryReleases: (options: unknown) =>

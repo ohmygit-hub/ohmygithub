@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   ACTIVITY_FILTER_KEYS,
+  collectRepoCardNames,
   groupFeedEvents,
   matchesActivityFilter,
   mergeFeedEvents,
@@ -54,26 +55,36 @@ describe('groupFeedEvents', () => {
   it('does not group stars separated by another event', () => {
     const events = [
       star('antfu', 'a/a'),
-      feedEvent({ payload: { kind: 'release', tagName: 'v1', releaseName: null }, actorLogin: 'antfu' }),
+      feedEvent({ payload: { kind: 'release', tagName: 'v1', releaseName: null, excerpt: null }, actorLogin: 'antfu' }),
       star('antfu', 'b/b'),
     ]
     expect(groupFeedEvents(events)).toHaveLength(3)
   })
 
-  it('sums commit counts for adjacent pushes to the same repo and branch', () => {
-    const push = (count: number) =>
-      feedEvent({ payload: { kind: 'push', branch: 'main', commitCount: count }, actorLogin: 'posva', repoFullName: 'vuejs/pinia' })
-    const groups = groupFeedEvents([push(2), push(3)])
+  it('sums commit counts and merges commit messages for adjacent pushes', () => {
+    const push = (count: number, messages: string[]) =>
+      feedEvent({
+        payload: { kind: 'push', branch: 'main', commitCount: count, commitMessages: messages },
+        actorLogin: 'posva',
+        repoFullName: 'vuejs/pinia',
+      })
+    const groups = groupFeedEvents([push(2, ['fix: a', 'feat: b']), push(3, ['chore: c'])])
 
     expect(groups).toHaveLength(1)
     expect(groups[0].kind).toBe('push')
-    expect(presentFeedGroup(groups[0]).pluralCount).toBe(5)
+    const presentation = presentFeedGroup(groups[0])
+    expect(presentation.pluralCount).toBe(5)
+    expect(presentation.card).toEqual({
+      kind: 'commits',
+      messages: ['fix: a', 'feat: b', 'chore: c'],
+      url: '/vuejs/pinia?tab=commits',
+    })
   })
 })
 
 describe('matchesActivityFilter', () => {
   it('maps each filter key to its payload kinds', () => {
-    const releaseEvent = feedEvent({ payload: { kind: 'release', tagName: 'v1', releaseName: null } })
+    const releaseEvent = feedEvent({ payload: { kind: 'release', tagName: 'v1', releaseName: null, excerpt: null } })
     expect(matchesActivityFilter(releaseEvent, 'releases')).toBe(true)
     expect(matchesActivityFilter(releaseEvent, 'stars')).toBe(false)
     expect(matchesActivityFilter(releaseEvent, null)).toBe(true)
@@ -88,37 +99,63 @@ describe('matchesActivityFilter', () => {
 })
 
 describe('presentFeedEvent', () => {
-  it('presents a star with the repo as link and row target', () => {
+  it('presents a star with the repo as link, repo card and row target', () => {
     const presentation = presentFeedEvent(star())
 
     expect(presentation.sentenceKey).toBe('workspace.activity.sentences.starred')
     expect(presentation.parts.repo).toEqual({ label: 'vitejs/vite', url: '/vitejs/vite' })
+    expect(presentation.card).toEqual({ kind: 'repo', repoFullName: 'vitejs/vite', url: '/vitejs/vite' })
     expect(presentation.targetUrl).toBe('/vitejs/vite')
   })
 
-  it('targets the commits section for pushes', () => {
-    const event = feedEvent({ payload: { kind: 'push', branch: 'main', commitCount: 3 } })
+  it('uses the forkee for fork repo cards', () => {
+    const event = feedEvent({ payload: { kind: 'fork', forkFullName: 'antfu/vite' } })
+    expect(presentFeedEvent(event).card).toEqual({ kind: 'repo', repoFullName: 'antfu/vite', url: '/antfu/vite' })
+  })
+
+  it('targets the commits section for pushes with a commits card', () => {
+    const event = feedEvent({
+      payload: { kind: 'push', branch: 'main', commitCount: 3, commitMessages: ['fix: a'] },
+    })
     const presentation = presentFeedEvent(event)
 
     expect(presentation.sentenceKey).toBe('workspace.activity.sentences.pushed')
     expect(presentation.pluralCount).toBe(3)
     expect(presentation.targetUrl).toBe('/vitejs/vite?tab=commits')
+    expect(presentation.card).toEqual({ kind: 'commits', messages: ['fix: a'], url: '/vitejs/vite?tab=commits' })
   })
 
-  it('links merged pull requests to the PR tab with title as subtitle', () => {
+  it('links merged pull requests to the PR tab with a text card', () => {
     const event = feedEvent({
-      payload: { kind: 'pull-request', action: 'closed', number: 9, title: 'Add feed', merged: true },
+      payload: { kind: 'pull-request', action: 'closed', number: 9, title: 'Add feed', merged: true, excerpt: 'Adds the feed.' },
     })
     const presentation = presentFeedEvent(event)
 
     expect(presentation.sentenceKey).toBe('workspace.activity.sentences.mergedPullRequest')
     expect(presentation.parts.target.url).toBe('/vitejs/vite/pull/9')
-    expect(presentation.subtitle).toBe('Add feed')
+    expect(presentation.card).toEqual({
+      kind: 'text',
+      title: '#9 Add feed',
+      excerpt: 'Adds the feed.',
+      url: '/vitejs/vite/pull/9',
+    })
+  })
+
+  it('builds release cards from tag, name and notes excerpt', () => {
+    const event = feedEvent({
+      payload: { kind: 'release', tagName: 'v3.2.0', releaseName: 'vitest v3.2.0', excerpt: 'Highlights' },
+    })
+    expect(presentFeedEvent(event).card).toEqual({
+      kind: 'text',
+      title: 'v3.2.0 · vitest v3.2.0',
+      excerpt: 'Highlights',
+      url: '/vitejs/vite?tab=releases',
+    })
   })
 
   it('routes PR comments to the pull request even for issue-comment payloads', () => {
     const event = feedEvent({
-      payload: { kind: 'issue-comment', number: 7, title: 'Fix', isPullRequest: true },
+      payload: { kind: 'issue-comment', number: 7, title: 'Fix', isPullRequest: true, excerpt: null },
     })
     const presentation = presentFeedEvent(event)
 
@@ -126,10 +163,23 @@ describe('presentFeedEvent', () => {
     expect(presentation.parts.target.url).toBe('/vitejs/vite/pull/7')
   })
 
-  it('falls back to the repo for unknown events', () => {
+  it('falls back to the repo without a card for unknown events', () => {
     const presentation = presentFeedEvent(feedEvent({ payload: { kind: 'unknown', type: 'X' } }))
     expect(presentation.sentenceKey).toBe('workspace.activity.sentences.acted')
     expect(presentation.targetUrl).toBe('/vitejs/vite')
+    expect(presentation.card).toBeNull()
+  })
+})
+
+describe('collectRepoCardNames', () => {
+  it('collects repo names only from repo-card events, deduped', () => {
+    const events = [
+      star('antfu', 'a/a'),
+      star('posva', 'a/a'),
+      feedEvent({ payload: { kind: 'fork', forkFullName: 'antfu/vite' } }),
+      feedEvent({ payload: { kind: 'push', branch: 'main', commitCount: 1, commitMessages: [] } }),
+    ]
+    expect(collectRepoCardNames(events).sort()).toEqual(['a/a', 'antfu/vite'])
   })
 })
 

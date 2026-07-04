@@ -5,9 +5,11 @@ import { useRouter } from 'vue-router'
 import GithubActorLink from '@/components/github/github-actor-link.vue'
 import { formatRelativeTime } from '@/components/conversation/format'
 import { presentFeedEvent } from '../activity-helpers'
+import ActivityFeedCard from './activity-feed-card.vue'
 
 const props = defineProps<{
   event: GitHubFeedEvent
+  repoCards?: Map<string, GitHubFeedRepoCard | null>
 }>()
 
 const { locale } = useI18n()
@@ -73,12 +75,12 @@ function openPart(url: string | null): void {
           </template>
         </i18n-t>
       </span>
-      <p
-        v-if="presentation.subtitle"
-        class="truncate text-caption text-muted-foreground"
-      >
-        {{ presentation.subtitle }}
-      </p>
+      <ActivityFeedCard
+        v-if="presentation.card"
+        class="mt-1.5"
+        :card="presentation.card"
+        :repo-cards="repoCards"
+      />
     </div>
 
     <span

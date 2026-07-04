@@ -107,12 +107,29 @@ export interface FeedSentencePart {
   url: string | null
 }
 
+export type FeedEventCard =
+  | { kind: 'repo'; repoFullName: string; url: string | null }
+  | { kind: 'text'; title: string; excerpt: string | null; url: string | null }
+  | { kind: 'commits'; messages: string[]; url: string | null }
+
 export interface FeedEventPresentation {
   sentenceKey: string
   pluralCount: number | null
   parts: Record<string, FeedSentencePart>
-  subtitle: string | null
+  card: FeedEventCard | null
   targetUrl: string | null
+}
+
+// star/fork/建仓/开源事件的仓库卡需要 GraphQL 补拉的数据；收集每页涉及的仓库名
+export function collectRepoCardNames(events: GitHubFeedEvent[]): string[] {
+  const names = new Set<string>()
+
+  for (const event of events) {
+    const card = presentFeedEvent(event).card
+    if (card?.kind === 'repo') names.add(card.repoFullName)
+  }
+
+  return [...names]
 }
 
 const SENTENCE_PREFIX = 'workspace.activity.sentences'
@@ -122,11 +139,12 @@ export function presentFeedEvent(event: GitHubFeedEvent): FeedEventPresentation 
   const { owner, repo } = splitRepoFullName(event.repoFullName)
   const repoUrl = owner && repo ? createRepositoryWorkspaceUrl(owner, repo) : null
   const repoPart: FeedSentencePart = { label: event.repoFullName, url: repoUrl }
-  const base = { pluralCount: null, subtitle: null }
+  const repoCard: FeedEventCard = { kind: 'repo', repoFullName: event.repoFullName, url: repoUrl }
+  const base = { pluralCount: null, card: null }
 
   switch (payload.kind) {
     case 'star':
-      return { ...base, sentenceKey: `${SENTENCE_PREFIX}.starred`, parts: { repo: repoPart }, targetUrl: repoUrl }
+      return { ...base, sentenceKey: `${SENTENCE_PREFIX}.starred`, parts: { repo: repoPart }, card: repoCard, targetUrl: repoUrl }
     case 'fork': {
       const forkPart = payload.forkFullName
         ? { label: payload.forkFullName, url: repoUrlFor(payload.forkFullName) }
@@ -135,12 +153,13 @@ export function presentFeedEvent(event: GitHubFeedEvent): FeedEventPresentation 
         ...base,
         sentenceKey: `${SENTENCE_PREFIX}.forked`,
         parts: { repo: repoPart, fork: forkPart },
+        card: { kind: 'repo', repoFullName: forkPart.label, url: forkPart.url },
         targetUrl: forkPart.url ?? repoUrl,
       }
     }
     case 'create': {
       if (payload.refType === 'repository') {
-        return { ...base, sentenceKey: `${SENTENCE_PREFIX}.createdRepository`, parts: { repo: repoPart }, targetUrl: repoUrl }
+        return { ...base, sentenceKey: `${SENTENCE_PREFIX}.createdRepository`, parts: { repo: repoPart }, card: repoCard, targetUrl: repoUrl }
       }
       const branchesUrl = owner && repo ? createRepositoryWorkspaceUrl(owner, repo, 'branches') : null
       return {
@@ -169,22 +188,33 @@ export function presentFeedEvent(event: GitHubFeedEvent): FeedEventPresentation 
           branch: { label: payload.branch, url: commitsUrl },
           count: { label: String(payload.commitCount), url: null },
         },
-        subtitle: null,
+        card: payload.commitMessages.length
+          ? { kind: 'commits', messages: payload.commitMessages, url: commitsUrl ?? repoUrl }
+          : null,
         targetUrl: commitsUrl ?? repoUrl,
       }
     }
     case 'release': {
       const releasesUrl = owner && repo ? createRepositoryWorkspaceUrl(owner, repo, 'releases') : null
-      const label = payload.releaseName?.trim() || payload.tagName
+      const releaseName = payload.releaseName?.trim() || ''
+      const label = releaseName || payload.tagName
       return {
         ...base,
         sentenceKey: `${SENTENCE_PREFIX}.published`,
         parts: { repo: repoPart, release: { label, url: releasesUrl } },
+        card: {
+          kind: 'text',
+          title: releaseName && releaseName !== payload.tagName
+            ? `${payload.tagName} · ${releaseName}`
+            : payload.tagName || releaseName,
+          excerpt: payload.excerpt,
+          url: releasesUrl ?? repoUrl,
+        },
         targetUrl: releasesUrl ?? repoUrl,
       }
     }
     case 'public':
-      return { ...base, sentenceKey: `${SENTENCE_PREFIX}.madePublic`, parts: { repo: repoPart }, targetUrl: repoUrl }
+      return { ...base, sentenceKey: `${SENTENCE_PREFIX}.madePublic`, parts: { repo: repoPart }, card: repoCard, targetUrl: repoUrl }
     case 'member': {
       const memberPart: FeedSentencePart = payload.memberLogin
         ? { label: payload.memberLogin, url: createAccountWorkspaceUrl(payload.memberLogin) }
@@ -202,7 +232,7 @@ export function presentFeedEvent(event: GitHubFeedEvent): FeedEventPresentation 
         ...base,
         sentenceKey: issueSentenceKey(payload.action),
         parts: { target: targetPart(event.repoFullName, payload.number, url, repoUrl) },
-        subtitle: payload.title || null,
+        card: referenceCard(payload.number, payload.title, payload.excerpt, url ?? repoUrl),
         targetUrl: url ?? repoUrl,
       }
     }
@@ -215,7 +245,7 @@ export function presentFeedEvent(event: GitHubFeedEvent): FeedEventPresentation 
           ? `${SENTENCE_PREFIX}.commentedPullRequest`
           : `${SENTENCE_PREFIX}.commentedIssue`,
         parts: { target: targetPart(event.repoFullName, payload.number, url, repoUrl) },
-        subtitle: payload.title || null,
+        card: referenceCard(payload.number, payload.title, payload.excerpt, url ?? repoUrl),
         targetUrl: url ?? repoUrl,
       }
     }
@@ -225,7 +255,7 @@ export function presentFeedEvent(event: GitHubFeedEvent): FeedEventPresentation 
         ...base,
         sentenceKey: pullRequestSentenceKey(payload.action, payload.merged),
         parts: { target: targetPart(event.repoFullName, payload.number, url, repoUrl) },
-        subtitle: payload.title || null,
+        card: referenceCard(payload.number, payload.title, payload.excerpt, url ?? repoUrl),
         targetUrl: url ?? repoUrl,
       }
     }
@@ -238,7 +268,7 @@ export function presentFeedEvent(event: GitHubFeedEvent): FeedEventPresentation 
           ? `${SENTENCE_PREFIX}.reviewedPullRequest`
           : `${SENTENCE_PREFIX}.commentedPullRequest`,
         parts: { target: targetPart(event.repoFullName, payload.number, url, repoUrl) },
-        subtitle: payload.title || null,
+        card: referenceCard(payload.number, payload.title, payload.excerpt, url ?? repoUrl),
         targetUrl: url ?? repoUrl,
       }
     }
@@ -246,15 +276,12 @@ export function presentFeedEvent(event: GitHubFeedEvent): FeedEventPresentation 
       const url = owner && repo && payload.commitSha
         ? createCommitWorkspaceUrl(owner, repo, payload.commitSha)
         : null
+      const label = payload.commitSha ? `${event.repoFullName}@${payload.commitSha.slice(0, 7)}` : event.repoFullName
       return {
         ...base,
         sentenceKey: `${SENTENCE_PREFIX}.commentedCommit`,
-        parts: {
-          target: {
-            label: payload.commitSha ? `${event.repoFullName}@${payload.commitSha.slice(0, 7)}` : event.repoFullName,
-            url: url ?? repoUrl,
-          },
-        },
+        parts: { target: { label, url: url ?? repoUrl } },
+        card: payload.excerpt ? { kind: 'text', title: label, excerpt: payload.excerpt, url: url ?? repoUrl } : null,
         targetUrl: url ?? repoUrl,
       }
     }
@@ -263,7 +290,9 @@ export function presentFeedEvent(event: GitHubFeedEvent): FeedEventPresentation 
         ...base,
         sentenceKey: `${SENTENCE_PREFIX}.startedDiscussion`,
         parts: { repo: repoPart },
-        subtitle: payload.title,
+        card: payload.title
+          ? { kind: 'text', title: payload.title, excerpt: payload.excerpt, url: repoUrl }
+          : null,
         targetUrl: repoUrl,
       }
     case 'wiki':
@@ -271,7 +300,7 @@ export function presentFeedEvent(event: GitHubFeedEvent): FeedEventPresentation 
         sentenceKey: `${SENTENCE_PREFIX}.editedWiki`,
         pluralCount: payload.pageCount,
         parts: { repo: repoPart, count: { label: String(payload.pageCount), url: null } },
-        subtitle: null,
+        card: null,
         targetUrl: repoUrl,
       }
     case 'sponsorship':
@@ -285,6 +314,7 @@ export interface FeedGroupPresentation {
   sentenceKey: string
   pluralCount: number | null
   parts: Record<string, FeedSentencePart>
+  card: FeedEventCard | null
   targetUrl: string | null
   expandable: boolean
   children: Array<{ id: string; part: FeedSentencePart; createdAt: string }>
@@ -297,11 +327,15 @@ export function presentFeedGroup(group: ActivityFeedGroup): FeedGroupPresentatio
       (sum, event) => sum + (event.payload.kind === 'push' ? event.payload.commitCount : 0),
       0,
     )
+    const messages = group.events
+      .flatMap((event) => (event.payload.kind === 'push' ? event.payload.commitMessages : []))
+      .slice(0, 5)
 
     return {
       sentenceKey: `${SENTENCE_PREFIX}.pushed`,
       pluralCount: total,
       parts: { ...first.parts, count: { label: String(total), url: null } },
+      card: messages.length ? { kind: 'commits', messages, url: first.targetUrl } : null,
       targetUrl: first.targetUrl,
       expandable: false,
       children: [],
@@ -312,6 +346,7 @@ export function presentFeedGroup(group: ActivityFeedGroup): FeedGroupPresentatio
     sentenceKey: group.kind === 'fork' ? 'workspace.activity.groups.forked' : 'workspace.activity.groups.starred',
     pluralCount: null,
     parts: { count: { label: String(group.events.length), url: null } },
+    card: null,
     targetUrl: null,
     expandable: true,
     children: group.events.map((event) => ({
@@ -356,6 +391,22 @@ function targetPart(
   return {
     label: number ? `${repoFullName}#${number}` : repoFullName,
     url: url ?? repoUrl,
+  }
+}
+
+function referenceCard(
+  number: number | null,
+  title: string,
+  excerpt: string | null,
+  url: string | null,
+): FeedEventCard | null {
+  if (!title) return null
+
+  return {
+    kind: 'text',
+    title: number ? `#${number} ${title}` : title,
+    excerpt,
+    url,
   }
 }
 
