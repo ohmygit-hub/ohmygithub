@@ -19,6 +19,15 @@ export function registerRepositoriesIpc(): void {
   ipcMain.handle('repositories:list-contributors', (_event, owner: string, repo: string, perPage?: number) =>
     listRepositoryContributors(owner, repo, perPage)
   )
+  ipcMain.handle('repositories:list-stargazers', (_event, owner: string, repo: string) =>
+    listRepositoryStargazers(owner, repo)
+  )
+  ipcMain.handle('repositories:list-watchers', (_event, owner: string, repo: string) =>
+    listRepositoryWatchers(owner, repo)
+  )
+  ipcMain.handle('repositories:list-forks', (_event, owner: string, repo: string) =>
+    listRepositoryForks(owner, repo)
+  )
   ipcMain.handle('repositories:list-files', (_event, owner: string, repo: string, ref?: string | null) =>
     listRepositoryFiles(owner, repo, ref)
   )
@@ -125,6 +134,27 @@ async function getRepositoryContributorStats(owner: string, repo: string) {
   const api = await createAuthenticatedGitHubApi()
 
   return api.repositories.getContributorStats(repository)
+}
+
+async function listRepositoryStargazers(owner: string, repo: string) {
+  const repository = normalizeRepository(owner, repo)
+  const api = await createAuthenticatedGitHubApi()
+
+  return api.repositories.listStargazers(repository)
+}
+
+async function listRepositoryWatchers(owner: string, repo: string) {
+  const repository = normalizeRepository(owner, repo)
+  const api = await createAuthenticatedGitHubApi()
+
+  return api.repositories.listWatchers(repository)
+}
+
+async function listRepositoryForks(owner: string, repo: string) {
+  const repository = normalizeRepository(owner, repo)
+  const api = await createAuthenticatedGitHubApi()
+
+  return api.repositories.listForks(repository)
 }
 
 async function listRepositoryContributors(owner: string, repo: string, perPage?: number) {

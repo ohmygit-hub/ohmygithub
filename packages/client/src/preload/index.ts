@@ -171,6 +171,12 @@ const api = {
       ipcRenderer.invoke('repositories:get-contributor-stats', owner, repo),
     listContributors: (owner: string, repo: string, perPage?: number) =>
       ipcRenderer.invoke('repositories:list-contributors', owner, repo, perPage),
+    listStargazers: (owner: string, repo: string) =>
+      ipcRenderer.invoke('repositories:list-stargazers', owner, repo),
+    listWatchers: (owner: string, repo: string) =>
+      ipcRenderer.invoke('repositories:list-watchers', owner, repo),
+    listForks: (owner: string, repo: string) =>
+      ipcRenderer.invoke('repositories:list-forks', owner, repo),
     listFiles: (owner: string, repo: string, ref?: string | null) =>
       ipcRenderer.invoke('repositories:list-files', owner, repo, ref),
     listCommits: (owner: string, repo: string, ref?: string | null, page?: number, perPage?: number) =>

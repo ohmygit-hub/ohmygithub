@@ -278,6 +278,23 @@ type GitHubAccountFollowList = {
   truncated: boolean
 }
 
+type GitHubRepositoryForkItem = {
+  id: number
+  owner: string
+  ownerAvatarUrl: string
+  name: string
+  fullName: string
+  description: string | null
+  stars: number
+  pushedAt: string | null
+}
+
+type GitHubRepositoryForkList = {
+  items: GitHubRepositoryForkItem[]
+  totalCount: number
+  truncated: boolean
+}
+
 type GitHubSponsorshipRole = 'maintainer' | 'sponsor'
 
 type GitHubSponsorshipTier = {
@@ -1944,6 +1961,9 @@ interface Window {
       getOverview: (owner: string, repo: string) => Promise<GitHubRepositoryOverview>
       getContributorStats: (owner: string, repo: string) => Promise<GitHubRepositoryContributorStatsResult>
       listContributors: (owner: string, repo: string, perPage?: number) => Promise<GitHubRepositoryContributorSummary[]>
+      listStargazers: (owner: string, repo: string) => Promise<GitHubAccountFollowList>
+      listWatchers: (owner: string, repo: string) => Promise<GitHubAccountFollowList>
+      listForks: (owner: string, repo: string) => Promise<GitHubRepositoryForkList>
       listFiles: (owner: string, repo: string, ref?: string | null) => Promise<GitHubRepositoryFileTree>
       listCommits: (
         owner: string,
