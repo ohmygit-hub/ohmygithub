@@ -14,7 +14,11 @@ export type RepositoryTabId =
   | 'contributors'
   | 'packages'
   | 'deployments'
-  | 'settings'
+  | 'settingsGeneral'
+  | 'settingsAccess'
+  | 'settingsAutomation'
+  | 'settingsSecurity'
+  | 'settingsIntegrations'
 
 export type AccountTabId =
   | 'overview'
@@ -68,6 +72,7 @@ export interface WorkspaceTab {
   accountSection?: AccountTabId
   appSlug?: string
   repositorySection?: RepositoryTabId
+  repositorySettingsSub?: string
   pullRequestCategory?: GitHubPullRequestCategory
   issueCategory?: GitHubIssueCategory
   searchMode?: GitHubWorkspaceSearchMode
@@ -97,6 +102,7 @@ export interface WorkspaceBookmark {
   accountSection?: AccountTabId
   appSlug?: string
   repositorySection?: RepositoryTabId
+  repositorySettingsSub?: string
   pullRequestCategory?: GitHubPullRequestCategory
   issueCategory?: GitHubIssueCategory
   searchMode?: GitHubWorkspaceSearchMode

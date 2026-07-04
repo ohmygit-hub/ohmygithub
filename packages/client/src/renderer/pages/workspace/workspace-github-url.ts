@@ -55,7 +55,7 @@ function repositoryGitHubUrl(tab: WorkspaceTab): string {
   if (tab.repositorySection === 'pullRequests') return `${baseUrl}/pulls`
   if (tab.repositorySection === 'issues') return `${baseUrl}/issues`
   if (tab.repositorySection === 'actions') return `${baseUrl}/actions`
-  if (tab.repositorySection === 'settings') return `${baseUrl}/settings`
+  if (tab.repositorySection?.startsWith('settings')) return `${baseUrl}/settings`
 
   return baseUrl
 }

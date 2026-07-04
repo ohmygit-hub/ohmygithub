@@ -18,6 +18,34 @@ const ISSUE_CATEGORIES = new Set<GitHubIssueCategory>([
 ])
 const DEFAULT_PULL_REQUEST_CATEGORY: GitHubPullRequestCategory = 'created-by-me'
 const DEFAULT_ISSUE_CATEGORY: GitHubIssueCategory = 'created-by-me'
+
+export const REPOSITORY_SETTINGS_SUBPAGES: Partial<Record<RepositoryTabId, readonly string[]>> = {
+  settingsAccess: ['collaborators', 'teams', 'moderation'],
+  settingsAutomation: [
+    'branches',
+    'rules',
+    'actions',
+    'runners',
+    'webhooks',
+    'environments',
+    'pages',
+    'custom-properties',
+  ],
+  settingsSecurity: ['advanced-security', 'deploy-keys', 'secrets'],
+  settingsIntegrations: ['autolinks'],
+}
+
+export function sanitizeRepositorySettingsSub(
+  section: RepositoryTabId,
+  value: string | undefined,
+): string | undefined {
+  if (!value) return undefined
+
+  const subpages = REPOSITORY_SETTINGS_SUBPAGES[section]
+  if (!subpages) return undefined
+
+  return subpages.includes(value) && value !== subpages[0] ? value : undefined
+}
 const VALID_TYPES = new Set<WorkspaceTabType>([
   'inbox',
   'reviews',
@@ -57,7 +85,11 @@ export function routeToWorkspaceUrl(route: RouteLocationNormalizedLoaded): strin
   }
 
   if (isRepositoryWorkspacePath(path)) {
-    return createRepositoryUrlFromPath(path, typeof route.query.tab === 'string' ? route.query.tab : '')
+    return createRepositoryUrlFromPath(
+      path,
+      typeof route.query.tab === 'string' ? route.query.tab : '',
+      typeof route.query.sub === 'string' ? route.query.sub : undefined,
+    )
   }
 
   if (isAccountWorkspacePath(path)) {
@@ -97,7 +129,7 @@ export function normalizeWorkspaceUrl(url: string): string {
   }
 
   if (isRepositoryWorkspacePath(path)) {
-    return createRepositoryUrlFromPath(path, search.get('tab') ?? '')
+    return createRepositoryUrlFromPath(path, search.get('tab') ?? '', search.get('sub') ?? undefined)
   }
 
   if (isAccountWorkspacePath(path)) {
@@ -111,9 +143,10 @@ export function createRepositoryWorkspaceUrl(
   owner: string,
   repo: string,
   section: RepositoryTabId = DEFAULT_REPOSITORY_SECTION,
+  settingsSub?: string,
 ): string {
   const path = `/${sanitizeSegment(owner)}/${sanitizeSegment(repo)}`
-  return createRepositoryUrlFromPath(path, repositorySectionToQuery(section))
+  return createRepositoryUrlFromPath(path, repositorySectionToQuery(section), settingsSub)
 }
 
 export function createActionRunWorkspaceUrl(
@@ -289,13 +322,15 @@ function parseWorkspaceUrl(url: string): Omit<WorkspaceTab, 'title'> {
 
   if (owner && repo) {
     const repositorySection = sanitizeRepositorySection(query.get('tab') ?? '')
+    const repositorySettingsSub = sanitizeRepositorySettingsSub(repositorySection, query.get('sub') ?? undefined)
 
     return {
-      url: createRepositoryWorkspaceUrl(owner, repo, repositorySection),
+      url: createRepositoryWorkspaceUrl(owner, repo, repositorySection, repositorySettingsSub),
       type: 'repo',
       owner,
       repo,
       repositorySection,
+      repositorySettingsSub,
     }
   }
 
@@ -344,7 +379,7 @@ function normalizeWorkspacePath(path: string): string {
   return trimmed || '/'
 }
 
-function createRepositoryUrlFromPath(path: string, rawSection: string): string {
+function createRepositoryUrlFromPath(path: string, rawSection: string, rawSub?: string): string {
   const repositorySection = sanitizeRepositorySection(rawSection)
 
   if (repositorySection === DEFAULT_REPOSITORY_SECTION) {
@@ -353,6 +388,12 @@ function createRepositoryUrlFromPath(path: string, rawSection: string): string {
 
   const params = new URLSearchParams()
   params.set('tab', repositorySectionToQuery(repositorySection))
+
+  const settingsSub = sanitizeRepositorySettingsSub(repositorySection, rawSub ?? undefined)
+  if (settingsSub) {
+    params.set('sub', settingsSub)
+  }
+
   return `${path}?${params.toString()}`
 }
 
@@ -447,7 +488,11 @@ function sanitizeRepositorySection(value: string | undefined): RepositoryTabId {
   if (value === 'contributors') return 'contributors'
   if (value === 'packages') return 'packages'
   if (value === 'deployments') return 'deployments'
-  if (value === 'settings') return 'settings'
+  if (value === 'settings' || value === 'settings-general') return 'settingsGeneral'
+  if (value === 'settings-access') return 'settingsAccess'
+  if (value === 'settings-automation') return 'settingsAutomation'
+  if (value === 'settings-security') return 'settingsSecurity'
+  if (value === 'settings-integrations') return 'settingsIntegrations'
   return DEFAULT_REPOSITORY_SECTION
 }
 
@@ -460,8 +505,17 @@ function sanitizeAccountSection(value: string | undefined): AccountTabId {
   return DEFAULT_ACCOUNT_SECTION
 }
 
+const REPOSITORY_SECTION_QUERY_TOKENS: Partial<Record<RepositoryTabId, string>> = {
+  pullRequests: 'pull-requests',
+  settingsGeneral: 'settings-general',
+  settingsAccess: 'settings-access',
+  settingsAutomation: 'settings-automation',
+  settingsSecurity: 'settings-security',
+  settingsIntegrations: 'settings-integrations',
+}
+
 function repositorySectionToQuery(section: RepositoryTabId): string {
-  return section === 'pullRequests' ? 'pull-requests' : section
+  return REPOSITORY_SECTION_QUERY_TOKENS[section] ?? section
 }
 
 function accountSectionToQuery(section: AccountTabId): string {

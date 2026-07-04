@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   createActionRunWorkspaceUrl,
+  createRepositoryWorkspaceUrl,
   createWorkspaceTabFromUrl,
   normalizeWorkspaceUrl,
 } from './workspace-url'
@@ -35,5 +36,37 @@ describe('new repository workspace URLs', () => {
 
   it('does not treat new-repository as an account path', () => {
     expect(createWorkspaceTabFromUrl('/new-repository').type).not.toBe('account')
+  })
+})
+
+describe('repository settings workspace URLs', () => {
+  it('normalizes the legacy settings tab token to settings-general', () => {
+    expect(normalizeWorkspaceUrl('/octo-org/hello-world?tab=settings'))
+      .toBe('/octo-org/hello-world?tab=settings-general')
+    expect(createWorkspaceTabFromUrl('/octo-org/hello-world?tab=settings'))
+      .toMatchObject({ type: 'repo', repositorySection: 'settingsGeneral' })
+  })
+
+  it('round-trips settings category tabs', () => {
+    expect(createRepositoryWorkspaceUrl('octo-org', 'hello-world', 'settingsAutomation'))
+      .toBe('/octo-org/hello-world?tab=settings-automation')
+    expect(createWorkspaceTabFromUrl('/octo-org/hello-world?tab=settings-security'))
+      .toMatchObject({ type: 'repo', repositorySection: 'settingsSecurity' })
+  })
+
+  it('keeps a valid non-default settings sub page in the query string', () => {
+    expect(createRepositoryWorkspaceUrl('octo-org', 'hello-world', 'settingsAutomation', 'webhooks'))
+      .toBe('/octo-org/hello-world?tab=settings-automation&sub=webhooks')
+    expect(createWorkspaceTabFromUrl('/octo-org/hello-world?tab=settings-automation&sub=webhooks'))
+      .toMatchObject({ repositorySection: 'settingsAutomation', repositorySettingsSub: 'webhooks' })
+  })
+
+  it('drops invalid, default-first, or misplaced sub pages', () => {
+    expect(normalizeWorkspaceUrl('/octo-org/hello-world?tab=settings-automation&sub=nope'))
+      .toBe('/octo-org/hello-world?tab=settings-automation')
+    expect(normalizeWorkspaceUrl('/octo-org/hello-world?tab=settings-automation&sub=branches'))
+      .toBe('/octo-org/hello-world?tab=settings-automation')
+    expect(normalizeWorkspaceUrl('/octo-org/hello-world?tab=commits&sub=webhooks'))
+      .toBe('/octo-org/hello-world?tab=commits')
   })
 })

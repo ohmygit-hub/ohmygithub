@@ -30,7 +30,7 @@ describe('createRepositorySectionCountLabel', () => {
     expect(createRepositorySectionCountLabel('overview', counts)).toBeNull()
     expect(createRepositorySectionCountLabel('files', counts)).toBeNull()
     expect(createRepositorySectionCountLabel('actions', counts)).toBeNull()
-    expect(createRepositorySectionCountLabel('settings', counts)).toBeNull()
+    expect(createRepositorySectionCountLabel('settingsGeneral', counts)).toBeNull()
   })
 
   it('uses independently loaded navigation counts before overview counts', () => {

@@ -77,7 +77,7 @@ const repositorySections: readonly RepositorySection[] = [
   { id: 'contributors', icon: Users },
   { id: 'packages', icon: Package },
   { id: 'deployments', icon: Rocket },
-  { id: 'settings', icon: Settings },
+  { id: 'settingsGeneral', icon: Settings },
 ]
 
 type RepositoryActionId = 'star' | 'watch'
