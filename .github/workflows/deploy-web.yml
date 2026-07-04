@@ -22,9 +22,10 @@ jobs:
     env:
       # Typecheck/build don't need the Electron runtime.
       ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
-      # Base URL the download buttons point at. Falls back to the default in
-      # lib/downloads.ts if neither a secret nor a repo variable is set.
-      VITE_R2_PUBLIC_BASE_URL: ${{ secrets.VITE_R2_PUBLIC_BASE_URL || vars.VITE_R2_PUBLIC_BASE_URL }}
+      # Base URL the download buttons point at — the R2 public bucket. Reuse the
+      # existing R2_PUBLIC_BASE_URL secret (same value the publish workflow uses).
+      # If it resolves empty, lib/downloads.ts falls back to the default.
+      VITE_R2_PUBLIC_BASE_URL: ${{ secrets.VITE_R2_PUBLIC_BASE_URL || vars.VITE_R2_PUBLIC_BASE_URL || secrets.R2_PUBLIC_BASE_URL }}
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4

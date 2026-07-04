@@ -9,8 +9,11 @@ const PRODUCT_NAME = 'Oh My GitHub'
 
 export const APP_VERSION: string = __APP_VERSION__
 
+// `||` (not `??`): the deploy workflow passes an empty string when the env var
+// is unset, and an empty base would make the download links resolve relative to
+// the landing page host instead of the R2 bucket.
 export const BASE_URL: string =
-  import.meta.env.VITE_R2_PUBLIC_BASE_URL ?? 'https://resource.oh-my-github.app'
+  import.meta.env.VITE_R2_PUBLIC_BASE_URL || 'https://resource.oh-my-github.app'
 
 export type PlatformId =
   | 'mac-arm64'
