@@ -5,7 +5,8 @@
   "description": "A faster GitHub workspace for notifications, pull requests, reviews, and actions.",
   "packageManager": "pnpm@11.7.0",
   "scripts": {
-    "env:setup": "pnpm install && pnpm --filter @oh-my-github/client exec install-electron",
+    "env:setup": "pnpm install && node packages/client/scripts/install-electron.mjs",
+    "install:electron": "node packages/client/scripts/install-electron.mjs",
     "dev": "pnpm --filter @oh-my-github/client dev",
     "dev:web": "pnpm --filter @oh-my-github/web dev",
     "build": "pnpm -r build",
