@@ -17,7 +17,11 @@ export interface AppInfo {
 // config `define`. The public production feed is also the fallback so installed
 // builds can update even if the build-time env was omitted.
 const DEFAULT_UPDATE_FEED_BASE_URL = 'https://resource.oh-my-github.app'
-const UPDATE_FEED_BASE_URL = (process.env.R2_PUBLIC_BASE_URL ?? DEFAULT_UPDATE_FEED_BASE_URL).trim()
+// The build-time `define` injects an empty string when `R2_PUBLIC_BASE_URL` is
+// unset, so `??` would not fall back. Trim first, then treat a blank value as
+// missing so the default feed always applies.
+const configuredFeedBaseUrl = (process.env.R2_PUBLIC_BASE_URL ?? '').trim()
+const UPDATE_FEED_BASE_URL = configuredFeedBaseUrl || DEFAULT_UPDATE_FEED_BASE_URL
 const { autoUpdater } = electronUpdater
 
 let updateState = createInitialUpdateState(app.getVersion())
@@ -127,11 +131,19 @@ function configureAutoUpdater(): void {
     autoUpdater.autoDownload = false
     autoUpdater.autoInstallOnAppQuit = false
     autoUpdater.forceDevUpdateConfig = !app.isPackaged
-    autoUpdater.setFeedURL({
-      provider: 'generic',
-      url: ensureTrailingSlash(UPDATE_FEED_BASE_URL),
-    })
-    updaterConfigured = true
+    try {
+      autoUpdater.setFeedURL({
+        provider: 'generic',
+        url: ensureTrailingSlash(UPDATE_FEED_BASE_URL),
+      })
+      updaterConfigured = true
+    } catch (error) {
+      // A malformed feed URL must not crash the main process at startup; the
+      // updater simply stays inactive and update checks report unavailable.
+      const message = error instanceof Error ? error.message : String(error)
+      setUpdateState({ type: 'unavailable', error: `Failed to configure updater: ${message}` })
+      return
+    }
   }
 
   if (updaterListenersRegistered) return
