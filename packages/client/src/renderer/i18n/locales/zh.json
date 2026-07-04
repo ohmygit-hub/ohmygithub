@@ -1098,6 +1098,9 @@
       "contributors": {
         "title": "贡献者"
       },
+      "engagement": {
+        "title": "互动"
+      },
       "deployments": {
         "title": "部署"
       },
@@ -1299,6 +1302,43 @@
       "pagination": {
         "summary": "第 {page} / {pageCount} 页 · 共 {totalCount} 个 release"
       }
+    },
+    "engagement": {
+      "empty": {
+        "stargazers": {
+          "title": "还没有人标星",
+          "description": "给这个仓库标星的人会显示在这里。"
+        },
+        "forks": {
+          "title": "还没有复刻",
+          "description": "这个仓库的复刻会显示在这里。"
+        },
+        "watchers": {
+          "title": "还没有人订阅",
+          "description": "订阅（Watch）这个仓库的人会显示在这里。"
+        }
+      },
+      "error": {
+        "title": "列表加载失败",
+        "description": "加载列表时出错，请重试。"
+      },
+      "forkUpdated": "更新于 {date}",
+      "pagination": {
+        "accounts": "第 {page} / {pageCount} 页 · 共 {totalCount} 个账号",
+        "forks": "第 {page} / {pageCount} 页 · 共 {totalCount} 个复刻"
+      },
+      "searchEmpty": {
+        "title": "没有匹配结果",
+        "description": "没有符合当前搜索的条目。"
+      },
+      "searchPlaceholder": "查找用户或复刻…",
+      "tabs": {
+        "stargazers": "标星",
+        "forks": "复刻",
+        "watchers": "订阅"
+      },
+      "tabsLabel": "标星、复刻与订阅",
+      "truncated": "仅显示最近的 1,000 条记录，可使用搜索缩小范围。"
     },
     "contributors": {
       "chartTitle": "对 {branch} 分支的贡献（不含合并提交）",

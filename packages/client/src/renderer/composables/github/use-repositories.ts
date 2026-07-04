@@ -88,6 +88,75 @@ export function useRepositoryContributorsQuery(
   })
 }
 
+export function useRepositoryStargazersQuery(
+  owner: MaybeRefOrGetter<string>,
+  repo: MaybeRefOrGetter<string>,
+  enabled: MaybeRefOrGetter<boolean>,
+) {
+  return useQuery<GitHubAccountFollowList>({
+    key: () => ['github', 'repository-stargazers', toValue(owner), toValue(repo)],
+    enabled: () => Boolean(toValue(owner) && toValue(repo)) && toValue(enabled),
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 30,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+    refetchOnWindowFocus: false,
+    query: async () => {
+      if (!window.ohMyGithub?.repositories) {
+        throw new Error('GitHub repositories bridge is unavailable')
+      }
+
+      return window.ohMyGithub.repositories.listStargazers(toValue(owner), toValue(repo))
+    },
+  })
+}
+
+export function useRepositoryWatchersQuery(
+  owner: MaybeRefOrGetter<string>,
+  repo: MaybeRefOrGetter<string>,
+  enabled: MaybeRefOrGetter<boolean>,
+) {
+  return useQuery<GitHubAccountFollowList>({
+    key: () => ['github', 'repository-watchers', toValue(owner), toValue(repo)],
+    enabled: () => Boolean(toValue(owner) && toValue(repo)) && toValue(enabled),
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 30,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+    refetchOnWindowFocus: false,
+    query: async () => {
+      if (!window.ohMyGithub?.repositories) {
+        throw new Error('GitHub repositories bridge is unavailable')
+      }
+
+      return window.ohMyGithub.repositories.listWatchers(toValue(owner), toValue(repo))
+    },
+  })
+}
+
+export function useRepositoryForksQuery(
+  owner: MaybeRefOrGetter<string>,
+  repo: MaybeRefOrGetter<string>,
+  enabled: MaybeRefOrGetter<boolean>,
+) {
+  return useQuery<GitHubRepositoryForkList>({
+    key: () => ['github', 'repository-forks', toValue(owner), toValue(repo)],
+    enabled: () => Boolean(toValue(owner) && toValue(repo)) && toValue(enabled),
+    staleTime: 1000 * 60 * 5,
+    gcTime: 1000 * 60 * 30,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+    refetchOnWindowFocus: false,
+    query: async () => {
+      if (!window.ohMyGithub?.repositories) {
+        throw new Error('GitHub repositories bridge is unavailable')
+      }
+
+      return window.ohMyGithub.repositories.listForks(toValue(owner), toValue(repo))
+    },
+  })
+}
+
 export function useRepositoryNavigationCountsQuery(
   owner: MaybeRefOrGetter<string>,
   repo: MaybeRefOrGetter<string>,

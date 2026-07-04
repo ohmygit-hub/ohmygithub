@@ -1303,6 +1303,43 @@
         "summary": "Page {page} of {pageCount} · {totalCount} releases"
       }
     },
+    "engagement": {
+      "empty": {
+        "stargazers": {
+          "title": "No stargazers yet",
+          "description": "People who star this repository will show up here."
+        },
+        "forks": {
+          "title": "No forks yet",
+          "description": "Forks of this repository will show up here."
+        },
+        "watchers": {
+          "title": "No watchers yet",
+          "description": "People watching this repository will show up here."
+        }
+      },
+      "error": {
+        "title": "Couldn't load this list",
+        "description": "Something went wrong while loading this list. Try again."
+      },
+      "forkUpdated": "Updated {date}",
+      "pagination": {
+        "accounts": "Page {page} of {pageCount} · {totalCount} accounts",
+        "forks": "Page {page} of {pageCount} · {totalCount} forks"
+      },
+      "searchEmpty": {
+        "title": "No matches",
+        "description": "Nothing matches the current search."
+      },
+      "searchPlaceholder": "Find a person or fork…",
+      "tabs": {
+        "stargazers": "Stargazers",
+        "forks": "Forks",
+        "watchers": "Watchers"
+      },
+      "tabsLabel": "Stargazers, forks, and watchers",
+      "truncated": "Showing the most recent 1,000 entries. Use search to narrow the list."
+    },
     "contributors": {
       "chartTitle": "Contributions to {branch}, excluding merge commits",
       "chartTitleNoBranch": "Contributions, excluding merge commits",
