@@ -597,7 +597,7 @@ function isDateItem(value: DateItem | null): value is DateItem {
             <Textarea
               id="pull-request-merge-commit-message"
               v-model="mergeCommitMessage"
-              class="min-h-40 resize-y"
+              class="min-h-40 max-h-[40vh] resize-y overflow-y-auto"
               :disabled="isMerging"
               :placeholder="t('pullRequest.merge.commitMessagePlaceholder')"
             />
