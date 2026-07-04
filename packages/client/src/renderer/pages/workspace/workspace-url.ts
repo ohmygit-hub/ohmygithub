@@ -485,6 +485,7 @@ function sanitizeRepositorySection(value: string | undefined): RepositoryTabId {
   if (value === 'issues') return 'issues'
   if (value === 'actions') return 'actions'
   if (value === 'releases') return 'releases'
+  if (value === 'engagement') return 'engagement'
   if (value === 'contributors') return 'contributors'
   if (value === 'packages') return 'packages'
   if (value === 'deployments') return 'deployments'

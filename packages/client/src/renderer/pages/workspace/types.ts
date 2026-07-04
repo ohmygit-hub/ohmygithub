@@ -11,6 +11,7 @@ export type RepositoryTabId =
   | 'issues'
   | 'actions'
   | 'releases'
+  | 'engagement'
   | 'contributors'
   | 'packages'
   | 'deployments'
