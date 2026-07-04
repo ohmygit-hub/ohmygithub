@@ -1,5 +1,5 @@
 import { join, resolve } from 'node:path'
-import { app, BrowserWindow, ipcMain, nativeImage, nativeTheme, shell, type NativeImage } from 'electron'
+import { app, BrowserWindow, ipcMain, Menu, nativeImage, nativeTheme, shell, type NativeImage } from 'electron'
 import { is } from '@electron-toolkit/utils'
 import { registerAccountsIpc } from './accounts'
 import { registerActionsIpc } from './actions'
@@ -56,6 +56,16 @@ function loadDevelopmentAppIcon(): NativeImage | undefined {
   const iconPath = process.platform === 'darwin' ? DEV_MAC_APP_ICON : DEV_DEFAULT_APP_ICON
   const icon = nativeImage.createFromPath(iconPath)
   return icon.isEmpty() ? undefined : icon
+}
+
+// On Windows/Linux the Electron application menu renders as an in-window menu bar
+// (File/Edit/View/Window). The app drives every command from its own UI and
+// renderer keyboard shortcuts, so that native menu is redundant chrome — remove
+// it. macOS keeps its menu bar: it lives in the system bar and provides the
+// standard app/edit accelerators expected on that platform.
+function configureApplicationMenu(): void {
+  if (process.platform === 'darwin') return
+  Menu.setApplicationMenu(null)
 }
 
 function createWindow(): void {
@@ -124,6 +134,7 @@ function registerWindowIpc(): void {
 
 void app.whenReady().then(() => {
   app.setAppUserModelId('dev.oh-my-github.client')
+  configureApplicationMenu()
   configureDevelopmentAppIcon()
   registerAccountsIpc()
   registerActionsIpc()
