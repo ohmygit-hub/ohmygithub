@@ -2136,6 +2136,61 @@
     "description": "{category} 分类下的 Issue。"
   },
   "workspace": {
+    "activity": {
+      "title": "Activity",
+      "filters": {
+        "stars": "Star",
+        "forks": "Fork",
+        "repos": "仓库",
+        "releases": "发布",
+        "commits": "提交",
+        "issuesAndPrs": "Issues 和 PR"
+      },
+      "sentences": {
+        "starred": "star 了 {repo}",
+        "forked": "将 {repo} fork 到 {fork}",
+        "createdRepository": "创建了仓库 {repo}",
+        "createdBranch": "在 {repo} 创建了分支 {ref}",
+        "createdTag": "在 {repo} 创建了标签 {ref}",
+        "deletedBranch": "删除了 {repo} 的分支 {ref}",
+        "deletedTag": "删除了 {repo} 的标签 {ref}",
+        "pushed": "向 {repo} · {branch} 推送了 {count} 个提交",
+        "published": "在 {repo} 发布了 {release}",
+        "madePublic": "公开了 {repo}",
+        "addedMember": "邀请 {member} 加入 {repo}",
+        "openedIssue": "创建了 issue {target}",
+        "closedIssue": "关闭了 issue {target}",
+        "reopenedIssue": "重新打开了 issue {target}",
+        "updatedIssue": "更新了 issue {target}",
+        "commentedIssue": "评论了 issue {target}",
+        "openedPullRequest": "创建了 PR {target}",
+        "mergedPullRequest": "合并了 PR {target}",
+        "closedPullRequest": "关闭了 PR {target}",
+        "reopenedPullRequest": "重新打开了 PR {target}",
+        "updatedPullRequest": "更新了 PR {target}",
+        "reviewedPullRequest": "评审了 PR {target}",
+        "commentedPullRequest": "评论了 PR {target}",
+        "commentedCommit": "评论了提交 {target}",
+        "startedDiscussion": "在 {repo} 发起了讨论",
+        "editedWiki": "编辑了 {repo} 的 {count} 个 wiki 页面",
+        "sponsored": "发起了赞助（{repo}）",
+        "acted": "在 {repo} 有新动态"
+      },
+      "groups": {
+        "starred": "star 了 {count} 个仓库",
+        "forked": "fork 了 {count} 个仓库"
+      },
+      "empty": {
+        "title": "还没有动态",
+        "description": "在 GitHub 上关注感兴趣的人或 star 仓库，动态会出现在这里。"
+      },
+      "error": {
+        "title": "动态加载失败",
+        "retry": "重试"
+      },
+      "loadMore": "加载更多",
+      "loadingMore": "加载中…"
+    },
     "inbox": {
       "title": "收件箱",
       "filters": {
@@ -2248,6 +2303,7 @@
         "organizations": "组织"
       },
       "items": {
+        "activity": "Activity",
         "inbox": "收件箱",
         "new": "新建",
         "newOrganization": "组织",

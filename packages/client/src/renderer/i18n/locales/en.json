@@ -2136,6 +2136,61 @@
     "description": "Issues in the {category} category."
   },
   "workspace": {
+    "activity": {
+      "title": "Activity",
+      "filters": {
+        "stars": "Stars",
+        "forks": "Forks",
+        "repos": "Repositories",
+        "releases": "Releases",
+        "commits": "Commits",
+        "issuesAndPrs": "Issues & PRs"
+      },
+      "sentences": {
+        "starred": "starred {repo}",
+        "forked": "forked {repo} to {fork}",
+        "createdRepository": "created repository {repo}",
+        "createdBranch": "created branch {ref} in {repo}",
+        "createdTag": "created tag {ref} in {repo}",
+        "deletedBranch": "deleted branch {ref} in {repo}",
+        "deletedTag": "deleted tag {ref} in {repo}",
+        "pushed": "pushed {count} commit to {repo} · {branch} | pushed {count} commits to {repo} · {branch}",
+        "published": "published {release} in {repo}",
+        "madePublic": "made {repo} public",
+        "addedMember": "added {member} to {repo}",
+        "openedIssue": "opened issue {target}",
+        "closedIssue": "closed issue {target}",
+        "reopenedIssue": "reopened issue {target}",
+        "updatedIssue": "updated issue {target}",
+        "commentedIssue": "commented on issue {target}",
+        "openedPullRequest": "opened pull request {target}",
+        "mergedPullRequest": "merged pull request {target}",
+        "closedPullRequest": "closed pull request {target}",
+        "reopenedPullRequest": "reopened pull request {target}",
+        "updatedPullRequest": "updated pull request {target}",
+        "reviewedPullRequest": "reviewed pull request {target}",
+        "commentedPullRequest": "commented on pull request {target}",
+        "commentedCommit": "commented on commit {target}",
+        "startedDiscussion": "started a discussion in {repo}",
+        "editedWiki": "edited {count} wiki page in {repo} | edited {count} wiki pages in {repo}",
+        "sponsored": "created a sponsorship ({repo})",
+        "acted": "had activity in {repo}"
+      },
+      "groups": {
+        "starred": "starred {count} repositories",
+        "forked": "forked {count} repositories"
+      },
+      "empty": {
+        "title": "No activity yet",
+        "description": "Follow people and star repositories on GitHub to fill this feed."
+      },
+      "error": {
+        "title": "Could not load activity",
+        "retry": "Retry"
+      },
+      "loadMore": "Load more",
+      "loadingMore": "Loading…"
+    },
     "inbox": {
       "title": "Inbox",
       "filters": {
@@ -2248,6 +2303,7 @@
         "organizations": "Organizations"
       },
       "items": {
+        "activity": "Activity",
         "inbox": "Inbox",
         "new": "New",
         "newOrganization": "Organization",
