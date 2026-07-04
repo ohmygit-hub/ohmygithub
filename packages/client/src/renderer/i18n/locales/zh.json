@@ -1646,6 +1646,113 @@
         "githubApps": "GitHub Apps",
         "emailNotifications": "邮件通知",
         "autolinks": "自动链接引用"
+      },
+      "general": {
+        "saveError": "保存仓库设置失败。",
+        "loadError": "加载仓库设置失败。",
+        "retry": "重试",
+        "basics": {
+          "title": "基本信息",
+          "name": "仓库名称",
+          "nameHint": "重命名后 GitHub 会重定向旧名称,本标签页会跟随新名称。",
+          "description": "描述",
+          "homepage": "网站",
+          "topics": "主题标签",
+          "topicsPlaceholder": "输入主题后按回车添加",
+          "save": "保存"
+        },
+        "defaultBranch": {
+          "title": "默认分支",
+          "description": "默认分支是新建拉取请求与提交的基准分支。",
+          "save": "更新",
+          "rename": "重命名",
+          "renameTitle": "重命名默认分支",
+          "renameDescription": "重命名 {name}。GitHub 会自动调整指向它的拉取请求与分支保护。",
+          "renameLabel": "新分支名",
+          "renameConfirm": "重命名"
+        },
+        "features": {
+          "title": "功能",
+          "wikis": "Wiki",
+          "issues": "Issues",
+          "projects": "Projects",
+          "discussions": "Discussions",
+          "sponsorships": "赞助(Sponsorships)",
+          "sponsorshipsUnavailable": "当前无法获取该仓库的赞助设置状态。"
+        },
+        "template": "模板仓库",
+        "signoff": "要求网页端提交署名(sign-off)",
+        "pullRequests": {
+          "title": "拉取请求",
+          "mergeCommits": "允许合并提交(merge commit)",
+          "squashMerging": "允许压缩合并(squash)",
+          "rebaseMerging": "允许变基合并(rebase)",
+          "autoMerge": "允许自动合并",
+          "deleteBranchOnMerge": "合并后自动删除来源分支",
+          "updateBranch": "始终建议更新拉取请求分支",
+          "squashDefaults": "压缩合并默认提交信息",
+          "mergeDefaults": "合并提交默认信息",
+          "defaults": {
+            "merge": {
+              "PR_TITLE_PR_BODY": "PR 标题与描述",
+              "PR_TITLE_BLANK": "仅 PR 标题",
+              "MERGE_MESSAGE_PR_TITLE": "默认信息"
+            },
+            "squash": {
+              "PR_TITLE_PR_BODY": "PR 标题与描述",
+              "PR_TITLE_COMMIT_MESSAGES": "PR 标题与提交详情",
+              "PR_TITLE_BLANK": "仅 PR 标题",
+              "COMMIT_OR_PR_TITLE_COMMIT_MESSAGES": "默认信息"
+            }
+          }
+        },
+        "releases": {
+          "title": "发布",
+          "immutable": "不可变发布(Immutable releases)",
+          "immutableHint": "已发布的 Release 及其资源将无法修改或删除。"
+        },
+        "externalLinks": {
+          "socialPreview": "社交预览图",
+          "wikiRestrict": "Wiki 编辑限制",
+          "lfsArchives": "归档包含 Git LFS 对象"
+        },
+        "dangerZone": {
+          "title": "危险区域",
+          "cancel": "取消",
+          "confirm": "确认",
+          "confirmLabel": "输入 {name} 以确认",
+          "visibility": {
+            "title": "更改仓库可见性",
+            "description": "当前仓库为 {visibility}。",
+            "makePrivate": "设为私有",
+            "makePublic": "设为公开",
+            "confirmTitle": "更改可见性",
+            "confirmDescription": "更改 {name} 的可见性会影响 fork、star、关注者与访问权限。"
+          },
+          "transfer": {
+            "title": "转移此仓库",
+            "action": "转移",
+            "newOwner": "新所有者(用户或组织)",
+            "newName": "新仓库名(可选)",
+            "confirmDescription": "转移 {name} 会将其移交给其他所有者,对方可能需要确认接收。",
+            "pending": "已发起转移,新所有者可能需要确认接收。"
+          },
+          "archive": {
+            "title": "归档此仓库",
+            "archiveAction": "归档",
+            "unarchiveAction": "取消归档",
+            "confirmTitle": "归档仓库",
+            "confirmDescription": "归档 {name} 后所有人只读,可随时取消归档。"
+          },
+          "delete": {
+            "title": "删除此仓库",
+            "action": "删除",
+            "confirmTitle": "删除仓库",
+            "confirmDescription": "删除 {name} 不可恢复,所有 Issue、拉取请求与发布都会被移除。",
+            "missingScope": "删除仓库需要重新授权 delete_repo 权限。",
+            "reauthorize": "重新授权"
+          }
+        }
       }
     }
   },

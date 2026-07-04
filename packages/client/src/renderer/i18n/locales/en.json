@@ -1646,6 +1646,113 @@
         "githubApps": "GitHub Apps",
         "emailNotifications": "Email notifications",
         "autolinks": "Autolink references"
+      },
+      "general": {
+        "saveError": "Failed to save repository settings.",
+        "loadError": "Failed to load repository settings.",
+        "retry": "Retry",
+        "basics": {
+          "title": "Basics",
+          "name": "Repository name",
+          "nameHint": "Renaming redirects the old name on GitHub, and this tab will follow the new name.",
+          "description": "Description",
+          "homepage": "Website",
+          "topics": "Topics",
+          "topicsPlaceholder": "Add a topic and press Enter",
+          "save": "Save"
+        },
+        "defaultBranch": {
+          "title": "Default branch",
+          "description": "The default branch is the base branch for new pull requests and commits.",
+          "save": "Update",
+          "rename": "Rename",
+          "renameTitle": "Rename default branch",
+          "renameDescription": "Rename {name}. Open pull requests and branch protection targeting it are retargeted by GitHub.",
+          "renameLabel": "New branch name",
+          "renameConfirm": "Rename"
+        },
+        "features": {
+          "title": "Features",
+          "wikis": "Wikis",
+          "issues": "Issues",
+          "projects": "Projects",
+          "discussions": "Discussions",
+          "sponsorships": "Sponsorships",
+          "sponsorshipsUnavailable": "Sponsorships state is unavailable for this repository."
+        },
+        "template": "Template repository",
+        "signoff": "Require contributors to sign off on web-based commits",
+        "pullRequests": {
+          "title": "Pull requests",
+          "mergeCommits": "Allow merge commits",
+          "squashMerging": "Allow squash merging",
+          "rebaseMerging": "Allow rebase merging",
+          "autoMerge": "Allow auto-merge",
+          "deleteBranchOnMerge": "Automatically delete head branches",
+          "updateBranch": "Always suggest updating pull request branches",
+          "squashDefaults": "Default squash commit message",
+          "mergeDefaults": "Default merge commit message",
+          "defaults": {
+            "merge": {
+              "PR_TITLE_PR_BODY": "Pull request title and description",
+              "PR_TITLE_BLANK": "Pull request title",
+              "MERGE_MESSAGE_PR_TITLE": "Default message"
+            },
+            "squash": {
+              "PR_TITLE_PR_BODY": "Pull request title and description",
+              "PR_TITLE_COMMIT_MESSAGES": "Pull request title and commit details",
+              "PR_TITLE_BLANK": "Pull request title",
+              "COMMIT_OR_PR_TITLE_COMMIT_MESSAGES": "Default message"
+            }
+          }
+        },
+        "releases": {
+          "title": "Releases",
+          "immutable": "Immutable releases",
+          "immutableHint": "Published releases and their assets cannot be modified or deleted."
+        },
+        "externalLinks": {
+          "socialPreview": "Social preview image",
+          "wikiRestrict": "Wiki editing restrictions",
+          "lfsArchives": "Git LFS objects in archives"
+        },
+        "dangerZone": {
+          "title": "Danger zone",
+          "cancel": "Cancel",
+          "confirm": "Confirm",
+          "confirmLabel": "Type {name} to confirm",
+          "visibility": {
+            "title": "Change repository visibility",
+            "description": "This repository is currently {visibility}.",
+            "makePrivate": "Make private",
+            "makePublic": "Make public",
+            "confirmTitle": "Change visibility",
+            "confirmDescription": "Changing the visibility of {name} affects forks, stars, watchers, and access."
+          },
+          "transfer": {
+            "title": "Transfer this repository",
+            "action": "Transfer",
+            "newOwner": "New owner (user or organization)",
+            "newName": "New repository name (optional)",
+            "confirmDescription": "Transferring {name} moves it to another owner. The new owner may need to accept the transfer.",
+            "pending": "Transfer requested. The new owner may need to accept it."
+          },
+          "archive": {
+            "title": "Archive this repository",
+            "archiveAction": "Archive",
+            "unarchiveAction": "Unarchive",
+            "confirmTitle": "Archive repository",
+            "confirmDescription": "Archiving {name} makes it read-only for everyone. You can unarchive it at any time."
+          },
+          "delete": {
+            "title": "Delete this repository",
+            "action": "Delete",
+            "confirmTitle": "Delete repository",
+            "confirmDescription": "Deleting {name} is permanent and cannot be undone. All issues, pull requests, and releases are removed.",
+            "missingScope": "Deleting repositories requires re-authorizing with the delete_repo permission.",
+            "reauthorize": "Re-authorize"
+          }
+        }
       }
     }
   },
