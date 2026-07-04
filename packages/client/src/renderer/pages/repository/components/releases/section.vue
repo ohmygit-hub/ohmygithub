@@ -49,6 +49,11 @@ const releasesQuery = useRepositoryReleasesQuery(
 const result = computed(() => releasesQuery.data.value ?? null)
 const releases = computed(() => result.value?.items ?? [])
 const hasNextPage = computed(() => result.value?.hasNextPage ?? false)
+const syntheticTotalCount = computed(() =>
+  (page.value - 1) * PER_PAGE
+  + releases.value.length
+  + (hasNextPage.value ? PER_PAGE : 0)
+)
 const isLoading = computed(() => releasesQuery.isLoading.value)
 const hasError = computed(() => Boolean(releasesQuery.error.value))
 const latestReleaseId = computed(() => {
@@ -184,6 +189,7 @@ function resolveErrorMessage(error: unknown): string | undefined {
       :per-page="PER_PAGE"
       :releases="orderedReleases"
       :repo="repo"
+      :total-count="syntheticTotalCount"
       @delete="deletingRelease = $event"
       @edit="openEdit"
       @publish="publish"

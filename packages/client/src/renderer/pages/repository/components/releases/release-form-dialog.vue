@@ -165,6 +165,7 @@ function extractErrorMessage(error: unknown): string | null {
               :default-branch="defaultBranch"
               :owner="owner"
               :repo="repo"
+              trigger-class="w-full"
             />
             <p class="text-caption text-muted-foreground">
               {{ t('repository.releases.form.targetHint') }}
@@ -188,7 +189,7 @@ function extractErrorMessage(error: unknown): string | null {
           <Textarea
             id="release-form-body"
             v-model="body"
-            class="max-h-72 min-h-40 font-mono text-body"
+            class="max-h-72 min-h-40 text-body"
             :disabled="isSubmitting"
             :placeholder="t('repository.releases.form.bodyPlaceholder')"
             spellcheck="false"

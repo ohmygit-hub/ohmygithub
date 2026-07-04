@@ -5,12 +5,17 @@ import SearchableSelect from '@/components/navigation/searchable-select.vue'
 import type { SearchableSelectOption } from '@/components/navigation/searchable-select.vue'
 import { useRepositoryBranchesQuery } from '@/composables/github/use-repositories'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   owner: string
   repo: string
   modelValue: string | null
   defaultBranch?: string | null
-}>()
+  // Trigger width/layout. Defaults to a bounded picker for toolbars; pass
+  // `w-full` in forms so it fills its column and lines up with sibling fields.
+  triggerClass?: string
+}>(), {
+  triggerClass: 'w-full sm:w-72',
+})
 
 const emit = defineEmits<{
   'update:modelValue': [value: string]
@@ -62,7 +67,7 @@ function selectBranch(value: string): void {
     :placeholder="t('repository.commits.branch.placeholder')"
     :search-placeholder="t('repository.commits.branch.searchPlaceholder')"
     :select-label="t('repository.commits.branch.selectLabel')"
-    trigger-class="w-full sm:w-72"
+    :trigger-class="triggerClass"
     @update:model-value="selectBranch"
   />
 </template>

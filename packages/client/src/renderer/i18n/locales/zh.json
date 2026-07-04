@@ -1286,7 +1286,7 @@
         "retry": "重试"
       },
       "pagination": {
-        "summary": "第 {page} 页"
+        "summary": "第 {page} / {pageCount} 页 · 共 {totalCount} 个 release"
       }
     },
     "contributors": {

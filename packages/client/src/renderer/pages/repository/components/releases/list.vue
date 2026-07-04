@@ -23,6 +23,7 @@ const props = defineProps<{
   page: number
   perPage: number
   repo: string
+  totalCount: number
 }>()
 
 const emit = defineEmits<{
@@ -141,8 +142,7 @@ const showEmpty = computed(() =>
         :page="page"
         :per-page="perPage"
         summary-key="repository.releases.pagination.summary"
-        :total-count="0"
-        variant="compact"
+        :total-count="totalCount"
         @update:page="emit('update:page', $event)"
       />
     </footer>

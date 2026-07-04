@@ -1286,7 +1286,7 @@
         "retry": "Retry"
       },
       "pagination": {
-        "summary": "Page {page}"
+        "summary": "Page {page} of {pageCount} · {totalCount} releases"
       }
     },
     "contributors": {
