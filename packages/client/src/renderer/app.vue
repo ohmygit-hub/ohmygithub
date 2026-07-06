@@ -6,8 +6,10 @@ import { Toaster } from '@oh-my-github/ui'
 import { useGlobalKeyboardShortcuts } from './keyboard/global-shortcuts'
 import { useKeyboardShortcutListener } from './keyboard/shortcut-runtime'
 import { useFocusRingModality } from './composables/use-focus-ring-modality'
+import { useAuthStore } from './stores/auth'
 import { useSettingsStore } from './stores/settings'
 
+const authStore = useAuthStore()
 const settingsStore = useSettingsStore()
 const { t } = useI18n()
 const toastHeadings = computed<Partial<Record<ToastVariant, string>>>(() => ({
@@ -18,6 +20,7 @@ const toastHeadings = computed<Partial<Record<ToastVariant, string>>>(() => ({
   warning: t('toast.headings.warning'),
 }))
 
+void authStore.refresh()
 void settingsStore.initialize()
 useFocusRingModality()
 useKeyboardShortcutListener()
@@ -25,7 +28,7 @@ useGlobalKeyboardShortcuts()
 </script>
 
 <template>
-  <RouterView />
+  <RouterView v-if="!authStore.isSwitching" />
   <Toaster
     :headings="toastHeadings"
     :label="t('toast.label')"

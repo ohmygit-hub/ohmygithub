@@ -49,7 +49,7 @@ router.beforeEach(async (to) => {
     }
   }
 
-  if (auth?.isAuthenticated && to.name === 'auth') {
+  if (auth?.isAuthenticated && to.name === 'auth' && to.query.add !== '1') {
     return { name: 'workspace-root' }
   }
 
