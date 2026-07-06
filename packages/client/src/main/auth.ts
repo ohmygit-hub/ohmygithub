@@ -1,28 +1,31 @@
-import { chmodSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { chmodSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { randomUUID } from 'node:crypto'
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { AuthApi, defaultGitHubOAuthScopes, type GitHubAuthViewer } from '@oh-my-github/api'
 import { clipboard, ipcMain, shell } from 'electron'
+import {
+  createEmptyAuthFile,
+  getActiveAccount,
+  normalizeStoredAuthFile,
+  removeAccount,
+  setActiveAccount,
+  toAccountSummaries,
+  upsertAccount,
+  type AccountSummary,
+  type AuthMethod,
+  type StoredAccount,
+  type StoredAuthFile
+} from './auth-store'
 import { resolveGitHubProxyUrl } from './proxy'
 
-export type AuthMethod = 'oauth_device' | 'personal_token'
-
-export interface StoredAuth {
-  schemaVersion: 1
-  method: AuthMethod
-  accessToken: string
-  tokenType: string
-  scopes: string[]
-  viewer: GitHubAuthViewer
-  createdAt: string
-  updatedAt: string
-}
+export type { AccountSummary, AuthMethod, StoredAccount } from './auth-store'
 
 export interface AuthState {
   isAuthenticated: boolean
   path: string
-  auth: Omit<StoredAuth, 'accessToken'> | null
+  auth: Omit<StoredAccount, 'accessToken'> | null
+  accounts: AccountSummary[]
   hasGitHubClientId: boolean
 }
 
@@ -53,33 +56,33 @@ export function initializeAuth(): AuthState {
 }
 
 export function getAuthenticatedAccessToken(): string {
-  const auth = readStoredAuth()
+  const account = getActiveAccount(readAuthFile())
 
-  if (!auth?.accessToken) {
+  if (!account?.accessToken) {
     throw new Error('GitHub authentication is required')
   }
 
-  return auth.accessToken
+  return account.accessToken
 }
 
 export function getAuthenticatedViewerLogin(): string {
-  const auth = readStoredAuth()
+  const account = getActiveAccount(readAuthFile())
 
-  if (!auth?.viewer.login) {
+  if (!account?.viewer.login) {
     throw new Error('GitHub authentication is required')
   }
 
-  return auth.viewer.login
+  return account.viewer.login
 }
 
-export function getAuthenticatedAuthMetadata(): Pick<StoredAuth, 'method' | 'scopes'> | null {
-  const auth = readStoredAuth()
+export function getAuthenticatedAuthMetadata(): Pick<StoredAccount, 'method' | 'scopes'> | null {
+  const account = getActiveAccount(readAuthFile())
 
-  if (!auth) return null
+  if (!account) return null
 
   return {
-    method: auth.method,
-    scopes: [...auth.scopes]
+    method: account.method,
+    scopes: [...account.scopes]
   }
 }
 
@@ -93,10 +96,29 @@ export function registerAuthIpc(): void {
     copyCodeAndOpenDeviceFlow(sessionId)
   )
   ipcMain.handle('auth:save-personal-token', (_event, token: string) => savePersonalToken(token))
-  ipcMain.handle('auth:logout', () => {
-    rmSync(authPath, { force: true })
-    return getAuthState()
-  })
+  ipcMain.handle('auth:switch-account', (_event, accountId: number) => switchToAccount(accountId))
+  ipcMain.handle('auth:logout', () => logoutActiveAccount())
+}
+
+function switchToAccount(accountId: number): AuthState {
+  const file = readAuthFile()
+
+  if (!file) {
+    throw new Error('GitHub account was not found')
+  }
+
+  writeAuthFile(setActiveAccount(file, accountId))
+  return getAuthState()
+}
+
+function logoutActiveAccount(): AuthState {
+  const file = readAuthFile()
+
+  if (file && file.activeAccountId !== null) {
+    writeAuthFile(removeAccount(file, file.activeAccountId))
+  }
+
+  return getAuthState()
 }
 
 async function startDeviceFlow(): Promise<DeviceFlowResult> {
@@ -161,7 +183,7 @@ async function completeDeviceFlow(sessionId: string): Promise<DeviceFlowResult> 
     })
     const viewer = await authApi.getViewer(token.accessToken)
 
-    writeStoredAuth({
+    persistAccount({
       method: 'oauth_device',
       accessToken: token.accessToken,
       tokenType: token.tokenType,
@@ -191,7 +213,7 @@ async function savePersonalToken(token: string): Promise<AuthState> {
   const authApi = await createAuthApi()
   const viewer = await authApi.getViewer(normalizedToken)
 
-  writeStoredAuth({
+  persistAccount({
     method: 'personal_token',
     accessToken: normalizedToken,
     tokenType: 'bearer',
@@ -202,21 +224,35 @@ async function savePersonalToken(token: string): Promise<AuthState> {
   return getAuthState()
 }
 
+function persistAccount(input: {
+  method: AuthMethod
+  accessToken: string
+  tokenType: string
+  scopes: string[]
+  viewer: GitHubAuthViewer
+}): void {
+  const file = readAuthFile() ?? createEmptyAuthFile()
+  writeAuthFile(upsertAccount(file, input, new Date().toISOString()))
+}
+
 function getAuthState(): AuthState {
-  const auth = readStoredAuth()
+  const file = readAuthFile()
+  const active = getActiveAccount(file)
 
   return {
-    isAuthenticated: Boolean(auth),
+    isAuthenticated: Boolean(active),
     path: authPath,
-    auth: auth ? sanitizeAuth(auth) : null,
+    auth: active ? sanitizeAccount(active) : null,
+    accounts: toAccountSummaries(file),
     hasGitHubClientId: Boolean(getGitHubClientId())
   }
 }
 
-function readStoredAuth(): StoredAuth | null {
+function readAuthFile(): StoredAuthFile | null {
+  let raw: string
+
   try {
-    const raw = readFileSync(authPath, 'utf8')
-    return normalizeStoredAuth(JSON.parse(raw) as Partial<StoredAuth>)
+    raw = readFileSync(authPath, 'utf8')
   } catch (error) {
     if (isMissingFileError(error)) {
       return null
@@ -224,61 +260,38 @@ function readStoredAuth(): StoredAuth | null {
 
     throw error
   }
-}
 
-function writeStoredAuth(input: {
-  method: AuthMethod
-  accessToken: string
-  tokenType: string
-  scopes: string[]
-  viewer: GitHubAuthViewer
-}): void {
-  const now = new Date().toISOString()
-  const previous = readStoredAuth()
-  const auth: StoredAuth = {
-    schemaVersion: 1,
-    method: input.method,
-    accessToken: input.accessToken,
-    tokenType: input.tokenType,
-    scopes: input.scopes,
-    viewer: input.viewer,
-    createdAt: previous?.createdAt ?? now,
-    updatedAt: now
+  let parsed: unknown
+
+  try {
+    parsed = JSON.parse(raw)
+  } catch {
+    // 手工损坏的文件视为未登录;不主动删除,等下次登录写入时覆盖。
+    return null
   }
 
+  const file = normalizeStoredAuthFile(parsed)
+
+  // v1 → v2 迁移后立刻写回,让磁盘与内存保持一致。
+  if (file && (parsed as { schemaVersion?: unknown }).schemaVersion !== 2) {
+    writeAuthFile(file)
+  }
+
+  return file
+}
+
+function writeAuthFile(file: StoredAuthFile): void {
   mkdirSync(dirname(authPath), { recursive: true })
-  writeFileSync(authPath, `${JSON.stringify(auth, null, 2)}\n`, {
+  writeFileSync(authPath, `${JSON.stringify(file, null, 2)}\n`, {
     encoding: 'utf8',
     mode: 0o600
   })
   trySetPrivatePermissions()
 }
 
-function sanitizeAuth(auth: StoredAuth): Omit<StoredAuth, 'accessToken'> {
-  const { accessToken: _accessToken, ...safeAuth } = auth
-  return safeAuth
-}
-
-function normalizeStoredAuth(auth: Partial<StoredAuth>): StoredAuth {
-  if (!auth.accessToken || !auth.viewer?.login) {
-    throw new Error('Invalid auth.json')
-  }
-
-  return {
-    schemaVersion: 1,
-    method: auth.method === 'personal_token' ? 'personal_token' : 'oauth_device',
-    accessToken: auth.accessToken,
-    tokenType: auth.tokenType ?? 'bearer',
-    scopes: Array.isArray(auth.scopes) ? auth.scopes : [],
-    viewer: {
-      id: Number(auth.viewer.id),
-      login: auth.viewer.login,
-      name: auth.viewer.name ?? null,
-      avatarUrl: auth.viewer.avatarUrl ?? ''
-    },
-    createdAt: auth.createdAt ?? new Date().toISOString(),
-    updatedAt: auth.updatedAt ?? new Date().toISOString()
-  }
+function sanitizeAccount(account: StoredAccount): Omit<StoredAccount, 'accessToken'> {
+  const { accessToken: _accessToken, ...safeAccount } = account
+  return safeAccount
 }
 
 async function pollForToken(options: {
