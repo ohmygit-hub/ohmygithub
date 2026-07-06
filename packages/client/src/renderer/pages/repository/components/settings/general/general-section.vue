@@ -189,6 +189,7 @@ function openExternal(): void {
             :owner="owner"
             :repo="repo"
             trigger-class="w-52"
+            trigger-size="sm"
           />
           <Button
             v-if="isDefaultBranchDirty"

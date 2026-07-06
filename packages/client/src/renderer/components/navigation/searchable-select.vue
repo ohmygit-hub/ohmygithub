@@ -31,8 +31,10 @@ const props = withDefaults(defineProps<{
   searchPlaceholder: string
   selectLabel: string
   triggerClass?: HTMLAttributes['class']
+  triggerSize?: 'sm' | 'default'
 }>(), {
   triggerClass: undefined,
+  triggerSize: 'default',
 })
 
 const emit = defineEmits<{
@@ -63,6 +65,7 @@ function selectOption(option: SearchableSelectOption): void {
         :disabled="disabled"
         role="combobox"
         :aria-expanded="open"
+        :size="triggerSize"
         type="button"
         variant="outline"
       >

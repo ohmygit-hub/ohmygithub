@@ -1662,7 +1662,7 @@
         },
         "defaultBranch": {
           "title": "Default branch",
-          "description": "The default branch is the base branch for new pull requests and commits.",
+          "description": "The default branch is considered the base branch in your repository, against which all pull requests and code commits are automatically made, unless you specify a different branch.",
           "save": "Update",
           "rename": "Rename",
           "renameTitle": "Rename default branch",
@@ -1677,7 +1677,12 @@
           "projects": "Projects",
           "discussions": "Discussions",
           "sponsorships": "Sponsorships",
-          "sponsorshipsUnavailable": "Sponsorships state is unavailable for this repository."
+          "sponsorshipsUnavailable": "Sponsorships state is unavailable for this repository.",
+          "wikisHint": "Wikis host documentation for your repository.",
+          "issuesHint": "Issues integrate lightweight task tracking into your repository. Keep projects on track with issue labels and milestones, and reference them in commit messages.",
+          "projectsHint": "Projects on GitHub help you organize and prioritize your work. You can create projects for specific feature work, comprehensive roadmaps, or release checklists.",
+          "discussionsHint": "Discussions is the space for your community to have conversations, ask questions and post answers without opening issues.",
+          "sponsorshipsHint": "Sponsorships help your community know how to financially support this repository."
         },
         "template": "Template repository",
         "signoff": "Require contributors to sign off on web-based commits",
@@ -1703,7 +1708,13 @@
               "PR_TITLE_BLANK": "Pull request title",
               "COMMIT_OR_PR_TITLE_COMMIT_MESSAGES": "Default message"
             }
-          }
+          },
+          "mergeCommitsHint": "Add all commits from the head branch to the base branch with a merge commit.",
+          "squashMergingHint": "Combine all commits from the head branch into a single commit in the base branch.",
+          "rebaseMergingHint": "Add all commits from the head branch onto the base branch individually.",
+          "updateBranchHint": "Whenever there are new changes available in the base branch, present an update branch option in the pull request.",
+          "autoMergeHint": "Waits for merge requirements to be met and then merges automatically.",
+          "deleteBranchOnMergeHint": "Automatically delete head branches after pull requests are merged. Deleted branches will still be able to be restored."
         },
         "releases": {
           "title": "Releases",
@@ -1734,14 +1745,16 @@
             "newOwner": "New owner (user or organization)",
             "newName": "New repository name (optional)",
             "confirmDescription": "Transferring {name} moves it to another owner. The new owner may need to accept the transfer.",
-            "pending": "Transfer requested. The new owner may need to accept it."
+            "pending": "Transfer requested. The new owner may need to accept it.",
+            "description": "Transfer this repository to another user or to an organization where you have the ability to create repositories."
           },
           "archive": {
             "title": "Archive this repository",
             "archiveAction": "Archive",
             "unarchiveAction": "Unarchive",
             "confirmTitle": "Archive repository",
-            "confirmDescription": "Archiving {name} makes it read-only for everyone. You can unarchive it at any time."
+            "confirmDescription": "Archiving {name} makes it read-only for everyone. You can unarchive it at any time.",
+            "description": "Mark this repository as archived and read-only."
           },
           "delete": {
             "title": "Delete this repository",
@@ -1749,9 +1762,12 @@
             "confirmTitle": "Delete repository",
             "confirmDescription": "Deleting {name} is permanent and cannot be undone. All issues, pull requests, and releases are removed.",
             "missingScope": "Deleting repositories requires re-authorizing with the delete_repo permission.",
-            "reauthorize": "Re-authorize"
+            "reauthorize": "Re-authorize",
+            "description": "Once you delete a repository, there is no going back. Please be certain."
           }
-        }
+        },
+        "templateHint": "Template repositories let users generate new repositories with the same directory structure and files.",
+        "signoffHint": "Contributors must sign off on commits made through GitHub's web interface, affirming the commit complies with the repository's terms — commonly the Developer Certificate of Origin (DCO)."
       },
       "access": {
         "navigation": "Access settings",
@@ -1898,7 +1914,8 @@
           },
           "retention": "Artifact and log retention",
           "retentionHint": "Days to keep artifacts and logs (1-400).",
-          "retentionInvalid": "Retention must be an integer between 1 and 400."
+          "retentionInvalid": "Retention must be an integer between 1 and 400.",
+          "canApproveHint": "Controls whether GitHub Actions can create pull requests or submit approving pull request reviews."
         },
         "runners": {
           "hint": "Self-hosted runners registered for this repository.",
@@ -2016,7 +2033,11 @@
           "removeVariable": "Delete variable",
           "variablesEmpty": "No variables.",
           "secretsTitle": "Secrets"
-        }
+        },
+        "secretScanningHint": "Receive alerts on GitHub for detected secrets, keys, or other tokens.",
+        "pushProtectionHint": "Block commits that contain supported secrets.",
+        "securityUpdatesHint": "Dependabot automatically opens pull requests to resolve alerts with an available patch.",
+        "privateReportingHint": "Allow your community to privately report potential security vulnerabilities to maintainers and repository owners."
       },
       "integrations": {
         "navigation": "Integrations settings",

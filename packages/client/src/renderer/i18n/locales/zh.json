@@ -1662,7 +1662,7 @@
         },
         "defaultBranch": {
           "title": "默认分支",
-          "description": "默认分支是新建拉取请求与提交的基准分支。",
+          "description": "默认分支是仓库的“基准”分支:除非特别指定,拉取请求与提交都默认基于它。",
           "save": "更新",
           "rename": "重命名",
           "renameTitle": "重命名默认分支",
@@ -1677,7 +1677,12 @@
           "projects": "Projects",
           "discussions": "Discussions",
           "sponsorships": "赞助(Sponsorships)",
-          "sponsorshipsUnavailable": "当前无法获取该仓库的赞助设置状态。"
+          "sponsorshipsUnavailable": "当前无法获取该仓库的赞助设置状态。",
+          "wikisHint": "Wiki 用于托管仓库的文档。",
+          "issuesHint": "Issues 为仓库提供轻量的任务跟踪。用标签和里程碑保持项目节奏,并可在提交信息中引用。",
+          "projectsHint": "Projects 帮助你组织与排序工作,可用于特性开发、路线图或发布清单。",
+          "discussionsHint": "Discussions 是社区交流的空间:提问、讨论、分享答案,而无需创建 Issue。",
+          "sponsorshipsHint": "赞助入口让社区知道如何在经济上支持这个仓库。"
         },
         "template": "模板仓库",
         "signoff": "要求网页端提交署名(sign-off)",
@@ -1703,7 +1708,13 @@
               "PR_TITLE_BLANK": "仅 PR 标题",
               "COMMIT_OR_PR_TITLE_COMMIT_MESSAGES": "默认信息"
             }
-          }
+          },
+          "mergeCommitsHint": "以一个合并提交把 head 分支的全部提交加入 base 分支。",
+          "squashMergingHint": "把 head 分支的全部提交压缩成 base 分支上的一个提交。",
+          "rebaseMergingHint": "把 head 分支的提交逐个变基到 base 分支上。",
+          "updateBranchHint": "当 base 分支有新变更时,在拉取请求中提供“更新分支”选项。",
+          "autoMergeHint": "等待合并条件全部满足后自动合并。",
+          "deleteBranchOnMergeHint": "拉取请求合并后自动删除来源分支;已删除的分支仍可恢复。"
         },
         "releases": {
           "title": "发布",
@@ -1734,14 +1745,16 @@
             "newOwner": "新所有者(用户或组织)",
             "newName": "新仓库名(可选)",
             "confirmDescription": "转移 {name} 会将其移交给其他所有者,对方可能需要确认接收。",
-            "pending": "已发起转移,新所有者可能需要确认接收。"
+            "pending": "已发起转移,新所有者可能需要确认接收。",
+            "description": "把仓库转移给其他用户,或你有建仓权限的组织。"
           },
           "archive": {
             "title": "归档此仓库",
             "archiveAction": "归档",
             "unarchiveAction": "取消归档",
             "confirmTitle": "归档仓库",
-            "confirmDescription": "归档 {name} 后所有人只读,可随时取消归档。"
+            "confirmDescription": "归档 {name} 后所有人只读,可随时取消归档。",
+            "description": "将仓库标记为已归档,所有人只读。"
           },
           "delete": {
             "title": "删除此仓库",
@@ -1749,9 +1762,12 @@
             "confirmTitle": "删除仓库",
             "confirmDescription": "删除 {name} 不可恢复,所有 Issue、拉取请求与发布都会被移除。",
             "missingScope": "删除仓库需要重新授权 delete_repo 权限。",
-            "reauthorize": "重新授权"
+            "reauthorize": "重新授权",
+            "description": "仓库删除后无法恢复,请务必确认。"
           }
-        }
+        },
+        "templateHint": "模板仓库允许他人基于相同的目录结构与文件生成新仓库。",
+        "signoffHint": "要求通过 GitHub 网页界面提交的贡献者对提交署名,确认其符合仓库条款(通常为 DCO 开发者原创声明)。"
       },
       "access": {
         "navigation": "访问权限设置",
@@ -1898,7 +1914,8 @@
           },
           "retention": "构件与日志保留",
           "retentionHint": "构件与日志保留天数(1-400)。",
-          "retentionInvalid": "保留天数必须是 1-400 之间的整数。"
+          "retentionInvalid": "保留天数必须是 1-400 之间的整数。",
+          "canApproveHint": "控制 GitHub Actions 是否可以创建拉取请求或提交批准评审。"
         },
         "runners": {
           "hint": "注册到此仓库的 self-hosted runners。",
@@ -2016,7 +2033,11 @@
           "removeVariable": "删除变量",
           "variablesEmpty": "没有变量。",
           "secretsTitle": "密钥"
-        }
+        },
+        "secretScanningHint": "检测到泄漏的密钥、令牌等机密时,在 GitHub 上接收告警。",
+        "pushProtectionHint": "阻止包含受支持机密的提交被推送。",
+        "securityUpdatesHint": "Dependabot 会自动创建拉取请求,修复有可用补丁的告警。",
+        "privateReportingHint": "允许社区成员向维护者与仓库所有者私密报告潜在安全漏洞。"
       },
       "integrations": {
         "navigation": "集成设置",

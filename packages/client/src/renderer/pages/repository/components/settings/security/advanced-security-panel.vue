@@ -97,6 +97,7 @@ function openExternal(): void {
     />
     <SettingsToggleRow
       v-if="overview.secretScanning !== 'unavailable'"
+      :description="t('repository.settings.security.secretScanningHint')"
       :disabled="pending.has('secretScanning')"
       :model-value="overview.secretScanning === 'enabled'"
       :title="t('repository.settings.security.secretScanning')"
@@ -104,6 +105,7 @@ function openExternal(): void {
     />
     <SettingsToggleRow
       v-if="overview.secretScanningPushProtection !== 'unavailable'"
+      :description="t('repository.settings.security.pushProtectionHint')"
       :disabled="pending.has('secretScanningPushProtection')"
       :model-value="overview.secretScanningPushProtection === 'enabled'"
       :title="t('repository.settings.security.pushProtection')"
@@ -119,6 +121,7 @@ function openExternal(): void {
     />
     <SettingsToggleRow
       v-if="overview.automatedSecurityFixes !== null"
+      :description="t('repository.settings.security.securityUpdatesHint')"
       :disabled="pending.has('automatedFixes')"
       :model-value="overview.automatedSecurityFixes"
       :title="t('repository.settings.security.securityUpdates')"
@@ -126,6 +129,7 @@ function openExternal(): void {
     />
     <SettingsToggleRow
       v-if="overview.privateVulnerabilityReporting !== null"
+      :description="t('repository.settings.security.privateReportingHint')"
       :disabled="pending.has('privateReporting')"
       :model-value="overview.privateVulnerabilityReporting"
       :title="t('repository.settings.security.privateReporting')"

@@ -161,7 +161,10 @@ const dialogDescriptionKey = computed(() => {
         </Button>
       </SettingsRow>
 
-      <SettingsRow :label="t('repository.settings.general.dangerZone.transfer.title')">
+      <SettingsRow
+        :description="t('repository.settings.general.dangerZone.transfer.description')"
+        :label="t('repository.settings.general.dangerZone.transfer.title')"
+      >
         <Button
           size="sm"
           type="button"
@@ -172,7 +175,10 @@ const dialogDescriptionKey = computed(() => {
         </Button>
       </SettingsRow>
 
-      <SettingsRow :label="t('repository.settings.general.dangerZone.archive.title')">
+      <SettingsRow
+        :description="t('repository.settings.general.dangerZone.archive.description')"
+        :label="t('repository.settings.general.dangerZone.archive.title')"
+      >
         <Button
           size="sm"
           type="button"
@@ -188,7 +194,7 @@ const dialogDescriptionKey = computed(() => {
       <SettingsRow
         :description="missingDeleteScopes.length > 0
           ? t('repository.settings.general.dangerZone.delete.missingScope')
-          : ''"
+          : t('repository.settings.general.dangerZone.delete.description')"
         :label="t('repository.settings.general.dangerZone.delete.title')"
       >
         <Button

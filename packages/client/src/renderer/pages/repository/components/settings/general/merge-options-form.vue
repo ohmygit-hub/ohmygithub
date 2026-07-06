@@ -114,24 +114,28 @@ function defaultsLabel(prefix: 'squash' | 'merge', option: string): string {
 <template>
   <SettingsSection :title="t('repository.settings.general.features.title')">
     <SettingsToggleRow
+      :description="t('repository.settings.general.features.wikisHint')"
       :disabled="isPending('hasWiki')"
       :model-value="settings.hasWiki"
       :title="t('repository.settings.general.features.wikis')"
       @update:model-value="patchToggle('hasWiki', $event)"
     />
     <SettingsToggleRow
+      :description="t('repository.settings.general.features.issuesHint')"
       :disabled="isPending('hasIssues')"
       :model-value="settings.hasIssues"
       :title="t('repository.settings.general.features.issues')"
       @update:model-value="patchToggle('hasIssues', $event)"
     />
     <SettingsToggleRow
+      :description="t('repository.settings.general.features.projectsHint')"
       :disabled="isPending('hasProjects')"
       :model-value="settings.hasProjects"
       :title="t('repository.settings.general.features.projects')"
       @update:model-value="patchToggle('hasProjects', $event)"
     />
     <SettingsToggleRow
+      :description="t('repository.settings.general.features.discussionsHint')"
       :disabled="isPending('discussions')"
       :model-value="settings.hasDiscussions"
       :title="t('repository.settings.general.features.discussions')"
@@ -140,19 +144,21 @@ function defaultsLabel(prefix: 'squash' | 'merge', option: string): string {
     <SettingsToggleRow
       :description="settings.hasSponsorships === null
         ? t('repository.settings.general.features.sponsorshipsUnavailable')
-        : undefined"
+        : t('repository.settings.general.features.sponsorshipsHint')"
       :disabled="settings.hasSponsorships === null || isPending('sponsorships')"
       :model-value="settings.hasSponsorships === true"
       :title="t('repository.settings.general.features.sponsorships')"
       @update:model-value="toggleSponsorships"
     />
     <SettingsToggleRow
+      :description="t('repository.settings.general.templateHint')"
       :disabled="isPending('isTemplate')"
       :model-value="settings.isTemplate"
       :title="t('repository.settings.general.template')"
       @update:model-value="patchToggle('isTemplate', $event)"
     />
     <SettingsToggleRow
+      :description="t('repository.settings.general.signoffHint')"
       :disabled="isPending('webCommitSignoffRequired')"
       :model-value="settings.webCommitSignoffRequired"
       :title="t('repository.settings.general.signoff')"
@@ -162,6 +168,7 @@ function defaultsLabel(prefix: 'squash' | 'merge', option: string): string {
 
   <SettingsSection :title="t('repository.settings.general.pullRequests.title')">
     <SettingsToggleRow
+      :description="t('repository.settings.general.pullRequests.mergeCommitsHint')"
       :disabled="isPending('allowMergeCommit')"
       :model-value="settings.allowMergeCommit"
       :title="t('repository.settings.general.pullRequests.mergeCommits')"
@@ -195,6 +202,7 @@ function defaultsLabel(prefix: 'squash' | 'merge', option: string): string {
     </SettingsRow>
 
     <SettingsToggleRow
+      :description="t('repository.settings.general.pullRequests.squashMergingHint')"
       :disabled="isPending('allowSquashMerge')"
       :model-value="settings.allowSquashMerge"
       :title="t('repository.settings.general.pullRequests.squashMerging')"
@@ -228,24 +236,28 @@ function defaultsLabel(prefix: 'squash' | 'merge', option: string): string {
     </SettingsRow>
 
     <SettingsToggleRow
+      :description="t('repository.settings.general.pullRequests.rebaseMergingHint')"
       :disabled="isPending('allowRebaseMerge')"
       :model-value="settings.allowRebaseMerge"
       :title="t('repository.settings.general.pullRequests.rebaseMerging')"
       @update:model-value="patchToggle('allowRebaseMerge', $event)"
     />
     <SettingsToggleRow
+      :description="t('repository.settings.general.pullRequests.updateBranchHint')"
       :disabled="isPending('allowUpdateBranch')"
       :model-value="settings.allowUpdateBranch"
       :title="t('repository.settings.general.pullRequests.updateBranch')"
       @update:model-value="patchToggle('allowUpdateBranch', $event)"
     />
     <SettingsToggleRow
+      :description="t('repository.settings.general.pullRequests.autoMergeHint')"
       :disabled="isPending('allowAutoMerge')"
       :model-value="settings.allowAutoMerge"
       :title="t('repository.settings.general.pullRequests.autoMerge')"
       @update:model-value="patchToggle('allowAutoMerge', $event)"
     />
     <SettingsToggleRow
+      :description="t('repository.settings.general.pullRequests.deleteBranchOnMergeHint')"
       :disabled="isPending('deleteBranchOnMerge')"
       :model-value="settings.deleteBranchOnMerge"
       :title="t('repository.settings.general.pullRequests.deleteBranchOnMerge')"

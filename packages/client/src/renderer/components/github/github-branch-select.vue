@@ -13,6 +13,7 @@ const props = withDefaults(defineProps<{
   // Trigger width/layout. Defaults to a bounded picker for toolbars; pass
   // `w-full` in forms so it fills its column and lines up with sibling fields.
   triggerClass?: string
+  triggerSize?: 'sm' | 'default'
 }>(), {
   triggerClass: 'w-full sm:w-72',
 })
@@ -68,6 +69,7 @@ function selectBranch(value: string): void {
     :search-placeholder="t('repository.commits.branch.searchPlaceholder')"
     :select-label="t('repository.commits.branch.selectLabel')"
     :trigger-class="triggerClass"
+    :trigger-size="triggerSize"
     @update:model-value="selectBranch"
   />
 </template>

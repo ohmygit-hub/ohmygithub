@@ -252,6 +252,7 @@ function saveRetention(): void {
 
       <SettingsToggleRow
         v-if="settings.canApprovePullRequestReviews !== null"
+        :description="t('repository.settings.automation.actions.canApproveHint')"
         :disabled="isPending('canApprove')"
         :model-value="settings.canApprovePullRequestReviews"
         :title="t('repository.settings.automation.actions.canApprove')"

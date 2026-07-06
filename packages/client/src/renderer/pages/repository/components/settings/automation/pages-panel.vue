@@ -151,6 +151,7 @@ function openVisibility(): void {
           :owner="owner"
           :repo="repo"
           trigger-class="w-44"
+          trigger-size="sm"
         />
         <Select v-model="enablePath">
           <SelectTrigger
