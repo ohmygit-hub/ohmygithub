@@ -392,7 +392,8 @@ const api = {
   },
   pins: {
     get: () => ipcRenderer.invoke('pins:get'),
-    update: (payload: unknown) => ipcRenderer.invoke('pins:update', payload)
+    update: (payload: unknown) => ipcRenderer.invoke('pins:update', payload),
+    setRepositoryPins: (payload: unknown) => ipcRenderer.invoke('pins:set-repository-pins', payload)
   },
   userSettings: {
     getProfile: () => ipcRenderer.invoke('user-settings:get-profile'),

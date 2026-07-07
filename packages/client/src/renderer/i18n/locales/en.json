@@ -620,6 +620,19 @@
       "truncated": "Showing the most recent 1,000 accounts. Use search to narrow the list."
     },
     "overview": {
+      "customPins": {
+        "button": "Custom Pins",
+        "cancel": "Cancel",
+        "description": "Choose up to six repositories to pin on your profile overview. The selection is stored locally in Oh My GitHub and replaces your GitHub pins here.",
+        "empty": "No repositories match this search.",
+        "emptyPinned": "No pinned repositories yet. Use Custom Pins to choose which repositories appear here.",
+        "loadError": "Repositories could not be loaded.",
+        "reset": "Use GitHub pins",
+        "save": "Save",
+        "searchPlaceholder": "Search your repositories",
+        "selectedCount": "{count}/{max} selected",
+        "title": "Custom pinned repositories"
+      },
       "pinned": "Pinned repositories",
       "readme": "Profile README"
     },

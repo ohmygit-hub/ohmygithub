@@ -620,6 +620,19 @@
       "truncated": "仅显示最近的 1,000 个账号，可使用搜索缩小范围。"
     },
     "overview": {
+      "customPins": {
+        "button": "自定义置顶",
+        "cancel": "取消",
+        "description": "最多选择六个仓库置顶显示在个人主页概览。该选择仅保存在 Oh My GitHub 本地，并在此处替代 GitHub 的置顶仓库。",
+        "empty": "没有仓库匹配当前搜索。",
+        "emptyPinned": "还没有置顶仓库，点击「自定义置顶」选择要展示的仓库。",
+        "loadError": "无法加载仓库列表。",
+        "reset": "恢复 GitHub 置顶",
+        "save": "保存",
+        "searchPlaceholder": "搜索我的仓库",
+        "selectedCount": "已选 {count}/{max}",
+        "title": "自定义置顶仓库"
+      },
       "pinned": "置顶仓库",
       "readme": "个人 README"
     },

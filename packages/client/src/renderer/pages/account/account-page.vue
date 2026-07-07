@@ -635,6 +635,7 @@ function normalizeExternalUrl(value: string | null): string | null {
               :contributions="contributions"
               :contributions-has-error="Boolean(contributionsQuery.error.value)"
               :contributions-loading="contributionsQuery.isLoading.value"
+              :is-viewer-account="isViewerAccount"
               :overview="overview"
               :selected-year="selectedContributionYear"
               @select-repository="selectRepository"

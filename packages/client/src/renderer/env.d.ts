@@ -2101,6 +2101,7 @@ type StoredWorkspaceBookmarksInfo = {
 type StoredPins = {
   version: 1
   organizations: string[]
+  repositoryPins: Record<string, GitHubAccountRepository[]>
 }
 
 type StoredPinsInfo = {
@@ -2598,7 +2599,11 @@ interface Window {
     }
     pins: {
       get: () => Promise<StoredPinsInfo>
-      update: (payload: StoredPins) => Promise<StoredPinsInfo>
+      update: (payload: Partial<StoredPins> & { version: 1 }) => Promise<StoredPinsInfo>
+      setRepositoryPins: (payload: {
+        login: string
+        repositories: GitHubAccountRepository[]
+      }) => Promise<StoredPinsInfo>
     }
     userSettings: {
       getProfile: () => Promise<GitHubUserSettingsProfile>
