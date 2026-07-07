@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Button } from '@oh-my-github/ui'
+import { Button, Spinner } from '@oh-my-github/ui'
 import { Check, X } from 'lucide-vue-next'
 import MonacoCodeEditor from '@/components/editor/monaco-code-editor.vue'
 import GitHubMarkdownRenderer from '@/components/github/github-markdown-renderer.vue'
@@ -121,11 +121,18 @@ function submitEdit(): void {
         <Button
           :disabled="!canSubmit"
           :loading="isSubmitting"
-          loading-mode="leading"
+          loading-mode="manual"
           size="sm"
           type="submit"
         >
-          <Check class="size-3.5" />
+          <Spinner
+            v-if="isSubmitting"
+            class="size-3.5"
+          />
+          <Check
+            v-else
+            class="size-3.5"
+          />
           <span>{{ message('save') }}</span>
         </Button>
       </div>

@@ -686,6 +686,37 @@ A recurring anti-pattern in settings rows is a select trigger rebuilt as a `<But
   actions, use a color-press (the library's `primary` / `brand` block mode) plus a `Spinner`, not a
   scale-down. Keep scale for small, secondary, non-block controls.
 
+### Button loading — swap the icon in place, never stack a second spinner
+
+A `<Button>`'s `loading-mode` picks *how* it shows progress, and the wrong one on an
+icon+text button renders **two glyphs at once**. `loading-mode="leading"` injects the
+Button's *own* spinner slot **before** the slot content — so a button that already
+renders a leading icon shows the original icon *and* a spinning spinner beside it. This
+was a repeated bug across the app (comment submit, markdown save, issue reopen/close,
+PR ready-for-review/close all shipped the double icon).
+
+Pick the mode by what the slot renders **while busy**:
+
+- **A leading icon is visible while busy → `loading-mode="manual"` + swap the glyph
+  yourself:** `<Spinner v-if="isBusy" class="size-3.5" /> <Icon v-else class="size-3.5" />`.
+  `manual` tells the Button to draw *no* spinner of its own; you replace the icon in
+  place so it becomes the spinner and comes back when done. This is the house pattern —
+  copy `action-run-header.vue` / `auth-page.vue`.
+- **Text-only button → `loading-mode="leading"` is correct.** There is no icon to
+  double up with; the spinner just grows in before the label (PR review
+  Comment/Approve, the merge-confirm dialog button).
+- **Leading icon that's already hidden while busy → `leading` is also fine.** If the
+  icon is gated off during load (`v-if="!isBusy"`, e.g. the merge button's
+  `showMergeActionIcon = !isMerging`), the injected spinner just fills its vacated
+  spot — no doubling.
+
+Rule of thumb: **if the slot shows a leading icon during the busy state, use the
+`manual` + `Spinner v-if / Icon v-else` swap** — `leading` is only for a button whose
+leading position is empty while busy. (The `overlay` default hides the whole label
+under one centered spinner — fine for a plain text button, but it blanks an icon+text
+button entirely, which is rarely the swap you want.) Guard it with a source-text test
+like `action-run-header.test.ts` so the double icon can't silently return.
+
 ### 7. Think the whole user path, including the exit
 
 Every entry needs a sane, short exit. Trace the full round-trip before you ship.

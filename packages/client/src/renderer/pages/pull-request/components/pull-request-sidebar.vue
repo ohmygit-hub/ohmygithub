@@ -21,6 +21,7 @@ import {
   DropdownMenuTrigger,
   Input,
   Label,
+  Spinner,
   Textarea,
 } from '@oh-my-github/ui'
 import {
@@ -541,13 +542,20 @@ function isDateItem(value: DateItem | null): value is DateItem {
           v-if="canMarkReadyForReview"
           :disabled="isMarkingReady"
           :loading="isMarkingReady"
-          loading-mode="leading"
+          loading-mode="manual"
           size="sm"
           type="button"
           variant="primary"
           @click="markReadyForReview"
         >
-          <GitPullRequest class="size-3.5" />
+          <Spinner
+            v-if="isMarkingReady"
+            class="size-3.5"
+          />
+          <GitPullRequest
+            v-else
+            class="size-3.5"
+          />
           <span>{{ t('pullRequest.actions.readyForReview') }}</span>
         </Button>
 
@@ -555,13 +563,20 @@ function isDateItem(value: DateItem | null): value is DateItem {
           v-if="canClosePullRequest"
           :disabled="isClosing"
           :loading="isClosing"
-          loading-mode="leading"
+          loading-mode="manual"
           size="sm"
           type="button"
           variant="outline"
           @click="closeCurrentPullRequest"
         >
-          <XCircle class="size-3.5" />
+          <Spinner
+            v-if="isClosing"
+            class="size-3.5"
+          />
+          <XCircle
+            v-else
+            class="size-3.5"
+          />
           <span>{{ t('pullRequest.actions.close') }}</span>
         </Button>
       </div>

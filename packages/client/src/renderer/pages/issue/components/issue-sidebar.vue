@@ -16,7 +16,7 @@ import {
   GitPullRequest,
   RotateCcw,
 } from 'lucide-vue-next'
-import { Avatar, AvatarFallback, AvatarImage, Button } from '@oh-my-github/ui'
+import { Avatar, AvatarFallback, AvatarImage, Button, Spinner } from '@oh-my-github/ui'
 import {
   GitHubActorLink,
   GitHubReferenceLink,
@@ -371,13 +371,20 @@ function toIssueReference(item: IssueLinkedWorkSummary): LinkedPullRequestRefere
             v-if="canReopenIssue"
             :disabled="isSavingField"
             :loading="isSavingField"
-            loading-mode="leading"
+            loading-mode="manual"
             size="sm"
             type="button"
             variant="outline"
             @click="reopenIssue"
           >
-            <RotateCcw class="size-3.5" />
+            <Spinner
+              v-if="isSavingField"
+              class="size-3.5"
+            />
+            <RotateCcw
+              v-else
+              class="size-3.5"
+            />
             <span>{{ t('issue.actions.reopen') }}</span>
           </Button>
 
@@ -385,25 +392,39 @@ function toIssueReference(item: IssueLinkedWorkSummary): LinkedPullRequestRefere
             <Button
               :disabled="isSavingField"
               :loading="isSavingField"
-              loading-mode="leading"
+              loading-mode="manual"
               size="sm"
               type="button"
               variant="outline"
               @click="closeAsCompleted"
             >
-              <CheckCircle2 class="size-3.5" />
+              <Spinner
+                v-if="isSavingField"
+                class="size-3.5"
+              />
+              <CheckCircle2
+                v-else
+                class="size-3.5"
+              />
               <span>{{ t('issue.actions.closeCompleted') }}</span>
             </Button>
             <Button
               :disabled="isSavingField"
               :loading="isSavingField"
-              loading-mode="leading"
+              loading-mode="manual"
               size="sm"
               type="button"
               variant="outline"
               @click="closeAsNotPlanned"
             >
-              <CircleSlash class="size-3.5" />
+              <Spinner
+                v-if="isSavingField"
+                class="size-3.5"
+              />
+              <CircleSlash
+                v-else
+                class="size-3.5"
+              />
               <span>{{ t('issue.actions.closeNotPlanned') }}</span>
             </Button>
           </template>
