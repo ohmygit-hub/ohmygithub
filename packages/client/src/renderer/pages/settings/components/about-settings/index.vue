@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { Download, MessageSquare, RefreshCw, RotateCcw } from 'lucide-vue-next'
 import { useI18n } from 'vue-i18n'
 import { Button, Spinner } from '@oh-my-github/ui'
+import GitHubIcon from '@/components/icons/github-icon.vue'
 import TelegramIcon from '@/components/icons/telegram-icon.vue'
 import { getShortcutPlatform } from '@/keyboard/shortcut-accelerator'
 import liquidLogo from '../../../../../../../../assets/liquid-glass-icon.png'
@@ -11,9 +13,13 @@ import { resolveUpdateButtonState } from './update-button-state'
 
 const AUTHOR_PROFILE_URL = 'https://github.com/sheepbox8646'
 const TELEGRAM_URL = 'https://t.me/ohmygithub'
-const FEEDBACK_URL = 'https://github.com/ohmygit-hub/ohmygithub/issues'
+// In-app workspace pages for the project repo. Navigating away from /settings
+// also dismisses the settings dialog, so no explicit close is needed.
+const REPO_WORKSPACE_URL = '/ohmygit-hub/ohmygithub'
+const FEEDBACK_WORKSPACE_URL = '/ohmygit-hub/ohmygithub?tab=issues'
 
 const { t } = useI18n()
+const router = useRouter()
 
 // macOS ships the liquid-glass mark; every other platform uses the shadow mark.
 // Resolved synchronously so the correct logo paints on first render.
@@ -90,12 +96,16 @@ function openAuthorProfile(): void {
   void window.ohMyGithub.links.openGitHubUrl(AUTHOR_PROFILE_URL)
 }
 
+function openGitHub(): void {
+  void router.push(REPO_WORKSPACE_URL)
+}
+
 function openTelegram(): void {
   void window.ohMyGithub.links.openExternalUrl(TELEGRAM_URL)
 }
 
 function openFeedback(): void {
-  void window.ohMyGithub.links.openExternalUrl(FEEDBACK_URL)
+  void router.push(FEEDBACK_WORKSPACE_URL)
 }
 </script>
 
@@ -121,7 +131,7 @@ function openFeedback(): void {
         </p>
       </div>
 
-      <div class="flex items-center justify-center gap-3">
+      <div class="grid grid-cols-2 gap-3">
         <Button
           :variant="updateButtonState.variant"
           :disabled="updateButtonState.disabled"
@@ -142,13 +152,19 @@ function openFeedback(): void {
         </Button>
 
         <Button
-          as="a"
-          href="#"
           variant="outline"
-          @click.prevent="openFeedback"
+          @click="openFeedback"
         >
           <MessageSquare class="size-4" />
           {{ t('settings.about.feedback') }}
+        </Button>
+
+        <Button
+          variant="outline"
+          @click="openGitHub"
+        >
+          <GitHubIcon class="size-4" />
+          {{ t('settings.about.github') }}
         </Button>
 
         <Button

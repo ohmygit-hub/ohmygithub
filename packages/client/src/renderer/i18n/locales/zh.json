@@ -192,6 +192,7 @@
       "currentVersion": "当前版本：{version}",
       "downloadUpdate": "下载更新",
       "feedback": "反馈",
+      "github": "GitHub",
       "latestVersion": "最新版本：{version}",
       "madeBy": "由 {author} 用 ❤️ 倾情打造",
       "restartToUpdate": "重启以更新",

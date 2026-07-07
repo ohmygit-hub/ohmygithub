@@ -192,6 +192,7 @@
       "currentVersion": "Current Version: {version}",
       "downloadUpdate": "Download Update",
       "feedback": "Feedback",
+      "github": "GitHub",
       "latestVersion": "Latest Version: {version}",
       "madeBy": "Made with ❤️ by {author}",
       "restartToUpdate": "Restart to Update",
