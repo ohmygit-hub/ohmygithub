@@ -470,6 +470,45 @@ const api = {
         ipcRenderer.removeListener('window:fullscreen-change', handler)
       }
     }
+  },
+  tray: {
+    onNavigate: (listener: (url: string) => void) => {
+      const handler = (_event: Electron.IpcRendererEvent, url: string): void => {
+        listener(url)
+      }
+      ipcRenderer.on('tray:navigate', handler)
+      return () => {
+        ipcRenderer.removeListener('tray:navigate', handler)
+      }
+    },
+    onOpenNotification: (
+      listener: (payload: {
+        repositoryFullName: string
+        number?: number
+        subjectType: string
+        htmlUrl: string
+      }) => void
+    ) => {
+      const handler = (
+        _event: Electron.IpcRendererEvent,
+        payload: { repositoryFullName: string; number?: number; subjectType: string; htmlUrl: string }
+      ): void => {
+        listener(payload)
+      }
+      ipcRenderer.on('tray:open-notification', handler)
+      return () => {
+        ipcRenderer.removeListener('tray:open-notification', handler)
+      }
+    },
+    onOpenSearch: (listener: () => void) => {
+      const handler = (): void => {
+        listener()
+      }
+      ipcRenderer.on('tray:open-search', handler)
+      return () => {
+        ipcRenderer.removeListener('tray:open-search', handler)
+      }
+    }
   }
 }
 

@@ -2637,5 +2637,17 @@ interface Window {
       getState: () => Promise<WindowControlsState>
       onFullscreenChange: (listener: (state: WindowControlsState) => void) => () => void
     }
+    tray: {
+      onNavigate: (listener: (url: string) => void) => () => void
+      onOpenNotification: (
+        listener: (payload: {
+          repositoryFullName: string
+          number?: number
+          subjectType: string
+          htmlUrl: string
+        }) => void
+      ) => () => void
+      onOpenSearch: (listener: () => void) => () => void
+    }
   }
 }
