@@ -31,8 +31,16 @@ configureDevRemoteDebugging()
 // applyThemeSource) — otherwise app=dark + OS=light paints a light window frame.
 const LIGHT_BACKGROUND = '#f7f7f5'
 const DARK_BACKGROUND = '#0a0a0a'
+const APP_NAME = 'Oh My GitHub'
 const DEV_MAC_APP_ICON = resolve(__dirname, '../../../../assets/liquid-glass-icon.png')
 const DEV_DEFAULT_APP_ICON = resolve(__dirname, '../../../../assets/shadow-icon.png')
+
+// macOS builds the application menu (About/Hide/Quit) from `app.name`. Without an
+// explicit name it falls back to the nearest package.json `name`
+// (`@oh-my-github/client`) in development, which then leaks into those menu items.
+// Pin it to the product name so dev matches the packaged build (electron-builder
+// sets the same value via `productName`).
+app.setName(APP_NAME)
 
 function resolveBackgroundColor(): string {
   return nativeTheme.shouldUseDarkColors ? DARK_BACKGROUND : LIGHT_BACKGROUND
@@ -78,7 +86,7 @@ function createWindow(): void {
     height: 940,
     minWidth: 1040,
     minHeight: 680,
-    title: 'Oh My GitHub',
+    title: APP_NAME,
     icon,
     backgroundColor: resolveBackgroundColor(),
     titleBarStyle: 'hiddenInset',
