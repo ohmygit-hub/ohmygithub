@@ -1,3 +1,9 @@
+import {
+  getPlatformManifestName,
+  resolveManifestArtifactUrl,
+  type PlatformId
+} from './download-manifest'
+
 // Download links for the desktop app. Filenames follow the electron-builder
 // artifactName templates in packages/client/electron-builder.yml:
 //   dmg / AppImage : ${productName}-${version}-${arch}.${ext}
@@ -15,12 +21,7 @@ export const APP_VERSION: string = __APP_VERSION__
 export const BASE_URL: string =
   import.meta.env.VITE_R2_PUBLIC_BASE_URL || 'https://resource.oh-my-github.app'
 
-export type PlatformId =
-  | 'mac-arm64'
-  | 'mac-x64'
-  | 'win-x64'
-  | 'linux-x64'
-  | 'linux-arm64'
+export type { PlatformId } from './download-manifest'
 
 export type OS = 'mac' | 'windows' | 'linux'
 
@@ -76,4 +77,18 @@ function detectOS(): OS {
 export function detectPlatform(): Platform {
   const os = detectOS()
   return PLATFORMS.find((p) => p.os === os) ?? PLATFORMS[0]
+}
+
+export async function resolveLatestDownloadUrl(platform: Platform): Promise<string> {
+  if (typeof fetch !== 'function') return platform.url
+
+  try {
+    const response = await fetch(buildUrl(getPlatformManifestName(platform.id)), { cache: 'no-store' })
+    if (!response.ok) return platform.url
+
+    const manifest = await response.text()
+    return resolveManifestArtifactUrl(platform.id, manifest, BASE_URL) ?? platform.url
+  } catch {
+    return platform.url
+  }
 }

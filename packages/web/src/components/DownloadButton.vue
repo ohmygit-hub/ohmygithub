@@ -9,20 +9,30 @@ import {
   DropdownMenuTrigger
 } from '@oh-my-github/ui'
 import { ChevronDown, Download } from 'lucide-vue-next'
-import { computed, type Component } from 'vue'
+import { computed, ref, type Component } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AppleIcon from '@/components/icons/AppleIcon.vue'
 import LinuxIcon from '@/components/icons/LinuxIcon.vue'
 import WindowsIcon from '@/components/icons/WindowsIcon.vue'
-import { APP_VERSION, detectPlatform, type OS, PLATFORMS } from '@/lib/downloads'
+import { APP_VERSION, detectPlatform, type OS, type Platform, PLATFORMS, resolveLatestDownloadUrl } from '@/lib/downloads'
 
 const { t } = useI18n()
 const detected = computed(() => detectPlatform())
+const downloadingId = ref<string | null>(null)
 
 const osIcon: Record<OS, Component> = {
   mac: AppleIcon,
   windows: WindowsIcon,
   linux: LinuxIcon
+}
+
+async function download(platform: Platform) {
+  downloadingId.value = platform.id
+  try {
+    window.location.href = await resolveLatestDownloadUrl(platform)
+  } finally {
+    downloadingId.value = null
+  }
 }
 </script>
 
@@ -35,6 +45,8 @@ const osIcon: Record<OS, Component> = {
         variant="primary"
         size="lg"
         class="rounded-r-none"
+        :disabled="downloadingId === detected.id"
+        @click.prevent="download(detected)"
       >
         <Download />
         {{ t(detected.labelKey) }}
@@ -60,6 +72,7 @@ const osIcon: Record<OS, Component> = {
             :key="p.id"
             as="a"
             :href="p.url"
+            @click.prevent="download(p)"
           >
             <component :is="osIcon[p.os]" class="size-4" />
             {{ t(p.labelKey) }}

@@ -1,14 +1,19 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { detectPlatform } from '@/lib/downloads'
+import { detectPlatform, resolveLatestDownloadUrl } from '@/lib/downloads'
 import { AUTHOR, AUTHOR_URL, ISSUES_URL, TELEGRAM_URL } from '@/lib/site'
 
 const { t } = useI18n()
 const year = new Date().getFullYear()
-const downloadUrl = computed(() => detectPlatform().url)
+const downloadPlatform = computed(() => detectPlatform())
+const downloadUrl = computed(() => downloadPlatform.value.url)
 
 const linkClass = 'text-muted-foreground transition-colors hover:text-foreground'
+
+async function download() {
+  window.location.href = await resolveLatestDownloadUrl(downloadPlatform.value)
+}
 </script>
 
 <template>
@@ -28,7 +33,7 @@ const linkClass = 'text-muted-foreground transition-colors hover:text-foreground
       </div>
 
       <nav class="flex items-center gap-5">
-        <a :href="downloadUrl" :class="linkClass">{{ t('footer.download') }}</a>
+        <a :href="downloadUrl" :class="linkClass" @click.prevent="download">{{ t('footer.download') }}</a>
         <a :href="ISSUES_URL" target="_blank" rel="noreferrer" :class="linkClass">
           {{ t('footer.issues') }}
         </a>
