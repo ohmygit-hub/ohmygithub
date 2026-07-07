@@ -4,12 +4,12 @@ import { is } from '@electron-toolkit/utils'
 import { registerAccountsIpc } from './accounts'
 import { registerActionsIpc } from './actions'
 import { registerActivityIpc } from './activity'
-import { initializeAuth, registerAuthIpc } from './auth'
-import { registerBookmarksIpc } from './bookmarks'
-import { initializeConfig, registerConfigIpc, type LocalConfig } from './config'
+import { initializeAuth, isAuthenticated, onAuthChanged, registerAuthIpc } from './auth'
+import { readBookmarks, registerBookmarksIpc } from './bookmarks'
+import { getLocalConfig, initializeConfig, registerConfigIpc, type LocalConfig } from './config'
 import { configureDevRemoteDebugging } from './debug'
 import { registerDeploymentsIpc } from './deployments'
-import { registerInboxIpc } from './inbox'
+import { listRecentNotifications, registerInboxIpc } from './inbox'
 import { registerIssuesIpc } from './issues'
 import { registerLinksIpc } from './links'
 import { registerOrganizationPeopleIpc } from './organization-people'
@@ -21,6 +21,7 @@ import { registerRepositorySettingsIpc } from './repository-settings'
 import { registerSearchIpc } from './search'
 import { registerUserSettingsIpc } from './user-settings'
 import { registerUpdatesIpc } from './updates'
+import { createAppTray, type AppTrayHandle } from './tray'
 
 configureDevRemoteDebugging()
 
@@ -41,6 +42,10 @@ const DEV_DEFAULT_APP_ICON = resolve(__dirname, '../../../../assets/shadow-icon.
 // Pin it to the product name so dev matches the packaged build (electron-builder
 // sets the same value via `productName`).
 app.setName(APP_NAME)
+
+let mainWindow: BrowserWindow | null = null
+let appTray: AppTrayHandle | null = null
+let isQuitting = false
 
 function resolveBackgroundColor(): string {
   return nativeTheme.shouldUseDarkColors ? DARK_BACKGROUND : LIGHT_BACKGROUND
@@ -81,7 +86,7 @@ function configureApplicationMenu(): void {
 function createWindow(): void {
   const icon = loadDevelopmentAppIcon()
 
-  const mainWindow = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 1560,
     height: 940,
     minWidth: 1040,
@@ -98,37 +103,51 @@ function createWindow(): void {
     }
   })
 
+  const window = mainWindow
+
   function sendFullscreenState(): void {
-    if (mainWindow.isDestroyed()) return
-    mainWindow.webContents.send('window:fullscreen-change', {
-      isFullScreen: mainWindow.isFullScreen()
+    if (window.isDestroyed()) return
+    window.webContents.send('window:fullscreen-change', {
+      isFullScreen: window.isFullScreen()
     })
   }
 
-  mainWindow.on('enter-full-screen', sendFullscreenState)
-  mainWindow.on('leave-full-screen', sendFullscreenState)
+  window.on('enter-full-screen', sendFullscreenState)
+  window.on('leave-full-screen', sendFullscreenState)
 
   function syncBackgroundColor(): void {
-    if (mainWindow.isDestroyed()) return
-    mainWindow.setBackgroundColor(resolveBackgroundColor())
+    if (window.isDestroyed()) return
+    window.setBackgroundColor(resolveBackgroundColor())
   }
 
   nativeTheme.on('updated', syncBackgroundColor)
-  mainWindow.on('closed', () => nativeTheme.off('updated', syncBackgroundColor))
-
-  mainWindow.once('ready-to-show', () => {
-    mainWindow.show()
+  window.on('closed', () => {
+    nativeTheme.off('updated', syncBackgroundColor)
+    mainWindow = null
   })
 
-  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+  window.once('ready-to-show', () => {
+    window.show()
+  })
+
+  window.on('close', (event) => {
+    if (!isQuitting) {
+      event.preventDefault()
+      window.hide()
+    }
+  })
+
+  window.on('focus', () => appTray?.refreshInbox())
+
+  window.webContents.setWindowOpenHandler(({ url }) => {
     void shell.openExternal(url)
     return { action: 'deny' }
   })
 
   if (is.dev && process.env.ELECTRON_RENDERER_URL) {
-    void mainWindow.loadURL(process.env.ELECTRON_RENDERER_URL)
+    void window.loadURL(process.env.ELECTRON_RENDERER_URL)
   } else {
-    void mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
+    void window.loadFile(join(__dirname, '../renderer/index.html'))
   }
 }
 
@@ -142,6 +161,27 @@ function registerWindowIpc(): void {
   })
 }
 
+function showWindow(): void {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    if (mainWindow.isMinimized()) mainWindow.restore()
+    mainWindow.show()
+    mainWindow.focus()
+    return
+  }
+  createWindow()
+}
+
+function sendToRenderer(channel: string, payload?: unknown): void {
+  showWindow()
+  const target = mainWindow
+  if (!target || target.isDestroyed()) return
+  if (target.webContents.isLoading()) {
+    target.webContents.once('did-finish-load', () => target.webContents.send(channel, payload))
+  } else {
+    target.webContents.send(channel, payload)
+  }
+}
+
 void app.whenReady().then(() => {
   app.setAppUserModelId('dev.oh-my-github.client')
   configureApplicationMenu()
@@ -151,7 +191,10 @@ void app.whenReady().then(() => {
   registerActivityIpc()
   registerAuthIpc()
   registerBookmarksIpc()
-  registerConfigIpc((config) => applyThemeSource(config.ui.theme))
+  registerConfigIpc((config) => {
+    applyThemeSource(config.ui.theme)
+    appTray?.refresh()
+  })
   registerDeploymentsIpc()
   registerInboxIpc()
   registerIssuesIpc()
@@ -169,6 +212,19 @@ void app.whenReady().then(() => {
   initializeAuth()
   applyThemeSource(initializeConfig().config.ui.theme)
   createWindow()
+  appTray = createAppTray({
+    showWindow,
+    sendToRenderer,
+    getLanguage: () => getLocalConfig().ui.locale,
+    isAuthenticated,
+    listBookmarks: () => readBookmarks(),
+    listNotifications: (limit) => listRecentNotifications(limit),
+    onAuthChanged,
+    quit: () => {
+      isQuitting = true
+      app.quit()
+    }
+  })
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
@@ -177,8 +233,11 @@ void app.whenReady().then(() => {
   })
 })
 
+app.on('before-quit', () => {
+  isQuitting = true
+})
+
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit()
-  }
+  // The app keeps running in the tray on all platforms. Quit happens only via the
+  // tray's Quit item (which sets isQuitting) or a genuine OS/updater quit.
 })
