@@ -21,6 +21,8 @@
   </a>
 </p>
 
+<video src="./packages/web/src/assets/gallery/output.mp4" controls autoplay muted loop playsinline width="900"></video>
+
 </div>
 
 ## About
@@ -30,10 +32,15 @@ lives in the sidebar, so you can move between notifications, pull requests,
 reviews, issues, and actions seamlessly — no constant page reloads, no piling up
 browser tabs.
 
-- **Unified sidebar** — every workflow in one place.
-- **Seamless flow** — switch between features without a reload.
-- **Fast & native** — a snappy desktop shell that stays out of your way.
-- **Cross-platform** — runs on macOS, Windows, and Linux.
+## Features
+
+- **A clean, powerful overview** — every feature is one click away in the sidebar: no new tabs, no reloads, no waiting for pages to load. Open the app and see your whole repository at a glance.
+- **Silky-smooth lists** — browse Pull Requests, Issues, and Actions at a glance. Filter, open, and act in one fluid motion — every interaction feels instant.
+- **Instant previews in the right panel** — preview any file without leaving where you are: source code, rich content, and full diffs render right in the panel — review a PR's changes at a glance.
+- **Actions, live** — follow every workflow run in real time: job progress, step status, and full logs stream in as they happen — no refreshing required.
+- **Bookmark anything** — pin any page to your sidebar bookmarks, so the repos, PRs, and views you care about are always one click away.
+- **Make it yours** — pick from a range of themes and styles, then go further with custom fonts and code block styling — until it looks exactly the way you like.
+- **Switch accounts in a snap** — sign in with multiple GitHub accounts and jump between them instantly — work and personal, always within reach.
 
 ## Download
 
