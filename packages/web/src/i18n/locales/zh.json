@@ -24,23 +24,35 @@
     }
   },
   "features": {
-    "title": "所有功能，侧边栏一触即达",
+    "title": "Features",
     "items": {
-      "sidebar": {
-        "title": "统一侧边栏",
-        "description": "所有工作流集中在一处，无需在标签间来回翻找。"
+      "overview": {
+        "title": "简洁强大的预览页",
+        "description": "所有功能都在侧边栏一触即达：无需新建标签、无需刷新页面，更不用等待加载，打开即可纵览仓库全貌。"
       },
-      "seamless": {
-        "title": "无缝衔接",
-        "description": "在通知、PR 与 Actions 之间切换，无需刷新页面。"
+      "lists": {
+        "title": "丝滑的列表管理",
+        "description": "Pull Requests、Issues 和 Actions 一览无余，筛选、打开、操作一气呵成，每一次交互都干脆利落。"
       },
-      "fast": {
-        "title": "轻快原生",
-        "description": "流畅的桌面外壳，不打断你的心流。"
+      "preview": {
+        "title": "右侧面板即时预览",
+        "description": "无需离开当前页面，即可在右侧面板预览各类文件：代码、Diff 都能直接渲染，PR 的每一处改动一眼看清。"
       },
-      "crossPlatform": {
-        "title": "跨平台",
-        "description": "支持 macOS、Windows 与 Linux。"
+      "actions": {
+        "title": "实时的 Actions 详情",
+        "description": "工作流的运行进度实时呈现，每个 Job 的状态与完整日志同步滚动，无需反复刷新。"
+      },
+      "bookmarks": {
+        "title": "侧边栏书签",
+        "description": "任何页面都能收藏进侧边栏书签，常用的仓库、PR 和视图触手可及。"
+      },
+      "customization": {
+        "title": "个性化定制",
+        "description": "多种主题与样式任你挑选，还支持自定义界面字体与代码块样式，把界面调成你最顺眼的样子。"
+      },
+      "accounts": {
+        "title": "多账号快速切换",
+        "description": "支持登录多个 GitHub 账号，一键即可切换，工作与个人身份无缝转换。"
       }
     }
   },

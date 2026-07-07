@@ -1,42 +1,66 @@
 <script setup lang="ts">
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@oh-my-github/ui'
-import { PanelLeft, Rows3, Sparkles, Zap } from 'lucide-vue-next'
-import type { Component } from 'vue'
 import { useI18n } from 'vue-i18n'
+import accountsShot from '@/assets/gallery/7.png'
+import actionsShot from '@/assets/gallery/4.png'
+import bookmarksClip from '@/assets/gallery/5.mp4'
+import customizationShot from '@/assets/gallery/6.png'
+import listsShot from '@/assets/gallery/2.png'
+import overviewShot from '@/assets/gallery/1.png'
+import previewClip from '@/assets/gallery/3.mp4'
 
 const { t } = useI18n()
 
-// Placeholder feature set — copy is intentionally light for now.
-const features: { key: string, icon: Component }[] = [
-  { key: 'sidebar', icon: PanelLeft },
-  { key: 'seamless', icon: Rows3 },
-  { key: 'fast', icon: Zap },
-  { key: 'crossPlatform', icon: Sparkles }
+const features: { key: string, media: string, video?: boolean }[] = [
+  { key: 'overview', media: overviewShot },
+  { key: 'lists', media: listsShot },
+  { key: 'preview', media: previewClip, video: true },
+  { key: 'actions', media: actionsShot },
+  { key: 'bookmarks', media: bookmarksClip, video: true },
+  { key: 'customization', media: customizationShot },
+  { key: 'accounts', media: accountsShot }
 ]
 </script>
 
 <template>
-  <section class="mx-auto max-w-5xl px-4 py-16 sm:px-6">
+  <section class="mx-auto max-w-6xl px-4 py-16 sm:px-6">
     <h2 class="text-center text-2xl font-medium tracking-tight">
       {{ t('features.title') }}
     </h2>
 
-    <div class="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      <Card v-for="feature in features" :key="feature.key">
-        <CardHeader>
-          <div class="flex size-10 items-center justify-center rounded-lg bg-secondary text-foreground">
-            <component :is="feature.icon" class="size-5" />
-          </div>
-          <CardTitle class="mt-3 font-medium">
+    <div class="mt-12 flex flex-col gap-16 sm:gap-24">
+      <div
+        v-for="(feature, index) in features"
+        :key="feature.key"
+        class="grid items-center gap-6 sm:grid-cols-2 sm:gap-12"
+      >
+        <div :class="index % 2 === 1 ? 'sm:order-2' : ''">
+          <video
+            v-if="feature.video"
+            :src="feature.media"
+            autoplay
+            loop
+            muted
+            playsinline
+            class="w-full rounded-xl border border-border"
+          />
+          <img
+            v-else
+            :src="feature.media"
+            :alt="t(`features.items.${feature.key}.title`)"
+            loading="lazy"
+            class="w-full"
+          />
+        </div>
+
+        <div :class="index % 2 === 1 ? 'sm:order-1' : ''">
+          <h3 class="text-xl font-medium tracking-tight sm:text-2xl">
             {{ t(`features.items.${feature.key}.title`) }}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <CardDescription>
+          </h3>
+          <p class="mt-3 leading-relaxed text-muted-foreground">
             {{ t(`features.items.${feature.key}.description`) }}
-          </CardDescription>
-        </CardContent>
-      </Card>
+          </p>
+        </div>
+      </div>
     </div>
   </section>
 </template>
