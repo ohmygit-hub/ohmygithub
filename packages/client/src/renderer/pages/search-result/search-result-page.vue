@@ -9,6 +9,7 @@ import {
   ChevronRight,
   Book,
   Search,
+  Star,
   UserRound,
 } from 'lucide-vue-next'
 import {
@@ -95,6 +96,12 @@ function itemKindLabel(item: GitHubWorkspaceSearchItem): string {
 
 function itemFallback(item: GitHubWorkspaceSearchItem): string {
   return item.title.slice(0, 2).toUpperCase()
+}
+
+const starFormatter = new Intl.NumberFormat(undefined, { notation: 'compact', maximumFractionDigits: 1 })
+
+function formatStars(value: number): string {
+  return starFormatter.format(value)
 }
 
 function openItem(item: GitHubWorkspaceSearchItem): void {
@@ -221,6 +228,13 @@ function refetch(): void {
                         class="size-3.5 shrink-0 text-muted-foreground"
                       />
                       <span class="truncate">{{ item.title }}</span>
+                      <span
+                        v-if="item.kind === 'repo' && item.starCount !== undefined"
+                        class="inline-flex shrink-0 select-none items-center gap-1 text-body font-normal tabular-nums text-muted-foreground"
+                      >
+                        <Star class="size-3.5" />
+                        {{ formatStars(item.starCount) }}
+                      </span>
                     </div>
                     <p class="mt-1 line-clamp-2 text-body text-muted-foreground">
                       {{ item.description || t('searchResult.noDescription') }}
@@ -271,6 +285,13 @@ function refetch(): void {
                   >
                     {{ t('searchResult.private') }}
                   </Badge>
+                  <span
+                    v-if="item.kind === 'repo' && item.starCount !== undefined"
+                    class="inline-flex shrink-0 select-none items-center gap-1 text-body font-normal tabular-nums text-muted-foreground"
+                  >
+                    <Star class="size-3.5" />
+                    {{ formatStars(item.starCount) }}
+                  </span>
                 </div>
                 <p class="mt-1 line-clamp-2 text-body text-muted-foreground">
                   {{ item.description || t('searchResult.noDescription') }}

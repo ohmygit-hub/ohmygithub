@@ -27,6 +27,7 @@ interface RepositoryResponse {
   owner?: { login?: string | null, avatar_url?: string | null } | null
   description?: string | null
   private?: boolean
+  stargazers_count?: number
   updated_at?: string | null
   html_url?: string | null
 }
@@ -425,6 +426,7 @@ function mapRepositorySearchItem(repository: RepositoryResponse): GitHubWorkspac
     repo,
     nameWithOwner,
     isPrivate: Boolean(repository.private),
+    starCount: repository.stargazers_count ?? 0,
     updatedAt: repository.updated_at ?? null,
   }
 }

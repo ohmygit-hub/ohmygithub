@@ -239,6 +239,7 @@ export interface GitHubWorkspaceSearchItem {
   repo?: string
   nameWithOwner?: string
   isPrivate?: boolean
+  starCount?: number
   updatedAt?: string | null
 }
 

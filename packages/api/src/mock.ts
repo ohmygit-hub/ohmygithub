@@ -953,6 +953,9 @@ export class MockGitHubClient implements GitHubClient {
         repo: repository.name,
         nameWithOwner: repository.nameWithOwner,
         isPrivate: repository.isPrivate,
+        // Fixtures carry no star count; derive a stable illustrative value so the
+        // dev search results render a plausible ⭐ figure.
+        starCount: (repository.name.length * 137) % 4200,
         updatedAt: repository.updatedAt,
       }))
 
