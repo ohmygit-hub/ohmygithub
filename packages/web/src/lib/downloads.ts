@@ -3,15 +3,13 @@ import {
   resolveManifestArtifactUrl,
   type PlatformId
 } from './download-manifest'
+import { GITHUB_URL } from './site'
 
-// Download links for the desktop app. Filenames follow the electron-builder
-// artifactName templates in packages/client/electron-builder.yml:
-//   dmg / AppImage : ${productName}-${version}-${arch}.${ext}
-//   nsis (win)     : ${productName}-${version}-${arch}-setup.${ext}
-// productName is "Oh My GitHub" (spaces are URL-encoded). The version is baked
-// in at build time from the monorepo root package.json (see vite.config.ts).
-
-const PRODUCT_NAME = 'Oh My GitHub'
+// The exact installer filename is never guessed client-side: the web deploy can
+// go live while the publish workflow is still uploading artifacts, so a
+// version-baked URL may 404. Instead, a click fetches the electron-builder
+// update manifest (latest*.yml, uploaded to R2 last) and downloads whatever
+// installer it lists. The GitHub releases page is the only static fallback.
 
 export const APP_VERSION: string = __APP_VERSION__
 
@@ -20,6 +18,9 @@ export const APP_VERSION: string = __APP_VERSION__
 // the landing page host instead of the R2 bucket.
 export const BASE_URL: string =
   import.meta.env.VITE_R2_PUBLIC_BASE_URL || 'https://resource.oh-my-github.app'
+
+// Static href / last-resort target: always exists, even mid-release.
+export const LATEST_RELEASE_URL = `${GITHUB_URL}/releases/latest`
 
 export type { PlatformId } from './download-manifest'
 
@@ -30,28 +31,19 @@ export interface Platform {
   os: OS
   /** i18n key under `download.platforms.*`. */
   labelKey: string
-  filename: string
-  url: string
 }
 
-function buildUrl(filename: string): string {
-  return `${BASE_URL}/${encodeURIComponent(filename)}`
+function platform(id: PlatformId, os: OS): Platform {
+  return { id, os, labelKey: `download.platforms.${id}` }
 }
-
-function platform(id: PlatformId, os: OS, filename: string): Platform {
-  return { id, os, labelKey: `download.platforms.${id}`, filename, url: buildUrl(filename) }
-}
-
-const v = APP_VERSION
 
 // Order matters: the first entry per OS is the default the smart button picks.
 export const PLATFORMS: Platform[] = [
-  platform('mac-arm64', 'mac', `${PRODUCT_NAME}-${v}-arm64.dmg`),
-  platform('mac-x64', 'mac', `${PRODUCT_NAME}-${v}-x64.dmg`),
-  platform('win-x64', 'windows', `${PRODUCT_NAME}-${v}-x64-setup.exe`),
-  // NOTE: electron-builder emits `x86_64` (not `x64`) for the Linux AppImage.
-  platform('linux-x64', 'linux', `${PRODUCT_NAME}-${v}-x86_64.AppImage`),
-  platform('linux-arm64', 'linux', `${PRODUCT_NAME}-${v}-arm64.AppImage`)
+  platform('mac-arm64', 'mac'),
+  platform('mac-x64', 'mac'),
+  platform('win-x64', 'windows'),
+  platform('linux-x64', 'linux'),
+  platform('linux-arm64', 'linux')
 ]
 
 interface UAData {
@@ -80,15 +72,16 @@ export function detectPlatform(): Platform {
 }
 
 export async function resolveLatestDownloadUrl(platform: Platform): Promise<string> {
-  if (typeof fetch !== 'function') return platform.url
+  if (typeof fetch !== 'function') return LATEST_RELEASE_URL
 
   try {
-    const response = await fetch(buildUrl(getPlatformManifestName(platform.id)), { cache: 'no-store' })
-    if (!response.ok) return platform.url
+    const manifestUrl = `${BASE_URL}/${getPlatformManifestName(platform.id)}`
+    const response = await fetch(manifestUrl, { cache: 'no-store' })
+    if (!response.ok) return LATEST_RELEASE_URL
 
     const manifest = await response.text()
-    return resolveManifestArtifactUrl(platform.id, manifest, BASE_URL) ?? platform.url
+    return resolveManifestArtifactUrl(platform.id, manifest, BASE_URL) ?? LATEST_RELEASE_URL
   } catch {
-    return platform.url
+    return LATEST_RELEASE_URL
   }
 }

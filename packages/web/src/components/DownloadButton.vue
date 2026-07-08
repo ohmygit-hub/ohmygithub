@@ -14,7 +14,7 @@ import { useI18n } from 'vue-i18n'
 import AppleIcon from '@/components/icons/AppleIcon.vue'
 import LinuxIcon from '@/components/icons/LinuxIcon.vue'
 import WindowsIcon from '@/components/icons/WindowsIcon.vue'
-import { APP_VERSION, detectPlatform, type OS, type Platform, PLATFORMS, resolveLatestDownloadUrl } from '@/lib/downloads'
+import { APP_VERSION, detectPlatform, LATEST_RELEASE_URL, type OS, type Platform, PLATFORMS, resolveLatestDownloadUrl } from '@/lib/downloads'
 
 const { t } = useI18n()
 const detected = computed(() => detectPlatform())
@@ -41,7 +41,7 @@ async function download(platform: Platform) {
     <div class="flex items-stretch">
       <Button
         as="a"
-        :href="detected.url"
+        :href="LATEST_RELEASE_URL"
         variant="primary"
         size="lg"
         class="rounded-r-none"
@@ -71,7 +71,7 @@ async function download(platform: Platform) {
             v-for="p in PLATFORMS"
             :key="p.id"
             as="a"
-            :href="p.url"
+            :href="LATEST_RELEASE_URL"
             @click.prevent="download(p)"
           >
             <component :is="osIcon[p.os]" class="size-4" />
