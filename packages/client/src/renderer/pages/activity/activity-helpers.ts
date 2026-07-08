@@ -132,9 +132,56 @@ export function collectRepoCardNames(events: GitHubFeedEvent[]): string[] {
   return [...names]
 }
 
+export interface ActivityPushCountRef {
+  key: string
+  repoFullName: string
+  before: string
+  head: string
+}
+
+export function buildPushCountKey(repoFullName: string, before: string, head: string): string {
+  return `${repoFullName}@${before}...${head}`
+}
+
+function makePushCountRef(repoFullName: string, before: string, head: string): ActivityPushCountRef | null {
+  if (!before || !head) return null
+  return { key: buildPushCountKey(repoFullName, before, head), repoFullName, before, head }
+}
+
+export function pushCountRefForEvent(event: GitHubFeedEvent): ActivityPushCountRef | null {
+  if (event.payload.kind !== 'push') return null
+  return makePushCountRef(event.repoFullName, event.payload.beforeSha, event.payload.headSha)
+}
+
+export function pushCountRefForGroup(group: ActivityFeedGroup): ActivityPushCountRef | null {
+  const newest = group.events[0]
+  const oldest = group.events[group.events.length - 1]
+  if (newest?.payload.kind !== 'push' || oldest?.payload.kind !== 'push') return null
+  // Events are newest-first, so the compare range spans the oldest push's `before` to the
+  // newest push's `head` — the group's whole pushed span in one call.
+  return makePushCountRef(newest.repoFullName, oldest.payload.beforeSha, newest.payload.headSha)
+}
+
+// Collect the unique compare refs to enrich for the currently-grouped feed. Covers both
+// single push rows and multi-push groups (a single is a group of one).
+export function collectPushCountRefs(groups: ActivityFeedGroup[]): ActivityPushCountRef[] {
+  const refs = new Map<string, ActivityPushCountRef>()
+  for (const group of groups) {
+    const ref = pushCountRefForGroup(group)
+    if (ref) refs.set(ref.key, ref)
+  }
+  return [...refs.values()]
+}
+
 const SENTENCE_PREFIX = 'workspace.activity.sentences'
 
-export function presentFeedEvent(event: GitHubFeedEvent): FeedEventPresentation {
+export function presentFeedEvent(
+  event: GitHubFeedEvent,
+  // Real commit count for a push, resolved via the compare API (GitHub no longer sends
+  // it in the payload). `undefined` = not looked up (use the payload's own value if any);
+  // `null` = looked up but unavailable → render the count-less sentence, never a fake 0.
+  resolvedPushCount?: number | null,
+): FeedEventPresentation {
   const { payload } = event
   const { owner, repo } = splitRepoFullName(event.repoFullName)
   const repoUrl = owner && repo ? createRepositoryWorkspaceUrl(owner, repo) : null
@@ -180,17 +227,29 @@ export function presentFeedEvent(event: GitHubFeedEvent): FeedEventPresentation 
     }
     case 'push': {
       const commitsUrl = owner && repo ? createRepositoryWorkspaceUrl(owner, repo, 'commits') : null
+      const count = resolvedPushCount === undefined ? payload.commitCount : resolvedPushCount
+      const branchPart: FeedSentencePart = { label: payload.branch, url: commitsUrl }
+      const pushCard: FeedEventCard | null = payload.commitMessages.length
+        ? { kind: 'commits', messages: payload.commitMessages, url: commitsUrl ?? repoUrl }
+        : null
+      if (count === null) {
+        return {
+          ...base,
+          sentenceKey: `${SENTENCE_PREFIX}.pushedUnknown`,
+          parts: { repo: repoPart, branch: branchPart },
+          card: pushCard,
+          targetUrl: commitsUrl ?? repoUrl,
+        }
+      }
       return {
         sentenceKey: `${SENTENCE_PREFIX}.pushed`,
-        pluralCount: payload.commitCount,
+        pluralCount: count,
         parts: {
           repo: repoPart,
-          branch: { label: payload.branch, url: commitsUrl },
-          count: { label: String(payload.commitCount), url: null },
+          branch: branchPart,
+          count: { label: String(count), url: null },
         },
-        card: payload.commitMessages.length
-          ? { kind: 'commits', messages: payload.commitMessages, url: commitsUrl ?? repoUrl }
-          : null,
+        card: pushCard,
         targetUrl: commitsUrl ?? repoUrl,
       }
     }
@@ -320,22 +379,41 @@ export interface FeedGroupPresentation {
   children: Array<{ id: string; part: FeedSentencePart; createdAt: string }>
 }
 
-export function presentFeedGroup(group: ActivityFeedGroup): FeedGroupPresentation {
+export function presentFeedGroup(
+  group: ActivityFeedGroup,
+  // Aggregate commit count for the whole push group, resolved via one compare call over
+  // the group's oldest→newest SHA range. Same semantics as presentFeedEvent's parameter.
+  resolvedPushCount?: number | null,
+): FeedGroupPresentation {
   if (group.kind === 'push') {
     const first = presentFeedEvent(group.events[0])
-    const total = group.events.reduce(
-      (sum, event) => sum + (event.payload.kind === 'push' ? event.payload.commitCount : 0),
-      0,
-    )
+    const payloadTotal = group.events.reduce<number | null>((sum, event) => {
+      if (event.payload.kind !== 'push' || typeof event.payload.commitCount !== 'number') return sum
+      return (sum ?? 0) + event.payload.commitCount
+    }, null)
+    const total = resolvedPushCount === undefined ? payloadTotal : resolvedPushCount
     const messages = group.events
       .flatMap((event) => (event.payload.kind === 'push' ? event.payload.commitMessages : []))
       .slice(0, 5)
+    const card: FeedEventCard | null = messages.length ? { kind: 'commits', messages, url: first.targetUrl } : null
+
+    if (total === null) {
+      return {
+        sentenceKey: `${SENTENCE_PREFIX}.pushedUnknown`,
+        pluralCount: null,
+        parts: { repo: first.parts.repo, branch: first.parts.branch },
+        card,
+        targetUrl: first.targetUrl,
+        expandable: false,
+        children: [],
+      }
+    }
 
     return {
       sentenceKey: `${SENTENCE_PREFIX}.pushed`,
       pluralCount: total,
-      parts: { ...first.parts, count: { label: String(total), url: null } },
-      card: messages.length ? { kind: 'commits', messages, url: first.targetUrl } : null,
+      parts: { repo: first.parts.repo, branch: first.parts.branch, count: { label: String(total), url: null } },
+      card,
       targetUrl: first.targetUrl,
       expandable: false,
       children: [],

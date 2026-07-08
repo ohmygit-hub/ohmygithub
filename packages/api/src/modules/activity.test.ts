@@ -64,6 +64,55 @@ describe('ActivityApi.listReceivedEvents', () => {
   })
 })
 
+describe('ActivityApi.getPushCommitCounts', () => {
+  function createCompareApi(totalByBasehead: Record<string, number | null | Error>) {
+    const compareCommitsWithBasehead = vi.fn(async ({ basehead }: { basehead: string }) => {
+      const value = totalByBasehead[basehead]
+      if (value instanceof Error) throw value
+      return { data: { total_commits: value } }
+    })
+    const api = new ActivityApi({
+      rest: { repos: { compareCommitsWithBasehead } },
+    } as unknown as GitHubOctokit)
+
+    return { api, compareCommitsWithBasehead }
+  }
+
+  it('resolves the commit count per push ref via compare', async () => {
+    const { api, compareCommitsWithBasehead } = createCompareApi({ 'a1...b2': 4 })
+    const result = await api.getPushCommitCounts([
+      { key: 'vuejs/pinia@a1...b2', repoFullName: 'vuejs/pinia', before: 'a1', head: 'b2' },
+    ])
+
+    expect(result).toEqual({ 'vuejs/pinia@a1...b2': 4 })
+    expect(compareCommitsWithBasehead).toHaveBeenCalledWith({
+      owner: 'vuejs',
+      repo: 'pinia',
+      basehead: 'a1...b2',
+      per_page: 1,
+    })
+  })
+
+  it('marks new-branch pushes (zero base SHA) unknown without calling compare', async () => {
+    const { api, compareCommitsWithBasehead } = createCompareApi({})
+    const result = await api.getPushCommitCounts([
+      { key: 'k', repoFullName: 'vuejs/pinia', before: '0000000000000000000000000000000000000000', head: 'b2' },
+    ])
+
+    expect(result).toEqual({ k: null })
+    expect(compareCommitsWithBasehead).not.toHaveBeenCalled()
+  })
+
+  it('degrades a failed compare to an unknown count', async () => {
+    const { api } = createCompareApi({ 'a1...b2': new Error('422 Unprocessable') })
+    const result = await api.getPushCommitCounts([
+      { key: 'k', repoFullName: 'vuejs/pinia', before: 'a1', head: 'b2' },
+    ])
+
+    expect(result).toEqual({ k: null })
+  })
+})
+
 describe('normalizeFeedEvent', () => {
   it('normalizes a WatchEvent into a star payload', () => {
     expect(normalizeFeedEvent(rawEvent('WatchEvent', { action: 'started' }))).toEqual({
@@ -84,6 +133,8 @@ describe('normalizeFeedEvent', () => {
   it('strips refs/heads/ from PushEvent and keeps first-line commit messages', () => {
     const event = normalizeFeedEvent(rawEvent('PushEvent', {
       ref: 'refs/heads/main',
+      before: 'aaa111',
+      head: 'bbb222',
       size: 3,
       commits: [
         { message: 'fix: cache invalidation\n\ndetails here' },
@@ -93,8 +144,26 @@ describe('normalizeFeedEvent', () => {
     expect(event.payload).toEqual({
       kind: 'push',
       branch: 'main',
+      beforeSha: 'aaa111',
+      headSha: 'bbb222',
       commitCount: 3,
       commitMessages: ['fix: cache invalidation', 'feat: add devtools hook'],
+    })
+  })
+
+  it('leaves commitCount null when the reduced PushEvent payload omits size and commits', () => {
+    const event = normalizeFeedEvent(rawEvent('PushEvent', {
+      ref: 'refs/heads/main',
+      before: 'aaa111',
+      head: 'bbb222',
+    }))
+    expect(event.payload).toEqual({
+      kind: 'push',
+      branch: 'main',
+      beforeSha: 'aaa111',
+      headSha: 'bbb222',
+      commitCount: null,
+      commitMessages: [],
     })
   })
 

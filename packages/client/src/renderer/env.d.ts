@@ -1565,7 +1565,7 @@ type GitHubFeedEventPayload =
   | { kind: 'fork'; forkFullName: string | null }
   | { kind: 'create'; refType: 'repository' | 'branch' | 'tag'; ref: string | null }
   | { kind: 'delete'; refType: 'branch' | 'tag'; ref: string }
-  | { kind: 'push'; branch: string; commitCount: number; commitMessages: string[] }
+  | { kind: 'push'; branch: string; beforeSha: string; headSha: string; commitCount: number | null; commitMessages: string[] }
   | { kind: 'release'; tagName: string; releaseName: string | null; excerpt: string | null }
   | { kind: 'public' }
   | { kind: 'member'; memberLogin: string | null }
@@ -2291,6 +2291,9 @@ interface Window {
     activity: {
       listReceivedEvents: (options?: { page?: number }) => Promise<GitHubFeedEventPage>
       getRepositoryCards: (fullNames: string[]) => Promise<Record<string, GitHubFeedRepoCard | null>>
+      getPushCommitCounts: (
+        refs: Array<{ key: string; repoFullName: string; before: string; head: string }>,
+      ) => Promise<Record<string, number | null>>
     }
     releases: {
       listRepositoryReleases: (options: ListRepositoryReleasesOptions) => Promise<GitHubReleasePage>

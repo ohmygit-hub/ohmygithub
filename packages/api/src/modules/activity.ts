@@ -16,7 +16,7 @@ export type GitHubFeedEventPayload =
   | { kind: 'fork'; forkFullName: string | null }
   | { kind: 'create'; refType: 'repository' | 'branch' | 'tag'; ref: string | null }
   | { kind: 'delete'; refType: 'branch' | 'tag'; ref: string }
-  | { kind: 'push'; branch: string; commitCount: number; commitMessages: string[] }
+  | { kind: 'push'; branch: string; beforeSha: string; headSha: string; commitCount: number | null; commitMessages: string[] }
   | { kind: 'release'; tagName: string; releaseName: string | null; excerpt: string | null }
   | { kind: 'public' }
   | { kind: 'member'; memberLogin: string | null }
@@ -120,6 +120,73 @@ export class ActivityApi {
       throw error
     }
   }
+
+  // GitHub no longer ships commit counts inside PushEvent payloads (only before/head
+  // SHAs). Recover the real count per push via the compare endpoint, keyed by a
+  // caller-supplied `key` so the renderer owns the cache identity. Runs as progressive
+  // enhancement: concurrency-limited, and any push we can't compare stays `null`.
+  async getPushCommitCounts(refs: PushCommitCountRef[]): Promise<Record<string, number | null>> {
+    const result: Record<string, number | null> = {}
+    const pending: PushCommitCountRef[] = []
+
+    for (const ref of refs) {
+      if (isEnrichablePushRef(ref)) {
+        pending.push(ref)
+      } else {
+        // New-branch pushes (before = zero SHA) and malformed refs have no comparable
+        // base — leave the count unknown rather than guessing.
+        result[ref.key] = null
+      }
+    }
+
+    let cursor = 0
+    const workerCount = Math.min(PUSH_COUNT_CONCURRENCY, pending.length)
+    await Promise.all(
+      Array.from({ length: workerCount }, async () => {
+        while (cursor < pending.length) {
+          const ref = pending[cursor++]
+          result[ref.key] = await this.fetchPushCommitCount(ref)
+        }
+      }),
+    )
+
+    return result
+  }
+
+  private async fetchPushCommitCount(ref: PushCommitCountRef): Promise<number | null> {
+    const [owner, repo] = ref.repoFullName.split('/')
+    try {
+      const response = await this.octokit.rest.repos.compareCommitsWithBasehead({
+        owner,
+        repo,
+        basehead: `${ref.before}...${ref.head}`,
+        per_page: 1,
+      })
+      return typeof response.data.total_commits === 'number' ? response.data.total_commits : null
+    } catch {
+      // Force-push / rewritten or deleted history / lost access: count stays unknown.
+      return null
+    }
+  }
+}
+
+export interface PushCommitCountRef {
+  key: string
+  repoFullName: string
+  before: string
+  head: string
+}
+
+const PUSH_COUNT_CONCURRENCY = 8
+const ZERO_SHA = '0000000000000000000000000000000000000000'
+
+function isEnrichablePushRef(ref: PushCommitCountRef): boolean {
+  return (
+    isValidRepoFullName(ref.repoFullName)
+    && ref.before.length > 0
+    && ref.head.length > 0
+    && ref.before !== ZERO_SHA
+  )
 }
 
 const REPO_CARDS_CHUNK_SIZE = 50
@@ -183,7 +250,15 @@ function normalizeFeedEventPayload(
       return {
         kind: 'push',
         branch: String(payload.ref ?? '').replace(/^refs\/heads\//, ''),
-        commitCount: typeof payload.size === 'number' ? payload.size : (payload.commits?.length ?? 0),
+        beforeSha: String(payload.before ?? ''),
+        headSha: String(payload.head ?? ''),
+        // GitHub reduced the PushEvent payload: `size`/`distinct_size`/`commits` are no
+        // longer sent, so the count is unknown here. `null` signals "resolve it later"
+        // (via getPushCommitCounts) rather than a fake `0`; keep reading `size` for the
+        // rare payloads / future restores that still carry it.
+        commitCount: typeof payload.size === 'number'
+          ? payload.size
+          : (Array.isArray(payload.commits) && payload.commits.length > 0 ? payload.commits.length : null),
         commitMessages: (Array.isArray(payload.commits) ? payload.commits : [])
           .slice(0, MAX_COMMIT_MESSAGES)
           .map((commit: { message?: string | null }) => firstLine(commit.message))

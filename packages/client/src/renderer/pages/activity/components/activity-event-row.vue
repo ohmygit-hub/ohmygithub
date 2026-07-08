@@ -4,18 +4,25 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import GithubActorLink from '@/components/github/github-actor-link.vue'
 import { formatRelativeTime } from '@/components/conversation/format'
-import { presentFeedEvent } from '../activity-helpers'
+import { presentFeedEvent, pushCountRefForEvent } from '../activity-helpers'
 import ActivityFeedCard from './activity-feed-card.vue'
 
 const props = defineProps<{
   event: GitHubFeedEvent
   repoCards?: Map<string, GitHubFeedRepoCard | null>
+  pushCounts?: Map<string, number | null>
 }>()
 
 const { locale } = useI18n()
 const router = useRouter()
 
-const presentation = computed(() => presentFeedEvent(props.event))
+const presentation = computed(() => {
+  const ref = pushCountRefForEvent(props.event)
+  // For a push, hand the resolved compare count down (null while pending/unavailable so
+  // the sentence stays count-less instead of showing a stale 0); non-push events ignore it.
+  const resolved = ref ? (props.pushCounts?.get(ref.key) ?? null) : undefined
+  return presentFeedEvent(props.event, resolved)
+})
 const relativeTime = computed(() => formatRelativeTime(props.event.createdAt, { locale: locale.value }))
 
 function openTarget(): void {

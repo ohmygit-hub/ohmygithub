@@ -2585,6 +2585,7 @@
         "deletedBranch": "删除了 {repo} 的分支 {ref}",
         "deletedTag": "删除了 {repo} 的标签 {ref}",
         "pushed": "向 {repo} · {branch} 推送了 {count} 个提交",
+        "pushedUnknown": "推送到 {repo} · {branch}",
         "published": "在 {repo} 发布了 {release}",
         "madePublic": "公开了 {repo}",
         "addedMember": "邀请 {member} 加入 {repo}",

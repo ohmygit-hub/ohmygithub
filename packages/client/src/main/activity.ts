@@ -1,4 +1,4 @@
-import { createGitHubApi } from '@oh-my-github/api'
+import { createGitHubApi, type PushCommitCountRef } from '@oh-my-github/api'
 import { ipcMain } from 'electron'
 import { getAuthenticatedAccessToken, getAuthenticatedViewerLogin } from './auth'
 import { resolveGitHubProxyUrl } from './proxy'
@@ -14,11 +14,19 @@ export function registerActivityIpc(): void {
   ipcMain.handle('activity:get-repository-cards', (_event, fullNames: string[]) =>
     getRepositoryCards(fullNames),
   )
+  ipcMain.handle('activity:get-push-commit-counts', (_event, refs: PushCommitCountRef[]) =>
+    getPushCommitCounts(refs),
+  )
 }
 
 async function getRepositoryCards(fullNames: string[]) {
   const api = await createAuthenticatedGitHubApi()
   return api.activity.getRepositoryCards(Array.isArray(fullNames) ? fullNames : [])
+}
+
+async function getPushCommitCounts(refs: PushCommitCountRef[]) {
+  const api = await createAuthenticatedGitHubApi()
+  return api.activity.getPushCommitCounts(Array.isArray(refs) ? refs : [])
 }
 
 async function listReceivedEvents(options?: ListReceivedEventsIpcOptions) {

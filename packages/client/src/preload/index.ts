@@ -156,6 +156,9 @@ const api = {
       ipcRenderer.invoke('activity:list-received-events', options),
     getRepositoryCards: (fullNames: string[]) =>
       ipcRenderer.invoke('activity:get-repository-cards', fullNames),
+    getPushCommitCounts: (
+      refs: Array<{ key: string, repoFullName: string, before: string, head: string }>,
+    ) => ipcRenderer.invoke('activity:get-push-commit-counts', refs),
   },
   releases: {
     listRepositoryReleases: (options: unknown) =>

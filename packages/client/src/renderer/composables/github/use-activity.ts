@@ -30,3 +30,9 @@ export async function fetchActivityRepoCards(
 ): Promise<Record<string, GitHubFeedRepoCard | null>> {
   return requireActivityBridge().getRepositoryCards(fullNames)
 }
+
+export async function fetchActivityPushCounts(
+  refs: Array<{ key: string, repoFullName: string, before: string, head: string }>,
+): Promise<Record<string, number | null>> {
+  return requireActivityBridge().getPushCommitCounts(refs)
+}

@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import {
   ACTIVITY_FILTER_KEYS,
+  collectPushCountRefs,
   collectRepoCardNames,
   groupFeedEvents,
   matchesActivityFilter,
   mergeFeedEvents,
   presentFeedEvent,
   presentFeedGroup,
+  pushCountRefForGroup,
 } from './activity-helpers'
 
 let nextId = 1
@@ -64,7 +66,7 @@ describe('groupFeedEvents', () => {
   it('sums commit counts and merges commit messages for adjacent pushes', () => {
     const push = (count: number, messages: string[]) =>
       feedEvent({
-        payload: { kind: 'push', branch: 'main', commitCount: count, commitMessages: messages },
+        payload: { kind: 'push', branch: 'main', beforeSha: 'a1', headSha: 'b2', commitCount: count, commitMessages: messages },
         actorLogin: 'posva',
         repoFullName: 'vuejs/pinia',
       })
@@ -115,7 +117,7 @@ describe('presentFeedEvent', () => {
 
   it('targets the commits section for pushes with a commits card', () => {
     const event = feedEvent({
-      payload: { kind: 'push', branch: 'main', commitCount: 3, commitMessages: ['fix: a'] },
+      payload: { kind: 'push', branch: 'main', beforeSha: 'a1', headSha: 'b2', commitCount: 3, commitMessages: ['fix: a'] },
     })
     const presentation = presentFeedEvent(event)
 
@@ -123,6 +125,28 @@ describe('presentFeedEvent', () => {
     expect(presentation.pluralCount).toBe(3)
     expect(presentation.targetUrl).toBe('/vitejs/vite?tab=commits')
     expect(presentation.card).toEqual({ kind: 'commits', messages: ['fix: a'], url: '/vitejs/vite?tab=commits' })
+  })
+
+  it('omits the count for a push whose commit count is unknown', () => {
+    const event = feedEvent({
+      payload: { kind: 'push', branch: 'main', beforeSha: 'a1', headSha: 'b2', commitCount: null, commitMessages: [] },
+    })
+    const presentation = presentFeedEvent(event)
+
+    expect(presentation.sentenceKey).toBe('workspace.activity.sentences.pushedUnknown')
+    expect(presentation.pluralCount).toBeNull()
+    expect(presentation.parts.count).toBeUndefined()
+  })
+
+  it('prefers the resolved compare count over the payload count', () => {
+    const event = feedEvent({
+      payload: { kind: 'push', branch: 'main', beforeSha: 'a1', headSha: 'b2', commitCount: null, commitMessages: [] },
+    })
+    const presentation = presentFeedEvent(event, 7)
+
+    expect(presentation.sentenceKey).toBe('workspace.activity.sentences.pushed')
+    expect(presentation.pluralCount).toBe(7)
+    expect(presentation.parts.count.label).toBe('7')
   })
 
   it('links merged pull requests to the PR tab with a text card', () => {
@@ -177,7 +201,7 @@ describe('collectRepoCardNames', () => {
       star('antfu', 'a/a'),
       star('posva', 'a/a'),
       feedEvent({ payload: { kind: 'fork', forkFullName: 'antfu/vite' } }),
-      feedEvent({ payload: { kind: 'push', branch: 'main', commitCount: 1, commitMessages: [] } }),
+      feedEvent({ payload: { kind: 'push', branch: 'main', beforeSha: 'a1', headSha: 'b2', commitCount: 1, commitMessages: [] } }),
     ]
     expect(collectRepoCardNames(events).sort()).toEqual(['a/a', 'antfu/vite'])
   })
@@ -193,5 +217,35 @@ describe('presentFeedGroup', () => {
     expect(presentation.parts.count.label).toBe('2')
     expect(presentation.children.map((child) => child.part.label)).toEqual(['a/a', 'b/b'])
     expect(presentation.children[0].part.url).toBe('/a/a')
+  })
+
+  it('uses the resolved compare total for a push group', () => {
+    const push = (before: string, head: string) =>
+      feedEvent({
+        payload: { kind: 'push', branch: 'main', beforeSha: before, headSha: head, commitCount: null, commitMessages: [] },
+        actorLogin: 'posva',
+        repoFullName: 'vuejs/pinia',
+      })
+    const groups = groupFeedEvents([push('c3', 'd4'), push('a1', 'c3')])
+
+    expect(presentFeedGroup(groups[0]).sentenceKey).toBe('workspace.activity.sentences.pushedUnknown')
+    expect(presentFeedGroup(groups[0], 9).pluralCount).toBe(9)
+  })
+})
+
+describe('push count refs', () => {
+  it('spans the oldest before SHA to the newest head SHA of a group', () => {
+    const push = (before: string, head: string) =>
+      feedEvent({
+        payload: { kind: 'push', branch: 'main', beforeSha: before, headSha: head, commitCount: null, commitMessages: [] },
+        actorLogin: 'posva',
+        repoFullName: 'vuejs/pinia',
+      })
+    // Newest-first ordering: the group's compare range is oldest.before...newest.head.
+    const groups = groupFeedEvents([push('c3', 'd4'), push('a1', 'c3')])
+    const ref = pushCountRefForGroup(groups[0])
+
+    expect(ref).toEqual({ key: 'vuejs/pinia@a1...d4', repoFullName: 'vuejs/pinia', before: 'a1', head: 'd4' })
+    expect(collectPushCountRefs(groups).map((entry) => entry.key)).toEqual(['vuejs/pinia@a1...d4'])
   })
 })

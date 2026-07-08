@@ -6,19 +6,24 @@ import { useRouter } from 'vue-router'
 import { ChevronDown, ChevronRight } from 'lucide-vue-next'
 import GithubActorLink from '@/components/github/github-actor-link.vue'
 import { formatRelativeTime } from '@/components/conversation/format'
-import { presentFeedGroup } from '../activity-helpers'
+import { presentFeedGroup, pushCountRefForGroup } from '../activity-helpers'
 import ActivityFeedCard from './activity-feed-card.vue'
 
 const props = defineProps<{
   group: ActivityFeedGroup
   repoCards?: Map<string, GitHubFeedRepoCard | null>
+  pushCounts?: Map<string, number | null>
 }>()
 
 const { locale } = useI18n()
 const router = useRouter()
 const expanded = ref(false)
 
-const presentation = computed(() => presentFeedGroup(props.group))
+const presentation = computed(() => {
+  const ref = pushCountRefForGroup(props.group)
+  const resolved = ref ? (props.pushCounts?.get(ref.key) ?? null) : undefined
+  return presentFeedGroup(props.group, resolved)
+})
 const relativeTime = computed(() => formatRelativeTime(props.group.createdAt, { locale: locale.value }))
 
 function onRowClick(): void {

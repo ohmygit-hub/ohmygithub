@@ -5,10 +5,11 @@ import { computed, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Badge, Button, Empty, EmptyDescription, EmptyHeader, EmptyTitle, ScrollArea, Skeleton } from '@oh-my-github/ui'
 import { Activity as ActivityIcon } from 'lucide-vue-next'
-import { fetchActivityFeedPage, fetchActivityRepoCards, useActivityFeedQuery } from '@/composables/github/use-activity'
+import { fetchActivityFeedPage, fetchActivityPushCounts, fetchActivityRepoCards, useActivityFeedQuery } from '@/composables/github/use-activity'
 import { useToast } from '@/composables/use-toast'
 import {
   ACTIVITY_FILTER_KEYS,
+  collectPushCountRefs,
   collectRepoCardNames,
   groupFeedEvents,
   matchesActivityFilter,
@@ -61,6 +62,27 @@ watch(events, async (list) => {
     // 保留 pending 之外的状态即可；下次事件列表变化会重试缺失项
   } finally {
     for (const name of missing) pendingCardNames.delete(name)
+  }
+}, { immediate: true })
+
+// PushEvent payloads no longer carry commit counts; resolve them per push group via the
+// compare API as progressive enhancement, mirroring the repo-card enrichment above.
+const pushCounts = reactive(new Map<string, number | null>())
+const pendingPushKeys = new Set<string>()
+
+watch(groups, async (list) => {
+  const missing = collectPushCountRefs(list)
+    .filter((ref) => !pushCounts.has(ref.key) && !pendingPushKeys.has(ref.key))
+  if (missing.length === 0) return
+
+  for (const ref of missing) pendingPushKeys.add(ref.key)
+  try {
+    const counts = await fetchActivityPushCounts(missing)
+    for (const ref of missing) pushCounts.set(ref.key, counts[ref.key] ?? null)
+  } catch {
+    // 静默降级：无法解析的推送保持无计数文案，下次分组变化会重试缺失项
+  } finally {
+    for (const ref of missing) pendingPushKeys.delete(ref.key)
   }
 }, { immediate: true })
 
@@ -160,11 +182,13 @@ async function loadMore(): Promise<void> {
               v-if="group.kind === 'single'"
               :event="group.events[0]"
               :repo-cards="repoCards"
+              :push-counts="pushCounts"
             />
             <ActivityGroupRow
               v-else
               :group="group"
               :repo-cards="repoCards"
+              :push-counts="pushCounts"
             />
           </template>
 

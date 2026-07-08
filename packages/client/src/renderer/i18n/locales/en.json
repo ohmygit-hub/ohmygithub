@@ -2585,6 +2585,7 @@
         "deletedBranch": "deleted branch {ref} in {repo}",
         "deletedTag": "deleted tag {ref} in {repo}",
         "pushed": "pushed {count} commit to {repo} · {branch} | pushed {count} commits to {repo} · {branch}",
+        "pushedUnknown": "pushed to {repo} · {branch}",
         "published": "published {release} in {repo}",
         "madePublic": "made {repo} public",
         "addedMember": "added {member} to {repo}",
