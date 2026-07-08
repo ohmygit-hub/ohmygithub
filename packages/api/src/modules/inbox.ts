@@ -106,11 +106,15 @@ export class InboxApi {
   constructor(private readonly octokit: GitHubOctokit) {}
 
   async listWorkspaceItems(options: ListWorkspaceItemsOptions = {}): Promise<GitHubWorkspaceItem[]> {
-    const [notifications, pullRequests, issues] = await Promise.all([
+    // fetchViewerWorkItems returns PR and issue nodes in a single query; fetch
+    // it once and split locally instead of letting listPullRequests/listIssues
+    // each re-issue the same query and discard half the result.
+    const [notifications, response] = await Promise.all([
       this.listNotifications(options),
-      this.listPullRequests(options),
-      this.listIssues(options)
+      this.fetchViewerWorkItems(options)
     ])
+    const pullRequests = mapGraphQLNodes(response.viewer.pullRequests.nodes, 'pull_request')
+    const issues = mapGraphQLNodes(response.viewer.issues.nodes, 'issue')
 
     return [...notifications, ...pullRequests, ...issues].sort((a, b) => {
       return Date.parse(b.updatedAt) - Date.parse(a.updatedAt)

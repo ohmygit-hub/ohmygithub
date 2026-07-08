@@ -151,21 +151,44 @@ export async function listInboxWorkItemReferences(
   }
 }
 
-async function listUnreadNotifications(octokit: GitHubOctokit) {
+function listUnreadNotifications(octokit: GitHubOctokit) {
   return listNotifications(octokit, false)
 }
 
-async function listAllNotifications(octokit: GitHubOctokit) {
+function listAllNotifications(octokit: GitHubOctokit) {
   return listNotifications(octokit, true)
 }
 
-async function listNotifications(octokit: GitHubOctokit, all: boolean) {
+// Cache notification fetches briefly so the first screen — which fires several
+// list/detail endpoints that each independently paginate notifications — shares
+// one fetch instead of racing duplicates. Concurrent callers de-dup on the same
+// promise; once resolved the value is reused until the TTL elapses.
+const NOTIFICATIONS_TTL = 30_000
+const notificationsCache = new Map<boolean, { fetchedAt: number; result: ReturnType<typeof fetchNotifications> }>()
+
+function listNotifications(octokit: GitHubOctokit, all: boolean) {
+  const now = Date.now()
+  const cached = notificationsCache.get(all)
+
+  if (cached && now - cached.fetchedAt < NOTIFICATIONS_TTL) {
+    return cached.result
+  }
+
+  const result = fetchNotifications(octokit, all)
+  notificationsCache.set(all, { fetchedAt: now, result })
+  setTimeout(() => {
+    if (notificationsCache.get(all)?.fetchedAt === now) {
+      notificationsCache.delete(all)
+    }
+  }, NOTIFICATIONS_TTL).unref?.()
+
+  return result
+}
+
+async function fetchNotifications(octokit: GitHubOctokit, all: boolean) {
   return octokit.paginate(
     octokit.rest.activity.listNotificationsForAuthenticatedUser,
-    {
-      all,
-      per_page: 100
-    }
+    { all, per_page: 100 }
   )
 }
 

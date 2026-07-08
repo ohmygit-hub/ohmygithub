@@ -660,8 +660,10 @@ export class IssuesApi {
     const { data: viewer } = await this.octokit.rest.users.getAuthenticated()
 
     if (options.category === 'inbox') {
-      const references = await listInboxWorkItemReferences(this.octokit, 'issue')
-      const unreadKeys = await listUnreadWorkItemKeys(this.octokit)
+      const [references, unreadKeys] = await Promise.all([
+        listInboxWorkItemReferences(this.octokit, 'issue'),
+        listUnreadWorkItemKeys(this.octokit)
+      ])
       const nodes = await Promise.all(
         references.map((reference) => this.fetchIssueByReference(reference).catch(() => null))
       )
@@ -683,15 +685,17 @@ export class IssuesApi {
 
   async listRepositoryIssues(options: ListRepositoryWorkspaceItemsOptions): Promise<GitHubIssue[]> {
     const limit = normalizeLimit(options.limit)
-    const response = await this.octokit.graphql<RepositoryIssuesResponse>(
-      repositoryIssuesQuery,
-      {
-        owner: options.owner,
-        repo: options.repo,
-        first: limit
-      }
-    )
-    const unreadKeys = await listUnreadWorkItemKeys(this.octokit)
+    const [response, unreadKeys] = await Promise.all([
+      this.octokit.graphql<RepositoryIssuesResponse>(
+        repositoryIssuesQuery,
+        {
+          owner: options.owner,
+          repo: options.repo,
+          first: limit
+        }
+      ),
+      listUnreadWorkItemKeys(this.octokit)
+    ])
 
     return mapIssueNodes(response.repository?.issues.nodes, unreadKeys)
   }
@@ -706,18 +710,20 @@ export class IssuesApi {
       search: options.search,
       state,
     })
-    const response = await this.octokit.request('GET /search/issues', {
-      q: searchQuery,
-      sort: 'created',
-      order: 'desc',
-      page,
-      per_page: perPage,
-    })
+    const [response, unreadKeys] = await Promise.all([
+      this.octokit.request('GET /search/issues', {
+        q: searchQuery,
+        sort: 'created',
+        order: 'desc',
+        page,
+        per_page: perPage,
+      }),
+      listUnreadWorkItemKeys(this.octokit)
+    ])
     const payload = response.data as SearchIssuesResponse
     const ids = (payload.items ?? [])
       .map((item) => item.node_id)
       .filter(isString)
-    const unreadKeys = await listUnreadWorkItemKeys(this.octokit)
     const issues = await this.fetchIssueNodes(ids, unreadKeys)
     const totalCount = payload.total_count ?? issues.length
 
@@ -732,21 +738,22 @@ export class IssuesApi {
   }
 
   async getIssueDetail(options: GetIssueDetailOptions): Promise<GitHubIssueDetail> {
-    const response = await this.octokit.graphql<IssueDetailResponse>(
-      issueDetailQuery,
-      {
-        owner: options.owner,
-        repo: options.repo,
-        number: options.number
-      }
-    )
+    const [response, unreadKeys] = await Promise.all([
+      this.octokit.graphql<IssueDetailResponse>(
+        issueDetailQuery,
+        {
+          owner: options.owner,
+          repo: options.repo,
+          number: options.number
+        }
+      ),
+      listUnreadWorkItemKeys(this.octokit)
+    ])
     const issue = response.repository?.issue
 
     if (!issue) {
       throw new Error('Issue not found')
     }
-
-    const unreadKeys = await listUnreadWorkItemKeys(this.octokit)
 
     return mapIssueDetailNode(issue, unreadKeys)
   }
@@ -872,14 +879,16 @@ export class IssuesApi {
   }
 
   private async searchIssues(searchQuery: string, limit: number): Promise<GitHubIssue[]> {
-    const response = await this.octokit.graphql<ViewerIssuesResponse>(
-      viewerIssuesQuery,
-      {
-        first: limit,
-        searchQuery
-      }
-    )
-    const unreadKeys = await listUnreadWorkItemKeys(this.octokit)
+    const [response, unreadKeys] = await Promise.all([
+      this.octokit.graphql<ViewerIssuesResponse>(
+        viewerIssuesQuery,
+        {
+          first: limit,
+          searchQuery
+        }
+      ),
+      listUnreadWorkItemKeys(this.octokit)
+    ])
 
     return dedupeIssues(mapIssueNodes(response.search.nodes, unreadKeys))
   }

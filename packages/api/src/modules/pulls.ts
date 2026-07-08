@@ -1635,8 +1635,10 @@ export class PullsApi {
     const { data: viewer } = await this.octokit.rest.users.getAuthenticated()
 
     if (options.category === 'inbox') {
-      const references = await listInboxWorkItemReferences(this.octokit, 'pull-request')
-      const unreadKeys = await listUnreadWorkItemKeys(this.octokit)
+      const [references, unreadKeys] = await Promise.all([
+        listInboxWorkItemReferences(this.octokit, 'pull-request'),
+        listUnreadWorkItemKeys(this.octokit)
+      ])
       const nodes = await Promise.all(
         references.map((reference) => this.fetchPullRequestByReference(reference).catch(() => null))
       )
@@ -1658,15 +1660,17 @@ export class PullsApi {
 
   async listRepositoryPullRequests(options: ListRepositoryWorkspaceItemsOptions): Promise<GitHubPullRequest[]> {
     const limit = normalizeLimit(options.limit)
-    const response = await this.octokit.graphql<RepositoryPullRequestsResponse>(
-      repositoryPullRequestsQuery,
-      {
-        owner: options.owner,
-        repo: options.repo,
-        first: limit
-      }
-    )
-    const unreadKeys = await listUnreadWorkItemKeys(this.octokit)
+    const [response, unreadKeys] = await Promise.all([
+      this.octokit.graphql<RepositoryPullRequestsResponse>(
+        repositoryPullRequestsQuery,
+        {
+          owner: options.owner,
+          repo: options.repo,
+          first: limit
+        }
+      ),
+      listUnreadWorkItemKeys(this.octokit)
+    ])
 
     return mapPullRequestNodes(response.repository?.pullRequests.nodes, unreadKeys)
   }
@@ -1683,18 +1687,20 @@ export class PullsApi {
       search: options.search,
       state,
     })
-    const response = await this.octokit.request('GET /search/issues', {
-      q: searchQuery,
-      sort: 'created',
-      order: 'desc',
-      page,
-      per_page: perPage,
-    })
+    const [response, unreadKeys] = await Promise.all([
+      this.octokit.request('GET /search/issues', {
+        q: searchQuery,
+        sort: 'created',
+        order: 'desc',
+        page,
+        per_page: perPage,
+      }),
+      listUnreadWorkItemKeys(this.octokit)
+    ])
     const payload = response.data as SearchPullRequestsResponse
     const ids = (payload.items ?? [])
       .map((item) => item.node_id)
       .filter(isString)
-    const unreadKeys = await listUnreadWorkItemKeys(this.octokit)
     const pullRequests = await this.fetchPullRequestNodes(ids, unreadKeys)
     const totalCount = payload.total_count ?? pullRequests.length
 
@@ -1709,21 +1715,22 @@ export class PullsApi {
   }
 
   async getPullRequestDetail(options: GetPullRequestDetailOptions): Promise<GitHubPullRequestDetail> {
-    const response = await this.octokit.graphql<PullRequestDetailResponse>(
-      pullRequestDetailQuery,
-      {
-        owner: options.owner,
-        repo: options.repo,
-        number: options.number
-      }
-    )
+    const [response, unreadKeys] = await Promise.all([
+      this.octokit.graphql<PullRequestDetailResponse>(
+        pullRequestDetailQuery,
+        {
+          owner: options.owner,
+          repo: options.repo,
+          number: options.number
+        }
+      ),
+      listUnreadWorkItemKeys(this.octokit)
+    ])
     const pullRequest = response.repository?.pullRequest
 
     if (!pullRequest) {
       throw new Error('Pull request not found')
     }
-
-    const unreadKeys = await listUnreadWorkItemKeys(this.octokit)
 
     return mapPullRequestDetailNode(pullRequest, unreadKeys, response.repository)
   }
@@ -1890,14 +1897,16 @@ export class PullsApi {
   }
 
   private async searchPullRequests(searchQuery: string, limit: number): Promise<GitHubPullRequest[]> {
-    const response = await this.octokit.graphql<ViewerPullRequestsResponse>(
-      viewerPullRequestsQuery,
-      {
-        first: limit,
-        searchQuery
-      }
-    )
-    const unreadKeys = await listUnreadWorkItemKeys(this.octokit)
+    const [response, unreadKeys] = await Promise.all([
+      this.octokit.graphql<ViewerPullRequestsResponse>(
+        viewerPullRequestsQuery,
+        {
+          first: limit,
+          searchQuery
+        }
+      ),
+      listUnreadWorkItemKeys(this.octokit)
+    ])
 
     return dedupePullRequests(mapPullRequestNodes(response.search.nodes, unreadKeys))
   }
