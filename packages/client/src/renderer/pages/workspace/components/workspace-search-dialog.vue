@@ -66,6 +66,16 @@ function searchQuery(mode: GitHubWorkspaceSearchMode, query: string): void {
   emit('navigate', `/search/${mode}?q=${encodeURIComponent(normalizedQuery)}`)
 }
 
+// A cached repository picked from the palette navigates straight to its workspace URL,
+// skipping the goto resolution round-trip.
+function navigateToUrl(url: string): void {
+  if (!url) return
+
+  gotoRequestId.value += 1
+  updateOpen(false)
+  emit('navigate', url)
+}
+
 function createNotFoundUrl(input: string): string {
   const params = new URLSearchParams()
   params.set('q', input)
@@ -87,6 +97,7 @@ function createNotFoundUrl(input: string): string {
       :resolve-error="resolveError"
       @goto="gotoQuery"
       @search="searchQuery"
+      @navigate="navigateToUrl"
     />
   </CommandDialog>
 </template>

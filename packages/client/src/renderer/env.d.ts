@@ -2140,6 +2140,7 @@ interface Window {
       listSponsorships: (options: ListAccountSponsorshipsOptions) => Promise<GitHubAccountSponsorshipPage>
       listOrganizations: () => Promise<GitHubOrganization[]>
       listOrganizationRepositories: (owner: string) => Promise<GitHubRepository[]>
+      listAllViewerRepositories: () => Promise<GitHubRepository[]>
     }
     organizationPeople: {
       getPeople: (org: string) => Promise<GitHubOrganizationPeople>

@@ -853,6 +853,10 @@ export class MockGitHubClient implements GitHubClient {
     return repositoriesByOrganization[owner] ?? []
   }
 
+  async listAllViewerRepositories(): Promise<GitHubRepository[]> {
+    return Object.values(repositoriesByOrganization).flat()
+  }
+
   async resolveWorkspaceGoto(input: string): Promise<GitHubWorkspaceGotoResult> {
     const normalizedInput = input.trim()
     const parsed = parseMockGotoInput(normalizedInput)

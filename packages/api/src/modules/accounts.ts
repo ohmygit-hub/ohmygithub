@@ -526,6 +526,10 @@ const accountContributionsQuery = `
   }
 `
 
+// Cap the viewer-repo aggregate at 10 pages (1000 repos) so a member of very large
+// orgs doesn't pull an unbounded list into the palette cache.
+const MAX_VIEWER_REPO_PAGES = 10
+
 export class AccountsApi {
   constructor(private readonly octokit: GitHubOctokit) {}
 
@@ -973,6 +977,44 @@ export class AccountsApi {
         url: repository.html_url ?? '',
       }
     })
+  }
+
+  // Full list of every repository the viewer can reach (owned + collaborator + org
+  // member), newest-first. Backs the local Ctrl-K palette cache, so it aggregates all
+  // pages up front — capped, because a member of large orgs can otherwise pull thousands.
+  async listAllViewerRepositories(): Promise<GitHubRepository[]> {
+    const repositories: GitHubRepository[] = []
+    const iterator = this.octokit.paginate.iterator(
+      this.octokit.rest.repos.listForAuthenticatedUser,
+      {
+        visibility: 'all',
+        affiliation: 'owner,collaborator,organization_member',
+        sort: 'updated',
+        direction: 'desc',
+        per_page: 100,
+      },
+    )
+
+    let pages = 0
+    for await (const { data } of iterator) {
+      for (const repository of data) {
+        const repositoryOwner = repository.owner?.login ?? ''
+        repositories.push({
+          id: repository.id,
+          name: repository.name,
+          nameWithOwner: repository.full_name ?? `${repositoryOwner}/${repository.name}`,
+          owner: repositoryOwner,
+          description: repository.description ?? null,
+          isPrivate: repository.private,
+          updatedAt: repository.updated_at ?? '',
+          url: repository.html_url ?? '',
+        })
+      }
+      pages += 1
+      if (pages >= MAX_VIEWER_REPO_PAGES) break
+    }
+
+    return repositories
   }
 
   private async getGraphOverview(login: string): Promise<Omit<GitHubAccountOverview, 'profile' | 'readme'>> {

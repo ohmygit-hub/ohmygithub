@@ -142,6 +142,7 @@ export function createGitHubApi(options: GitHubApiOptions): GitHubApi {
     setAccountFollowed: (options) => accounts.setFollowed(options),
     listViewerOrganizations: () => accounts.listViewerOrganizations(),
     listOrganizationRepositories: (owner) => accounts.listOrganizationRepositories(owner),
+    listAllViewerRepositories: () => accounts.listAllViewerRepositories(),
     resolveWorkspaceGoto: (input) => search.resolveWorkspaceGoto(input),
     resolveRepositoryReference: (options) => search.resolveRepositoryReference(options),
     searchWorkspace: (options) => search.searchWorkspace(options),

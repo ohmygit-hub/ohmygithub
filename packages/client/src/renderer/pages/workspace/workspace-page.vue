@@ -7,6 +7,7 @@ import { SidebarInset, SidebarProvider } from '@oh-my-github/ui'
 import { useWorkspaceBookmarks } from './composables/use-workspace-bookmarks'
 import { useWorkspaceSearchRequestSignal } from './composables/use-workspace-search-request'
 import { useOrganizationsQuery } from '@/composables/github/use-organizations'
+import { useViewerRepositoriesQuery } from '@/composables/github/use-accounts'
 import { useRightPanel } from '@/composables/use-right-panel'
 import { useToast } from '@/composables/use-toast'
 import { registerKeyboardShortcutHandler } from '@/keyboard/shortcut-runtime'
@@ -52,6 +53,9 @@ const {
 } = useWorkspaceTabs()
 
 const organizationsQuery = useOrganizationsQuery()
+// Warm the Ctrl-K palette's repository cache on workspace load so the first search is
+// instant; the query stays session-warm (see useViewerRepositoriesQuery).
+useViewerRepositoriesQuery()
 const activeGithubUrl = computed(() => activeTab.value ? workspaceTabToGitHubUrl(activeTab.value) : null)
 const organizations = computed(() => organizationsQuery.data.value ?? [])
 const organizationsLoading = computed(() => organizationsQuery.isLoading.value)

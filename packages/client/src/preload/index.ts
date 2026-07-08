@@ -22,7 +22,9 @@ const api = {
     listSponsorships: (options: unknown) => ipcRenderer.invoke('accounts:list-sponsorships', options),
     listOrganizations: () => ipcRenderer.invoke('accounts:list-organizations'),
     listOrganizationRepositories: (owner: string) =>
-      ipcRenderer.invoke('accounts:list-organization-repositories', owner)
+      ipcRenderer.invoke('accounts:list-organization-repositories', owner),
+    listAllViewerRepositories: () =>
+      ipcRenderer.invoke('accounts:list-all-viewer-repositories')
   },
   organizationPeople: {
     getPeople: (org: string) => ipcRenderer.invoke('organization-people:get', org),

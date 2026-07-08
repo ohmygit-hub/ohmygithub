@@ -24,6 +24,7 @@ export function registerAccountsIpc(): void {
   ipcMain.handle('accounts:list-organization-repositories', (_event, owner: string) =>
     listOrganizationRepositories(owner)
   )
+  ipcMain.handle('accounts:list-all-viewer-repositories', () => listAllViewerRepositories())
 }
 
 async function getAccountProfile(login: string) {
@@ -153,6 +154,12 @@ async function listOrganizationRepositories(owner: string) {
   const api = await createAuthenticatedGitHubApi()
 
   return api.accounts.listOrganizationRepositories(normalizedOwner)
+}
+
+async function listAllViewerRepositories() {
+  const api = await createAuthenticatedGitHubApi()
+
+  return api.accounts.listAllViewerRepositories()
 }
 
 function normalizeLogin(login: string): string {

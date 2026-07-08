@@ -72,6 +72,27 @@ export function useAccountContributionsQuery(
   })
 }
 
+export function useViewerRepositoriesQuery(enabled: MaybeRefOrGetter<boolean> = true) {
+  return useQuery<GitHubRepository[]>({
+    key: ['github', 'viewer-repositories'],
+    enabled: () => toValue(enabled),
+    // Backs the Ctrl-K palette's local fuzzy search. Fetched once and kept warm for the
+    // session (long stale/gc, no focus refetch); a single cold fetch after launch is fine.
+    staleTime: 1000 * 60 * 30,
+    gcTime: 1000 * 60 * 60,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+    refetchOnWindowFocus: false,
+    query: async () => {
+      if (!window.ohMyGithub?.accounts) {
+        throw new Error('GitHub accounts bridge is unavailable')
+      }
+
+      return window.ohMyGithub.accounts.listAllViewerRepositories()
+    },
+  })
+}
+
 export function useAccountRepositoriesQuery(
   login: MaybeRefOrGetter<string>,
   page: MaybeRefOrGetter<number>,
