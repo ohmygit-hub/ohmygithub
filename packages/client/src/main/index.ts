@@ -183,6 +183,20 @@ function sendToRenderer(channel: string, payload?: unknown): void {
   }
 }
 
+// Single-instance guard. The app keeps running in the tray, so relaunching the
+// binary (double-clicking the desktop icon) would otherwise spawn a second process
+// with its own window AND its own tray icon. Hold a lock: a duplicate launch quits
+// immediately and the primary instance surfaces its existing window instead.
+const gotSingleInstanceLock = app.requestSingleInstanceLock()
+
+if (!gotSingleInstanceLock) {
+  app.quit()
+} else {
+  app.on('second-instance', () => {
+    showWindow()
+  })
+}
+
 void app.whenReady().then(() => {
   app.setAppUserModelId('dev.oh-my-github.client')
   configureApplicationMenu()
