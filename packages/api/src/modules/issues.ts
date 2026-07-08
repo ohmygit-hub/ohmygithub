@@ -268,7 +268,7 @@ const viewerIssuesQuery = `
 const repositoryIssuesQuery = `
   query RepositoryIssues($owner: String!, $repo: String!, $first: Int!) {
     repository(owner: $owner, name: $repo) {
-      issues(first: $first, states: [OPEN], orderBy: { field: UPDATED_AT, direction: DESC }) {
+      issues(first: $first, states: [OPEN], orderBy: { field: CREATED_AT, direction: DESC }) {
         nodes {
           ...IssueFields
         }
@@ -708,7 +708,7 @@ export class IssuesApi {
     })
     const response = await this.octokit.request('GET /search/issues', {
       q: searchQuery,
-      sort: 'updated',
+      sort: 'created',
       order: 'desc',
       page,
       per_page: perPage,
