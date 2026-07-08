@@ -106,11 +106,15 @@ export class InboxApi {
   constructor(private readonly octokit: GitHubOctokit) {}
 
   async listWorkspaceItems(options: ListWorkspaceItemsOptions = {}): Promise<GitHubWorkspaceItem[]> {
-    const [notifications, pullRequests, issues] = await Promise.all([
+    // fetchViewerWorkItems returns PR and issue nodes in a single query; fetch
+    // it once and split locally instead of letting listPullRequests/listIssues
+    // each re-issue the same query and discard half the result.
+    const [notifications, response] = await Promise.all([
       this.listNotifications(options),
-      this.listPullRequests(options),
-      this.listIssues(options)
+      this.fetchViewerWorkItems(options)
     ])
+    const pullRequests = mapGraphQLNodes(response.viewer.pullRequests.nodes, 'pull_request')
+    const issues = mapGraphQLNodes(response.viewer.issues.nodes, 'issue')
 
     return [...notifications, ...pullRequests, ...issues].sort((a, b) => {
       return Date.parse(b.updatedAt) - Date.parse(a.updatedAt)
@@ -119,13 +123,13 @@ export class InboxApi {
 
   async listNotifications(options: ListWorkspaceItemsOptions = {}): Promise<GitHubWorkspaceItem[]> {
     const limit = options.limit ?? 50
-    const notifications = await this.octokit.paginate(
-      this.octokit.rest.activity.listNotificationsForAuthenticatedUser,
-      {
-        all: false,
-        per_page: Math.min(limit, 100)
-      }
-    )
+    // Newest-first: the first `limit` rows are in the first page. See
+    // listInboxNotifications for why paginate is avoided here.
+    const response = await this.octokit.rest.activity.listNotificationsForAuthenticatedUser({
+      all: false,
+      per_page: Math.min(limit, 100)
+    })
+    const notifications = response.data
 
     return notifications.slice(0, limit).map((notification) => {
       const repository = notification.repository.full_name
@@ -152,14 +156,16 @@ export class InboxApi {
 
   async listInboxNotifications(options: ListNotificationsOptions = {}): Promise<GitHubNotification[]> {
     const limit = options.limit ?? 50
-    const notifications = await this.octokit.paginate(
-      this.octokit.rest.activity.listNotificationsForAuthenticatedUser,
-      {
-        all: options.all ?? false,
-        participating: options.participating ?? false,
-        per_page: Math.min(limit, 50),
-      },
-    )
+    // A single page is enough — notifications arrive newest-first, so the first
+    // `limit` rows are in the first response. Using paginate here would walk
+    // every page (per_page was capped at 50, so hundreds of notifications meant
+    // dozens of serial requests) only to slice back to `limit` anyway.
+    const response = await this.octokit.rest.activity.listNotificationsForAuthenticatedUser({
+      all: options.all ?? false,
+      participating: options.participating ?? false,
+      per_page: Math.min(limit, 100),
+    })
+    const notifications = response.data
 
     return notifications.slice(0, limit).map((notification) => ({
       id: notification.id,

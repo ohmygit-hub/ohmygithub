@@ -3,7 +3,7 @@ import type { GitHubOctokit } from '../transport'
 import { InboxApi, notificationHtmlUrl, parseSubjectNumber } from './inbox'
 
 function createApi(notifications: unknown[]) {
-  const listNotificationsForAuthenticatedUser = vi.fn()
+  const listNotificationsForAuthenticatedUser = vi.fn().mockResolvedValue({ data: notifications })
   const paginate = vi.fn().mockResolvedValue(notifications)
   const api = new InboxApi({
     paginate,
@@ -87,11 +87,11 @@ describe('InboxApi.listInboxNotifications', () => {
     })
   })
 
-  it('passes all and participating options through to paginate', async () => {
-    const { api, paginate, listNotificationsForAuthenticatedUser } = createApi([])
+  it('passes all and participating options through to the request', async () => {
+    const { api, listNotificationsForAuthenticatedUser } = createApi([])
     await api.listInboxNotifications({ all: true, participating: true, limit: 10 })
 
-    expect(paginate).toHaveBeenCalledWith(listNotificationsForAuthenticatedUser, {
+    expect(listNotificationsForAuthenticatedUser).toHaveBeenCalledWith({
       all: true,
       participating: true,
       per_page: 10,
