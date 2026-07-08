@@ -453,7 +453,7 @@ const viewerPullRequestsQuery = `
 const repositoryPullRequestsQuery = `
   query RepositoryPullRequests($owner: String!, $repo: String!, $first: Int!) {
     repository(owner: $owner, name: $repo) {
-      pullRequests(first: $first, states: [OPEN], orderBy: { field: UPDATED_AT, direction: DESC }) {
+      pullRequests(first: $first, states: [OPEN], orderBy: { field: CREATED_AT, direction: DESC }) {
         nodes {
           ...PullRequestFields
         }
@@ -1685,7 +1685,7 @@ export class PullsApi {
     })
     const response = await this.octokit.request('GET /search/issues', {
       q: searchQuery,
-      sort: 'updated',
+      sort: 'created',
       order: 'desc',
       page,
       per_page: perPage,
