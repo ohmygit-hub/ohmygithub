@@ -89,6 +89,7 @@ function createNotFoundUrl(input: string): string {
     :description="t('workspace.search.description')"
     :open="props.open"
     :title="t('workspace.search.title')"
+    highlight-first-on-open
     @update:open="updateOpen"
   >
     <WorkspaceSearchDialogContent

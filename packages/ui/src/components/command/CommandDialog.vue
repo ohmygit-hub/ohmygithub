@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { DialogRootEmits, DialogRootProps } from 'reka-ui'
+import { reactiveOmit } from '@vueuse/core'
 import { useForwardPropsEmits } from 'reka-ui'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '#/components/dialog'
 import Command from './Command.vue'
@@ -7,13 +8,18 @@ import Command from './Command.vue'
 const props = withDefaults(defineProps<DialogRootProps & {
   title?: string
   description?: string
+  // Forwarded to the inner <Command>: a true cmdk palette (where Enter should fire the
+  // highlighted first row) opts in; leave off for value pickers that open on nothing.
+  highlightFirstOnOpen?: boolean
 }>(), {
   title: 'Command Palette',
   description: 'Search for a command to run...',
+  highlightFirstOnOpen: false,
 })
 const emits = defineEmits<DialogRootEmits>()
 
-const forwarded = useForwardPropsEmits(props, emits)
+// highlightFirstOnOpen belongs to <Command>, not the Dialog root — strip it before forwarding.
+const forwarded = useForwardPropsEmits(reactiveOmit(props, 'highlightFirstOnOpen'), emits)
 </script>
 
 <template>
@@ -49,7 +55,10 @@ const forwarded = useForwardPropsEmits(props, emits)
            hairline in dark mode, and NONE in light mode — a white palette already
            separates from the dark scrim by luminance, so a dark hairline there would
            just muddy the edge instead of sharpening it. -->
-      <Command class="border-[color:var(--border-menu-elevated)] shadow-[var(--shadow-modal)]">
+      <Command
+        :highlight-first-on-open="highlightFirstOnOpen"
+        class="border-[color:var(--border-menu-elevated)] shadow-[var(--shadow-modal)]"
+      >
         <slot v-bind="slotProps" />
       </Command>
     </DialogContent>
