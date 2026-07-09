@@ -18,9 +18,12 @@ const router = useRouter()
 
 const presentation = computed(() => {
   const ref = pushCountRefForEvent(props.event)
-  // For a push, hand the resolved compare count down (null while pending/unavailable so
-  // the sentence stays count-less instead of showing a stale 0); non-push events ignore it.
-  const resolved = ref ? (props.pushCounts?.get(ref.key) ?? null) : undefined
+  // Only override the payload count once the compare result is actually cached: a Map
+  // miss (still pending / non-push) stays `undefined` so presentFeedEvent falls back to
+  // the payload's own count; a cached `null` (unavailable) renders the count-less sentence.
+  const resolved = ref && props.pushCounts?.has(ref.key)
+    ? props.pushCounts.get(ref.key)!
+    : undefined
   return presentFeedEvent(props.event, resolved)
 })
 const relativeTime = computed(() => formatRelativeTime(props.event.createdAt, { locale: locale.value }))

@@ -190,77 +190,80 @@ function sendToRenderer(channel: string, payload?: unknown): void {
 const gotSingleInstanceLock = app.requestSingleInstanceLock()
 
 if (!gotSingleInstanceLock) {
+  // A primary instance already owns the app (possibly hidden in the tray). Quit this
+  // duplicate before it registers any window / tray / IPC, and let the primary surface
+  // its window via 'second-instance' — the shape of Electron's single-instance example.
   app.quit()
 } else {
   app.on('second-instance', () => {
     showWindow()
   })
+
+  void app.whenReady().then(() => {
+    app.setAppUserModelId('dev.oh-my-github.client')
+    configureApplicationMenu()
+    configureDevelopmentAppIcon()
+    registerAccountsIpc()
+    registerActionsIpc()
+    registerActivityIpc()
+    registerAuthIpc()
+    registerBookmarksIpc()
+    registerConfigIpc((config) => {
+      applyThemeSource(config.ui.theme)
+      appTray?.refresh()
+    })
+    registerDeploymentsIpc()
+    registerInboxIpc()
+    registerIssuesIpc()
+    registerLinksIpc()
+    registerOrganizationPeopleIpc()
+    registerPackagesIpc()
+    registerPinsIpc()
+    registerPullsIpc()
+    registerReleasesIpc()
+    registerRepositoriesIpc()
+    registerRepositorySettingsIpc()
+    registerSearchIpc()
+    registerUserSettingsIpc()
+    registerUpdatesIpc()
+    registerWindowIpc()
+    initializeAuth()
+    applyThemeSource(initializeConfig().config.ui.theme)
+    createWindow()
+    appTray = createAppTray({
+      showWindow,
+      sendToRenderer,
+      getLanguage: () => getLocalConfig().ui.locale,
+      isAuthenticated,
+      listBookmarks: () => readBookmarks(),
+      listNotifications: (limit) => listRecentNotifications(limit),
+      onAuthChanged,
+      quit: () => {
+        isQuitting = true
+        app.quit()
+      }
+    })
+
+    app.on('activate', () => {
+      showWindow()
+    })
+  })
+
+  app.on('before-quit', () => {
+    isQuitting = true
+  })
+
+  // macOS installs updates through Electron's native autoUpdater, which closes all
+  // windows WITHOUT emitting 'before-quit' (it emits 'before-quit-for-update' on
+  // itself instead) and only installs/relaunches once 'window-all-closed' fires.
+  // Without this, the close-to-tray guard hides the window, the updater waits
+  // forever, and "Restart to update" leaves the old app running hidden in the tray.
+  autoUpdater.on('before-quit-for-update', () => {
+    isQuitting = true
+  })
+
+  app.on('window-all-closed', () => {
+    // The app keeps running in the tray on all platforms. Quit happens only via the
+    // tray's Quit item (which sets isQuitting) or a genuine OS/updater quit.
+  })
 }
-
-void app.whenReady().then(() => {
-  app.setAppUserModelId('dev.oh-my-github.client')
-  configureApplicationMenu()
-  configureDevelopmentAppIcon()
-  registerAccountsIpc()
-  registerActionsIpc()
-  registerActivityIpc()
-  registerAuthIpc()
-  registerBookmarksIpc()
-  registerConfigIpc((config) => {
-    applyThemeSource(config.ui.theme)
-    appTray?.refresh()
-  })
-  registerDeploymentsIpc()
-  registerInboxIpc()
-  registerIssuesIpc()
-  registerLinksIpc()
-  registerOrganizationPeopleIpc()
-  registerPackagesIpc()
-  registerPinsIpc()
-  registerPullsIpc()
-  registerReleasesIpc()
-  registerRepositoriesIpc()
-  registerRepositorySettingsIpc()
-  registerSearchIpc()
-  registerUserSettingsIpc()
-  registerUpdatesIpc()
-  registerWindowIpc()
-  initializeAuth()
-  applyThemeSource(initializeConfig().config.ui.theme)
-  createWindow()
-  appTray = createAppTray({
-    showWindow,
-    sendToRenderer,
-    getLanguage: () => getLocalConfig().ui.locale,
-    isAuthenticated,
-    listBookmarks: () => readBookmarks(),
-    listNotifications: (limit) => listRecentNotifications(limit),
-    onAuthChanged,
-    quit: () => {
-      isQuitting = true
-      app.quit()
-    }
-  })
-
-  app.on('activate', () => {
-    showWindow()
-  })
-})
-
-app.on('before-quit', () => {
-  isQuitting = true
-})
-
-// macOS installs updates through Electron's native autoUpdater, which closes all
-// windows WITHOUT emitting 'before-quit' (it emits 'before-quit-for-update' on
-// itself instead) and only installs/relaunches once 'window-all-closed' fires.
-// Without this, the close-to-tray guard hides the window, the updater waits
-// forever, and "Restart to update" leaves the old app running hidden in the tray.
-autoUpdater.on('before-quit-for-update', () => {
-  isQuitting = true
-})
-
-app.on('window-all-closed', () => {
-  // The app keeps running in the tray on all platforms. Quit happens only via the
-  // tray's Quit item (which sets isQuitting) or a genuine OS/updater quit.
-})

@@ -21,7 +21,11 @@ const expanded = ref(false)
 
 const presentation = computed(() => {
   const ref = pushCountRefForGroup(props.group)
-  const resolved = ref ? (props.pushCounts?.get(ref.key) ?? null) : undefined
+  // A Map miss (pending / non-push) stays `undefined` so presentFeedGroup falls back to
+  // the group's own payloadTotal; only a cached `null` renders the count-less sentence.
+  const resolved = ref && props.pushCounts?.has(ref.key)
+    ? props.pushCounts.get(ref.key)!
+    : undefined
   return presentFeedGroup(props.group, resolved)
 })
 const relativeTime = computed(() => formatRelativeTime(props.group.createdAt, { locale: locale.value }))
