@@ -660,7 +660,7 @@ export class IssuesApi {
     const { data: viewer } = await this.octokit.rest.users.getAuthenticated()
 
     if (options.category === 'inbox') {
-      const references = await listInboxWorkItemReferences(this.octokit, 'issue')
+      const references = await listInboxWorkItemReferences(this.octokit, 'issue', limit)
       const unreadKeys = await listUnreadWorkItemKeys(this.octokit)
       const nodes = await Promise.all(
         references.map((reference) => this.fetchIssueByReference(reference).catch(() => null))

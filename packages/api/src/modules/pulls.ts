@@ -1635,7 +1635,7 @@ export class PullsApi {
     const { data: viewer } = await this.octokit.rest.users.getAuthenticated()
 
     if (options.category === 'inbox') {
-      const references = await listInboxWorkItemReferences(this.octokit, 'pull-request')
+      const references = await listInboxWorkItemReferences(this.octokit, 'pull-request', limit)
       const unreadKeys = await listUnreadWorkItemKeys(this.octokit)
       const nodes = await Promise.all(
         references.map((reference) => this.fetchPullRequestByReference(reference).catch(() => null))

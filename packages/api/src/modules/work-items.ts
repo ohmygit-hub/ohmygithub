@@ -107,42 +107,67 @@ export async function listUnreadWorkItemKeys(octokit: GitHubOctokit): Promise<Se
 
 export async function listInboxWorkItemReferences(
   octokit: GitHubOctokit,
-  kind: WorkItemKind
+  kind: WorkItemKind,
+  limit = 100
 ): Promise<WorkItemReference[]> {
   try {
-    const notifications = await listAllNotifications(octokit)
     const seen = new Set<string>()
     const refs: WorkItemReference[] = []
+    let page = 1
 
-    for (const notification of notifications) {
-      const notificationKind = notification.subject.type === 'PullRequest'
-        ? 'pull-request'
-        : notification.subject.type === 'Issue'
-          ? 'issue'
-          : null
-      const number = parseSubjectNumber(notification.subject.url)
-
-      if (notificationKind !== kind || !number) {
-        continue
-      }
-
-      const repository = notification.repository.full_name
-      const [owner = '', repo = ''] = repository.split('/')
-      const key = createWorkItemKey(kind, repository, number)
-
-      if (!owner || !repo || seen.has(key)) {
-        continue
-      }
-
-      seen.add(key)
-      refs.push({
-        kind,
-        owner,
-        repo,
-        repository,
-        number,
-        updatedAt: notification.updated_at
+    // Page by reference count: a mixed notification stream may have few
+    // matching kinds, so we keep paging until enough refs are collected.
+    while (refs.length < limit) {
+      const response = await octokit.rest.activity.listNotificationsForAuthenticatedUser({
+        all: true,
+        per_page: 50,
+        page,
       })
+
+      if (response.data.length === 0) {
+        break
+      }
+
+      for (const notification of response.data) {
+        const notificationKind = notification.subject.type === 'PullRequest'
+          ? 'pull-request'
+          : notification.subject.type === 'Issue'
+            ? 'issue'
+            : null
+        const number = parseSubjectNumber(notification.subject.url)
+
+        if (notificationKind !== kind || !number) {
+          continue
+        }
+
+        const repository = notification.repository.full_name
+        const [owner = '', repo = ''] = repository.split('/')
+        const key = createWorkItemKey(kind, repository, number)
+
+        if (!owner || !repo || seen.has(key)) {
+          continue
+        }
+
+        seen.add(key)
+        refs.push({
+          kind,
+          owner,
+          repo,
+          repository,
+          number,
+          updatedAt: notification.updated_at
+        })
+
+        if (refs.length >= limit) {
+          break
+        }
+      }
+
+      if (!response.headers.link?.includes('rel="next"')) {
+        break
+      }
+
+      page += 1
     }
 
     return refs
@@ -151,22 +176,13 @@ export async function listInboxWorkItemReferences(
   }
 }
 
+// Unread-dot lookups only need the newest page.
 async function listUnreadNotifications(octokit: GitHubOctokit) {
-  return listNotifications(octokit, false)
-}
-
-async function listAllNotifications(octokit: GitHubOctokit) {
-  return listNotifications(octokit, true)
-}
-
-async function listNotifications(octokit: GitHubOctokit, all: boolean) {
-  return octokit.paginate(
-    octokit.rest.activity.listNotificationsForAuthenticatedUser,
-    {
-      all,
-      per_page: 100
-    }
-  )
+  const response = await octokit.rest.activity.listNotificationsForAuthenticatedUser({
+    all: false,
+    per_page: 50,
+  })
+  return response.data
 }
 
 function parseSubjectNumber(url: string | undefined): number | null {
