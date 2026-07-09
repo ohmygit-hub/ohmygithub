@@ -41,6 +41,10 @@ export function createAppTray(deps: AppTrayDeps): AppTrayHandle {
   const tray = new Tray(resolveTrayIcon())
   tray.setToolTip('Oh My GitHub')
 
+  // Double-clicking the tray icon restores/focuses the window (creating it if the app
+  // was closed to tray). Right-click still opens the context menu.
+  tray.on('double-click', () => deps.showWindow())
+
   let notifications: GitHubNotification[] = []
 
   const handlers: TrayMenuHandlers = {
