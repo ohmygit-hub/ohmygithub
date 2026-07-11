@@ -122,6 +122,56 @@ export function useWorkspaceTabs() {
     persistTabs(tabs.value, activeUrl.value)
   }
 
+  async function closeOtherTabs(url: string): Promise<void> {
+    if (tabs.value.length <= 1) return
+
+    const target = tabs.value.find((tab) => tab.url === url)
+    if (!target) return
+
+    tabs.value = [target]
+    backStack.value = []
+    forwardStack.value = []
+
+    if (activeUrl.value !== target.url) {
+      activeUrl.value = target.url
+      persistTabs(tabs.value, activeUrl.value)
+      await replaceWorkspaceUrl(target.url)
+      return
+    }
+
+    persistTabs(tabs.value, activeUrl.value)
+  }
+
+  async function closeTabsToRight(url: string): Promise<void> {
+    const index = tabs.value.findIndex((tab) => tab.url === url)
+    if (index === -1 || index >= tabs.value.length - 1) return
+
+    const removedUrls = new Set(tabs.value.slice(index + 1).map((tab) => tab.url))
+    tabs.value = tabs.value.slice(0, index + 1)
+    backStack.value = []
+    forwardStack.value = []
+
+    if (removedUrls.has(activeUrl.value)) {
+      activeUrl.value = url
+      persistTabs(tabs.value, activeUrl.value)
+      await replaceWorkspaceUrl(url)
+      return
+    }
+
+    persistTabs(tabs.value, activeUrl.value)
+  }
+
+  async function closeAllTabs(): Promise<void> {
+    const defaultTab = createWorkspaceTabFromUrl(DEFAULT_WORKSPACE_URL)
+
+    tabs.value = [defaultTab]
+    backStack.value = []
+    forwardStack.value = []
+    activeUrl.value = defaultTab.url
+    persistTabs(tabs.value, activeUrl.value)
+    await replaceWorkspaceUrl(defaultTab.url)
+  }
+
   async function replaceActiveTabUrl(url: string): Promise<void> {
     const previousActiveUrl = activeUrl.value
     const nextTab = createWorkspaceTabFromUrl(url)
@@ -273,6 +323,9 @@ export function useWorkspaceTabs() {
     canGoBack,
     canGoForward,
     closeTab,
+    closeOtherTabs,
+    closeTabsToRight,
+    closeAllTabs,
     goBack,
     goForward,
     openWorkspaceTab,

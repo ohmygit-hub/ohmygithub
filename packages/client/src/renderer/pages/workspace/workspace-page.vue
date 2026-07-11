@@ -44,6 +44,9 @@ const {
   canGoBack,
   canGoForward,
   closeTab,
+  closeOtherTabs,
+  closeTabsToRight,
+  closeAllTabs,
   goBack,
   goForward,
   openWorkspaceTab,
@@ -376,6 +379,9 @@ async function writeClipboardText(value: string): Promise<void> {
           @back="goBack"
           @bookmark="addTabBookmark"
           @close="closeTab"
+          @close-others="closeOtherTabs"
+          @close-to-right="closeTabsToRight"
+          @close-all="closeAllTabs"
           @copy-git-hub-url="copyActiveGitHubUrl"
           @open-git-hub-url="openActiveGitHubUrl"
           @forward="goForward"

@@ -2788,6 +2788,12 @@
     },
     "tabs": {
       "closeTab": "Close {title}",
+      "context": {
+        "close": "Close tab",
+        "closeAll": "Close all tabs",
+        "closeOthers": "Close other tabs",
+        "closeToRight": "Close tabs to the right"
+      },
       "items": {
         "activity": "Activity",
         "inbox": "Inbox",

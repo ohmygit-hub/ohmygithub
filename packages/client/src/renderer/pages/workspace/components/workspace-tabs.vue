@@ -12,6 +12,7 @@ import {
   ArrowRight,
   Bookmark,
   Check,
+  ChevronsRight,
   Copy,
   Folder,
   Github,
@@ -23,6 +24,11 @@ import {
 } from 'lucide-vue-next'
 import {
   Button,
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuSeparator,
+  ContextMenuTrigger,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -56,6 +62,9 @@ const emit = defineEmits<{
   back: []
   bookmark: [input: { folderId: string | null; tab: WorkspaceTab; title: string }]
   close: [url: string]
+  closeOthers: [url: string]
+  closeToRight: [url: string]
+  closeAll: []
   copyGitHubUrl: []
   openGitHubUrl: []
   forward: []
@@ -153,6 +162,15 @@ function tabIdentity(tab: WorkspaceTab): string {
   }
 
   return tab.url
+}
+
+function canCloseOtherTabs(url: string): boolean {
+  return props.tabs.some((tab) => tab.url !== url)
+}
+
+function canCloseTabsToRight(url: string): boolean {
+  const index = props.tabs.findIndex((tab) => tab.url === url)
+  return index !== -1 && index < props.tabs.length - 1
 }
 
 function bookmarkRootLabel(): string {
@@ -459,31 +477,68 @@ watch(
           @scroll="updateScrollMetrics"
         >
           <TabsList class="w-auto min-w-max border-b-0">
-            <div
+            <ContextMenu
               v-for="tab in props.tabs"
               :key="tabIdentity(tab)"
-              class="workspace-tab-chip"
-              :data-active="activeUrl === tab.url ? 'true' : undefined"
             >
-              <TabsTrigger
-                :value="tab.url"
-                class="workspace-tab-trigger max-w-40 min-w-0"
-              >
-                <component :is="getWorkspaceTabView(tab).icon" />
-                <span class="truncate">{{ tabTitle(tab) }}</span>
-              </TabsTrigger>
-              <Button
-                :aria-label="t('workspace.tabs.closeTab', { title: tabTitle(tab) })"
-                class="workspace-tab-close"
-                :disabled="props.tabs.length <= 1"
-                size="icon-sm"
-                type="button"
-                variant="ghost"
-                @click.stop="emit('close', tab.url)"
-              >
-                <X class="size-3" />
-              </Button>
-            </div>
+              <ContextMenuTrigger as-child>
+                <div
+                  class="workspace-tab-chip"
+                  :data-active="activeUrl === tab.url ? 'true' : undefined"
+                >
+                  <TabsTrigger
+                    :value="tab.url"
+                    class="workspace-tab-trigger max-w-40 min-w-0"
+                  >
+                    <component :is="getWorkspaceTabView(tab).icon" />
+                    <span class="truncate">{{ tabTitle(tab) }}</span>
+                  </TabsTrigger>
+                  <Button
+                    :aria-label="t('workspace.tabs.closeTab', { title: tabTitle(tab) })"
+                    class="workspace-tab-close"
+                    :disabled="props.tabs.length <= 1"
+                    size="icon-sm"
+                    type="button"
+                    variant="ghost"
+                    @click.stop="emit('close', tab.url)"
+                  >
+                    <X class="size-3" />
+                  </Button>
+                </div>
+              </ContextMenuTrigger>
+
+              <ContextMenuContent class="w-48">
+                <ContextMenuItem
+                  :disabled="props.tabs.length <= 1"
+                  @select="emit('close', tab.url)"
+                >
+                  <X />
+                  <span>{{ t('workspace.tabs.context.close') }}</span>
+                </ContextMenuItem>
+                <ContextMenuItem
+                  :disabled="!canCloseOtherTabs(tab.url)"
+                  @select="emit('closeOthers', tab.url)"
+                >
+                  <X />
+                  <span>{{ t('workspace.tabs.context.closeOthers') }}</span>
+                </ContextMenuItem>
+                <ContextMenuItem
+                  :disabled="!canCloseTabsToRight(tab.url)"
+                  @select="emit('closeToRight', tab.url)"
+                >
+                  <ChevronsRight />
+                  <span>{{ t('workspace.tabs.context.closeToRight') }}</span>
+                </ContextMenuItem>
+                <ContextMenuSeparator />
+                <ContextMenuItem
+                  variant="destructive"
+                  @select="emit('closeAll')"
+                >
+                  <X />
+                  <span>{{ t('workspace.tabs.context.closeAll') }}</span>
+                </ContextMenuItem>
+              </ContextMenuContent>
+            </ContextMenu>
           </TabsList>
         </div>
         <div
