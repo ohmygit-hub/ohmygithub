@@ -1,6 +1,20 @@
 @import "tailwindcss";
 @import "@oh-my-github/ui/style.css";
 
+/* Bundled UI font: MiSans VF (the variable, wght 100–900 build). We ship the
+   full variable font as one woff2 instead of the misans package's per-weight
+   static subsets — the static build was the wrong package (fixed-weight, so
+   font-weight interpolation and any weight off the four bundled steps fell back
+   to the OS). One VF covers every weight the design tokens ask for. The family
+   name stays "MiSans" so --font-sans in @oh-my-github/ui resolves unchanged. */
+@font-face {
+  font-family: "MiSans";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url("../assets/fonts/MiSans-VF.woff2") format("woff2");
+}
+
 /* Default bundled code font (Maple Mono). Overridden per-user via --font-mono
    from the settings store; --font-sans default lives in @oh-my-github/ui. */
 :root {

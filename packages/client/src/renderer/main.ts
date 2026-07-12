@@ -8,13 +8,7 @@ import { router } from './router'
 import 'markstream-vue/index.css'
 import 'katex/dist/katex.min.css'
 import 'animate.css'
-// Bundled default fonts. MiSans (UI) — the SC "Normal" subset also embeds
-// Latin/Latin-ext/Cyrillic, so these four weights cover both 中文 and English.
-// Weights map onto the app's role weights (360→330, 450, 520, 620→630).
-import 'misans/lib/Normal/MiSans-Regular.min.css'
-import 'misans/lib/Normal/MiSans-Demibold.min.css'
-import 'misans/lib/Normal/MiSans-Semibold.min.css'
-import 'misans/lib/Normal/MiSans-Bold.min.css'
+// Bundled UI font (MiSans VF) is declared as an @font-face in styles/app.css.
 // Maple Mono (code) — Latin only, weights 400/700 + 400 italic.
 import '@fontsource/maple-mono/400.css'
 import '@fontsource/maple-mono/400-italic.css'
