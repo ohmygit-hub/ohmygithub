@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { WorkspaceTab } from '@/pages/workspace/types'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useFuse } from '@vueuse/integrations/useFuse'
@@ -11,6 +12,7 @@ import {
   UserRound,
 } from 'lucide-vue-next'
 import {
+  Badge,
   CommandGroup,
   CommandInput,
   CommandItem,
@@ -20,12 +22,14 @@ import {
   useCommand,
 } from '@oh-my-github/ui'
 import { useViewerRepositoriesQuery } from '@/composables/github/use-accounts'
+import { getWorkspaceTabView } from '@/pages/workspace/tab-presentation'
 import { createRepositoryWorkspaceUrl } from '@/pages/workspace/workspace-url'
 
 const props = defineProps<{
   isResolving: boolean
   open: boolean
   resolveError: boolean
+  tabs: WorkspaceTab[]
 }>()
 
 const emit = defineEmits<{
@@ -39,6 +43,36 @@ const { filterState } = useCommand()
 const latestQuery = ref('')
 const query = computed(() => filterState.search.trim())
 const hasQuery = computed(() => query.value.length > 0)
+const openTabUrls = computed(() => new Set(props.tabs.map((tab) => tab.url)))
+const openTabs = computed(() => props.tabs.map((tab) => {
+  const view = getWorkspaceTabView(tab)
+  const title = view.titleKey ? t(view.titleKey, view.titleParams ?? {}) : view.title
+
+  return {
+    icon: view.icon,
+    searchText: [title, tab.url, tab.owner, tab.repo, tab.type].filter(Boolean).join(' '),
+    tab,
+    title,
+  }
+}))
+
+const MAX_OPEN_TAB_MATCHES = 6
+const { results: openTabFuseResults } = useFuse(query, openTabs, {
+  matchAllWhenSearchEmpty: false,
+  fuseOptions: {
+    keys: [
+      { name: 'title', weight: 2 },
+      { name: 'searchText', weight: 1 },
+    ],
+    threshold: 0.4,
+    ignoreLocation: true,
+  },
+})
+const openTabMatches = computed(() =>
+  hasQuery.value
+    ? openTabFuseResults.value.slice(0, MAX_OPEN_TAB_MATCHES).map((result) => result.item)
+    : [],
+)
 
 // Local cache of every repo the viewer can reach, for instant fuzzy navigation. Shares
 // the session-warm Colada query prefetched by the workspace shell, so opening the palette
@@ -59,7 +93,12 @@ const { results: fuseResults } = useFuse(query, repositories, {
   },
 })
 const repoMatches = computed(() =>
-  hasQuery.value ? fuseResults.value.slice(0, MAX_REPO_MATCHES).map((result) => result.item) : [],
+  hasQuery.value
+    ? fuseResults.value
+        .map((result) => result.item)
+        .filter((repository) => !openTabUrls.value.has(createRepositoryWorkspaceUrl(repository.owner, repository.name)))
+        .slice(0, MAX_REPO_MATCHES)
+    : [],
 )
 
 watch(query, (value) => {
@@ -107,6 +146,33 @@ function openRepository(repository: GitHubRepository): void {
     v-if="hasQuery"
     :key="query"
   >
+    <CommandGroup
+      v-if="openTabMatches.length"
+      force-render
+    >
+      <CommandItem
+        v-for="item in openTabMatches"
+        :key="item.tab.url"
+        force-render
+        :value="`tab:${item.searchText}`"
+        @select="emit('navigate', item.tab.url)"
+      >
+        <component
+          :is="item.icon"
+          class="size-3.5"
+        />
+        <span class="min-w-0 flex-1 truncate">{{ item.title }}</span>
+        <Badge
+          class="select-none shrink-0"
+          variant="secondary"
+        >
+          {{ t('workspace.search.openTab') }}
+        </Badge>
+      </CommandItem>
+    </CommandGroup>
+
+    <CommandSeparator v-if="openTabMatches.length" />
+
     <!-- Repositories matched against the local cache: pressing Enter jumps straight to the
       top match, which is what most Ctrl-K users want. Rendered first so it stays the
       default; when nothing matches, the repository-search action below is the fallback. -->

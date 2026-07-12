@@ -395,6 +395,7 @@ async function writeClipboardText(value: string): Promise<void> {
 
     <WorkspaceSearchDialog
       v-model:open="isSearchDialogOpen"
+      :tabs="tabs"
       @navigate="selectTab"
     />
   </SidebarProvider>

@@ -118,6 +118,11 @@ const rightPanelLabel = computed(() =>
   t(isRightPanelOpen.value ? 'workspace.rightPanel.close' : 'workspace.rightPanel.open'),
 )
 const hasTabOverflow = computed(() => scrollMetrics.value.scrollWidth > scrollMetrics.value.clientWidth + 1)
+const canScrollTabsLeft = computed(() => hasTabOverflow.value && scrollMetrics.value.scrollLeft > 1)
+const canScrollTabsRight = computed(() => {
+  const { clientWidth, scrollLeft, scrollWidth } = scrollMetrics.value
+  return hasTabOverflow.value && scrollLeft + clientWidth < scrollWidth - 1
+})
 const scrollbarThumbStyle = computed(() => {
   const { clientWidth, scrollLeft, scrollWidth } = scrollMetrics.value
 
@@ -350,7 +355,7 @@ watch(
     class="min-h-0 flex-1 gap-0"
     @update:model-value="setActiveTab"
   >
-    <div class="workspace-tabs-bar flex h-9 shrink-0 items-center gap-1 border-b border-border bg-background px-2">
+    <div class="workspace-tabs-bar flex h-10 shrink-0 items-center gap-1 border-b border-border bg-background px-2">
       <div
         v-if="shouldReserveTrafficLights"
         aria-hidden="true"
@@ -469,6 +474,8 @@ watch(
 
       <div
         class="workspace-tabs-scroll-frame min-w-0 flex-1"
+        :data-can-scroll-left="canScrollTabsLeft ? 'true' : undefined"
+        :data-can-scroll-right="canScrollTabsRight ? 'true' : undefined"
         :data-overflowing="hasTabOverflow ? 'true' : undefined"
       >
         <div
@@ -502,7 +509,7 @@ watch(
                     variant="ghost"
                     @click.stop="emit('close', tab.url)"
                   >
-                    <X class="size-3" />
+                    <X class="size-3.5" />
                   </Button>
                 </div>
               </ContextMenuTrigger>
@@ -680,6 +687,38 @@ watch(
   position: relative;
 }
 
+.workspace-tabs-scroll-frame::before,
+.workspace-tabs-scroll-frame::after {
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  bottom: 0;
+  width: 2rem;
+  content: '';
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.16s ease;
+}
+
+.workspace-tabs-scroll-frame::before {
+  left: 0;
+  background: linear-gradient(to right, var(--background), transparent);
+  backdrop-filter: blur(2px);
+  mask-image: linear-gradient(to right, black, transparent);
+}
+
+.workspace-tabs-scroll-frame::after {
+  right: 0;
+  background: linear-gradient(to left, var(--background), transparent);
+  backdrop-filter: blur(2px);
+  mask-image: linear-gradient(to left, black, transparent);
+}
+
+.workspace-tabs-scroll-frame[data-can-scroll-left="true"]::before,
+.workspace-tabs-scroll-frame[data-can-scroll-right="true"]::after {
+  opacity: 1;
+}
+
 .workspace-tabs-scroll {
   scrollbar-width: none;
 }
@@ -690,6 +729,7 @@ watch(
 
 .workspace-tabs-scrollbar {
   position: absolute;
+  z-index: 2;
   right: 0;
   bottom: 0.125rem;
   left: 0;
@@ -718,7 +758,7 @@ watch(
   display: flex;
   min-width: 0;
   align-items: center;
-  height: 1.75rem;
+  height: 2rem;
   border-radius: var(--radius-md);
   color: var(--muted-foreground);
 }
@@ -734,12 +774,12 @@ watch(
 }
 
 [data-workspace-tabs] :deep([data-slot="tabs-trigger"]) {
-  height: 1.75rem;
-  padding-inline: 0.5rem 0.25rem;
+  height: 2rem;
+  padding-inline: 0.75rem 0.5rem;
   border-radius: var(--radius-md);
-  font-size: var(--text-body);
-  line-height: var(--text-body--line-height);
-  letter-spacing: var(--text-body--letter-spacing);
+  font-size: var(--text-label);
+  line-height: var(--text-label--line-height);
+  letter-spacing: var(--text-label--letter-spacing);
   color: inherit;
 }
 
@@ -754,8 +794,8 @@ watch(
 }
 
 [data-workspace-tabs] :deep([data-slot="tabs-trigger"] svg) {
-  width: 0.875rem;
-  height: 0.875rem;
+  width: 1rem;
+  height: 1rem;
 }
 
 [data-workspace-tabs] :deep(.tabs-underline) {
@@ -763,8 +803,9 @@ watch(
 }
 
 .workspace-tab-close {
-  width: 1.375rem;
-  height: 1.375rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin-right: 0.25rem;
   color: inherit;
 }
 

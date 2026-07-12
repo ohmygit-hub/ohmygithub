@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { WorkspaceTab } from '@/pages/workspace/types'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { CommandDialog } from '@oh-my-github/ui'
@@ -6,6 +7,7 @@ import WorkspaceSearchDialogContent from './workspace-search-dialog-content.vue'
 
 const props = defineProps<{
   open: boolean
+  tabs: WorkspaceTab[]
 }>()
 
 const emit = defineEmits<{
@@ -96,6 +98,7 @@ function createNotFoundUrl(input: string): string {
       :is-resolving="isResolving"
       :open="props.open"
       :resolve-error="resolveError"
+      :tabs="props.tabs"
       @goto="gotoQuery"
       @search="searchQuery"
       @navigate="navigateToUrl"
