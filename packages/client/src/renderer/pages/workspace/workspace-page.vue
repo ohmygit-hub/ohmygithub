@@ -41,6 +41,7 @@ const toast = useToast()
 const {
   activeTab,
   activeUrl,
+  canCloseAllTabs,
   canGoBack,
   canGoForward,
   closeTab,
@@ -371,6 +372,7 @@ async function writeClipboardText(value: string): Promise<void> {
           :bookmark-folders="bookmarkFolders"
           :bookmarks="bookmarks"
           :bookmarked-urls="bookmarkedUrls"
+          :can-close-all-tabs="canCloseAllTabs"
           :can-go-back="canGoBack"
           :can-go-forward="canGoForward"
           :is-fullscreen="isWindowFullscreen"
