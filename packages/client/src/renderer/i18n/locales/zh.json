@@ -2815,8 +2815,9 @@
         "repos": "搜索仓库 \"{query}\"",
         "users": "搜索用户 \"{query}\""
       },
-      "description": "搜索 GitHub 账号、组织和仓库。",
-      "placeholder": "搜索 GitHub 或粘贴 URL",
+      "description": "搜索已打开的标签页、GitHub 账号、组织和仓库。",
+      "openTab": "已打开的 Tab",
+      "placeholder": "搜索标签页或 GitHub，也可以粘贴 URL",
       "resolveError": "无法解析这个目标。可以改用搜索。",
       "title": "搜索工作区"
     },

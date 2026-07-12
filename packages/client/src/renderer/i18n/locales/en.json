@@ -2815,8 +2815,9 @@
         "repos": "Search repositories for \"{query}\"",
         "users": "Search users for \"{query}\""
       },
-      "description": "Search for GitHub accounts, organizations, and repositories.",
-      "placeholder": "Search GitHub or paste a URL",
+      "description": "Search open tabs, GitHub accounts, organizations, and repositories.",
+      "openTab": "Already open",
+      "placeholder": "Search tabs or GitHub, or paste a URL",
       "resolveError": "Could not resolve this target. Try a search instead.",
       "title": "Search workspace"
     },
