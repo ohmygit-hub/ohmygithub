@@ -162,12 +162,14 @@ function fallbackInitials(login: string): string {
     v-if="open"
     class="absolute z-50 w-64 overflow-hidden rounded-[var(--radius-menu-shell)] border border-border bg-popover text-popover-foreground shadow-[var(--shadow-dropdown)]"
     :style="{ top: `${top}px`, left: `${left}px` }"
-    role="listbox"
-    :aria-label="t('conversation.mention.label')"
   >
+    <!-- The listbox role lives on the options container so it only exists
+         while it holds role="option" children; loading/empty are status text. -->
     <div
       v-if="candidates.length > 0"
       class="max-h-64 overflow-auto py-1"
+      role="listbox"
+      :aria-label="t('conversation.mention.label')"
     >
       <button
         v-for="(candidate, index) in candidates"
@@ -196,6 +198,7 @@ function fallbackInitials(login: string): string {
     <p
       v-else-if="isLoading"
       class="flex items-center gap-2 px-3 py-2.5 text-body text-muted-foreground"
+      role="status"
     >
       <Spinner class="size-3.5" />
       {{ t('conversation.mention.searching') }}
@@ -204,6 +207,7 @@ function fallbackInitials(login: string): string {
     <p
       v-else
       class="px-3 py-2.5 text-body text-muted-foreground"
+      role="status"
     >
       {{ t('conversation.mention.empty') }}
     </p>

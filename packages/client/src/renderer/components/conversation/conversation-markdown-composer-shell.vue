@@ -145,14 +145,16 @@ function handleMentionKey(key: 'Enter' | 'ArrowUp' | 'ArrowDown' | 'Escape'): bo
     return true
   }
 
+  // With no candidates to navigate, let the editor move the caret instead of
+  // trapping it; the cursor sync then closes the menu when the caret leaves.
   if (key === 'ArrowDown') {
-    if (mentionCandidates.value.length === 0) return true
+    if (mentionCandidates.value.length === 0) return false
     mentionActiveIndex.value = (mentionActiveIndex.value + 1) % mentionCandidates.value.length
     return true
   }
 
   if (key === 'ArrowUp') {
-    if (mentionCandidates.value.length === 0) return true
+    if (mentionCandidates.value.length === 0) return false
     mentionActiveIndex.value = (
       mentionActiveIndex.value - 1 + mentionCandidates.value.length
     ) % mentionCandidates.value.length
