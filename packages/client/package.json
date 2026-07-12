@@ -1,6 +1,6 @@
 {
   "name": "@oh-my-github/client",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "private": true,
   "description": "Electron desktop client for Oh My GitHub.",
   "author": "Oh My GitHub",

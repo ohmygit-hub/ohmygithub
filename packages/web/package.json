@@ -1,6 +1,6 @@
 {
   "name": "@oh-my-github/web",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "private": true,
   "type": "module",
   "description": "Landing page for Oh My GitHub.",
