@@ -1,7 +1,7 @@
 import { createGitHubApi, type PushCommitCountRef } from '@oh-my-github/api'
 import { ipcMain } from 'electron'
 import { getAuthenticatedAccessToken, getAuthenticatedViewerLogin } from './auth'
-import { resolveGitHubProxyUrl } from './proxy'
+import { resolveGitHubTransport } from './proxy'
 
 interface ListReceivedEventsIpcOptions {
   page?: number
@@ -40,6 +40,6 @@ async function listReceivedEvents(options?: ListReceivedEventsIpcOptions) {
 async function createAuthenticatedGitHubApi() {
   return createGitHubApi({
     token: getAuthenticatedAccessToken(),
-    proxyUrl: await resolveGitHubProxyUrl(),
+    ...(await resolveGitHubTransport()),
   })
 }

@@ -1,5 +1,5 @@
-import type { GitHubOctokit } from '../transport'
-import { createOctokit, createProxyFetch } from '../transport'
+import type { GitHubOctokit, GitHubTransportOptions } from '../transport'
+import { createGitHubFetch, createOctokit } from '../transport'
 import type {
   GitHubAuthViewer,
   GitHubDeviceAuthorization,
@@ -51,6 +51,7 @@ export const defaultGitHubOAuthScopes = [
 interface AuthApiOptions {
   octokit?: GitHubOctokit
   proxyUrl?: string
+  ca?: string | string[]
 }
 
 export class AuthApi {
@@ -65,7 +66,7 @@ export class AuthApi {
         client_id: options.clientId,
         scope: options.scopes.join(' ')
       },
-      this.options.proxyUrl
+      this.transportOptions
     )
 
     return {
@@ -88,7 +89,7 @@ export class AuthApi {
         device_code: options.deviceCode,
         grant_type: 'urn:ietf:params:oauth:grant-type:device_code'
       },
-      this.options.proxyUrl
+      this.transportOptions
     )
 
     if (response.access_token) {
@@ -115,9 +116,13 @@ export class AuthApi {
     }
   }
 
+  private get transportOptions(): GitHubTransportOptions {
+    return { proxyUrl: this.options.proxyUrl, ca: this.options.ca }
+  }
+
   async getViewer(token?: string): Promise<GitHubAuthViewer> {
     const octokit = token
-      ? createOctokit({ token, proxyUrl: this.options.proxyUrl })
+      ? createOctokit({ token, ...this.transportOptions })
       : this.options.octokit
 
     if (!octokit) {
@@ -138,10 +143,10 @@ export class AuthApi {
 async function postGitHubOAuth<T>(
   url: string,
   body: Record<string, string>,
-  proxyUrl: string | undefined
+  transport: GitHubTransportOptions
 ): Promise<T> {
-  const fetchWithProxy = proxyUrl ? createProxyFetch(proxyUrl) : fetch
-  const response = await fetchWithProxy(url, {
+  const fetchWithTransport = createGitHubFetch(transport) ?? fetch
+  const response = await fetchWithTransport(url, {
     method: 'POST',
     headers: {
       Accept: 'application/json',

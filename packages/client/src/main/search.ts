@@ -7,7 +7,7 @@ import {
 } from '@oh-my-github/api'
 import { ipcMain } from 'electron'
 import { getAuthenticatedAccessToken } from './auth'
-import { resolveGitHubProxyUrl } from './proxy'
+import { resolveGitHubTransport } from './proxy'
 
 export function registerSearchIpc(): void {
   ipcMain.handle('search:resolve-goto', (_event, input: string) => resolveWorkspaceGoto(input))
@@ -95,6 +95,6 @@ function normalizePositiveInteger(value: number | undefined): number | undefined
 async function createAuthenticatedGitHubApi() {
   return createGitHubApi({
     token: getAuthenticatedAccessToken(),
-    proxyUrl: await resolveGitHubProxyUrl()
+    ...(await resolveGitHubTransport())
   })
 }

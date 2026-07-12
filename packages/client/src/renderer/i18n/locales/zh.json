@@ -152,6 +152,7 @@
     },
     "loginWithGitHub": "使用 GitHub 登录",
     "missingClientId": "还没有配置 OAUTH_CLIENT_ID。请把它加入 .env，或使用个人 token。",
+    "networkSettings": "网络设置",
     "saveToken": "保存 token",
     "subtitle": "连接 GitHub 账号后开始处理工作项。",
     "switchAccount": "切换账号",
@@ -176,6 +177,7 @@
     "tabs": {
       "appearance": "外观",
       "keyboard": "键盘",
+      "network": "网络",
       "about": "关于",
       "github-profile": "公开资料",
       "github-emails": "邮箱",
@@ -201,6 +203,21 @@
       "upToDate": "已是最新",
       "updateChecking": "正在检查更新",
       "updateDownloading": "正在下载 {progress}%"
+    },
+    "network": {
+      "title": "网络",
+      "description": "配置 Oh My GitHub 如何连接 GitHub。",
+      "proxy": "代理",
+      "modes": {
+        "none": "不使用",
+        "system": "系统",
+        "custom": "自定义"
+      },
+      "customUrl": "代理地址",
+      "customUrlDescription": "例如 http://127.0.0.1:7890。",
+      "customUrlPlaceholder": "http://host:port",
+      "useSystemCa": "信任系统证书",
+      "useSystemCaDescription": "同时信任操作系统的证书库，从而接受本地安装的根证书（例如反向代理工具）。除非确有需要，否则请保持关闭——启用会降低 TLS 安全性，后果自行承担。"
     },
     "appearance": {
       "codeFontFamily": "代码字体",

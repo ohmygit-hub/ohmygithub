@@ -19,6 +19,7 @@ import {
   Mail,
   MessageSquareText,
   MonitorSmartphone,
+  Network,
   Palette,
   ScrollText,
   ShieldCheck,
@@ -30,6 +31,7 @@ import {
 export type SettingsTabId =
   | 'appearance'
   | 'keyboard'
+  | 'network'
   | 'about'
   | 'github-profile'
   | 'github-emails'
@@ -85,6 +87,7 @@ export const SETTINGS_NAV_GROUPS: SettingsNavGroup[] = [
     items: [
       { kind: 'tab', id: 'appearance', icon: Palette, labelKey: 'settings.tabs.appearance' },
       { kind: 'tab', id: 'keyboard', icon: Keyboard, labelKey: 'settings.tabs.keyboard' },
+      { kind: 'tab', id: 'network', icon: Network, labelKey: 'settings.tabs.network' },
       { kind: 'tab', id: 'about', icon: Info, labelKey: 'settings.tabs.about' },
     ],
   },

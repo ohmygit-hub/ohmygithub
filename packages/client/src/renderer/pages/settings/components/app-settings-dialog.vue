@@ -25,6 +25,7 @@ import OrganizationsSettings from './github/organizations-settings.vue'
 import ProfileSettings from './github/profile-settings.vue'
 import SavedRepliesSettings from './github/saved-replies-settings.vue'
 import KeyboardSettingsPage from './keyboard/keyboard-settings-page.vue'
+import NetworkSettings from './network/network-settings.vue'
 
 const props = defineProps<{
   activeTab: SettingsTabId
@@ -39,6 +40,7 @@ const { t } = useI18n()
 const tabComponents: Record<SettingsTabId, Component> = {
   'appearance': AppearanceSettings,
   'keyboard': KeyboardSettingsPage,
+  'network': NetworkSettings,
   'about': AboutSettings,
   'github-profile': ProfileSettings,
   'github-emails': EmailsSettings,

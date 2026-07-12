@@ -7,7 +7,7 @@ import {
 } from '@oh-my-github/api'
 import { ipcMain } from 'electron'
 import { getAuthenticatedAccessToken } from './auth'
-import { resolveGitHubProxyUrl } from './proxy'
+import { resolveGitHubTransport } from './proxy'
 
 export function registerIssuesIpc(): void {
   ipcMain.handle('issues:list-category', (_event, category: GitHubIssueCategory) =>
@@ -373,6 +373,6 @@ function requireNonEmpty(value: string | undefined, message: string): string {
 async function createAuthenticatedGitHubApi() {
   return createGitHubApi({
     token: getAuthenticatedAccessToken(),
-    proxyUrl: await resolveGitHubProxyUrl()
+    ...(await resolveGitHubTransport())
   })
 }

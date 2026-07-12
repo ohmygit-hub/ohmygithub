@@ -1730,6 +1730,13 @@ export interface GitHubApiOptions {
   baseUrl?: string
   proxyUrl?: string
   userAgent?: string
+  /**
+   * Extra CA certificates (PEM) to trust for GitHub TLS connections, on top of
+   * Node's default store. Used to opt into a locally-installed root CA (e.g. a
+   * reverse-proxy tool that MITMs github.com); the main process supplies the
+   * system trust store here only when the user has explicitly enabled it.
+   */
+  ca?: string | string[]
 }
 
 export interface StartDeviceAuthorizationOptions {

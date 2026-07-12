@@ -7,7 +7,7 @@ import {
 } from '@oh-my-github/api'
 import { ipcMain } from 'electron'
 import { getAuthenticatedAccessToken, getAuthenticatedViewerLogin } from './auth'
-import { resolveGitHubProxyUrl } from './proxy'
+import { resolveGitHubTransport } from './proxy'
 
 export function registerUserSettingsIpc(): void {
   ipcMain.handle('user-settings:get-profile', async () =>
@@ -200,6 +200,6 @@ function normalizeId(value: unknown): number {
 async function createAuthenticatedGitHubApi() {
   return createGitHubApi({
     token: getAuthenticatedAccessToken(),
-    proxyUrl: await resolveGitHubProxyUrl()
+    ...(await resolveGitHubTransport())
   })
 }

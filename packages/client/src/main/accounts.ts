@@ -1,7 +1,7 @@
 import { createGitHubApi } from '@oh-my-github/api'
 import { ipcMain } from 'electron'
 import { getAuthenticatedAccessToken, getAuthenticatedAuthMetadata } from './auth'
-import { resolveGitHubProxyUrl } from './proxy'
+import { resolveGitHubTransport } from './proxy'
 
 export function registerAccountsIpc(): void {
   ipcMain.handle('accounts:get-profile', (_event, login: string) => getAccountProfile(login))
@@ -219,7 +219,7 @@ function normalizePositiveInteger(value: unknown, fallback: number): number {
 async function createAuthenticatedGitHubApi() {
   return createGitHubApi({
     token: getAuthenticatedAccessToken(),
-    proxyUrl: await resolveGitHubProxyUrl()
+    ...(await resolveGitHubTransport())
   })
 }
 

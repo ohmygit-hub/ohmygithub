@@ -1,7 +1,7 @@
 import { createGitHubApi, defaultGitHubOAuthScopes } from '@oh-my-github/api'
 import { ipcMain } from 'electron'
 import { getAuthenticatedAccessToken, getAuthenticatedAuthMetadata } from './auth'
-import { resolveGitHubProxyUrl } from './proxy'
+import { resolveGitHubTransport } from './proxy'
 
 export function registerRepositoriesIpc(): void {
   ipcMain.handle('repositories:get-viewer-state', (_event, owner: string, repo: string) =>
@@ -447,7 +447,7 @@ function normalizeRepositoryRef(ref: string | null | undefined): string | null {
 async function createAuthenticatedGitHubApi() {
   return createGitHubApi({
     token: getAuthenticatedAccessToken(),
-    proxyUrl: await resolveGitHubProxyUrl()
+    ...(await resolveGitHubTransport())
   })
 }
 

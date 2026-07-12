@@ -2,7 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
-import { ArrowLeft, Check, Copy, Github } from 'lucide-vue-next'
+import { ArrowLeft, Check, Copy, Github, Network } from 'lucide-vue-next'
 import {
   Alert,
   AlertDescription,
@@ -12,9 +12,15 @@ import {
   Button,
   Card,
   CardContent,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
   Input,
   Spinner,
 } from '@oh-my-github/ui'
+import NetworkSettings from '@/pages/settings/components/network/network-settings.vue'
 import { useAuthActions } from '@/composables/use-auth-actions'
 import { useAuthStore } from '@/stores/auth'
 
@@ -33,6 +39,7 @@ const showTokenForm = ref(false)
 const oauthStatus = ref<'idle' | 'opening' | 'waiting' | 'success'>('idle')
 const tokenStatus = ref<'idle' | 'saving'>('idle')
 const switchingAccountId = ref<number | null>(null)
+const showNetworkSettings = ref(false)
 
 const isOAuthLoading = computed(() => oauthStatus.value === 'opening' || oauthStatus.value === 'waiting')
 const isTokenSaving = computed(() => tokenStatus.value === 'saving')
@@ -321,6 +328,27 @@ function resolveErrorMessage(error: unknown): string {
         </div>
       </section>
     </div>
+
+    <Button
+      class="auth-no-drag absolute bottom-4 right-4"
+      size="sm"
+      type="button"
+      variant="outline"
+      @click="showNetworkSettings = true"
+    >
+      <Network class="size-4" />
+      {{ t('auth.networkSettings') }}
+    </Button>
+
+    <Dialog v-model:open="showNetworkSettings">
+      <DialogContent class="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{{ t('settings.network.title') }}</DialogTitle>
+          <DialogDescription>{{ t('settings.network.description') }}</DialogDescription>
+        </DialogHeader>
+        <NetworkSettings />
+      </DialogContent>
+    </Dialog>
   </main>
 </template>
 

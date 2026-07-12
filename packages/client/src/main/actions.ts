@@ -7,7 +7,7 @@ import {
 } from '@oh-my-github/api'
 import { ipcMain } from 'electron'
 import { getAuthenticatedAccessToken } from './auth'
-import { resolveGitHubProxyUrl } from './proxy'
+import { resolveGitHubTransport } from './proxy'
 
 export function registerActionsIpc(): void {
   ipcMain.handle('actions:list-workflows', (_event, owner: string, repo: string) =>
@@ -193,6 +193,6 @@ function normalizePositiveInteger(value: number | undefined, fallback: number): 
 async function createAuthenticatedGitHubApi() {
   return createGitHubApi({
     token: getAuthenticatedAccessToken(),
-    proxyUrl: await resolveGitHubProxyUrl()
+    ...(await resolveGitHubTransport())
   })
 }

@@ -17,7 +17,7 @@ import {
   type StoredAccount,
   type StoredAuthFile
 } from './auth-store'
-import { resolveGitHubProxyUrl } from './proxy'
+import { resolveGitHubTransport } from './proxy'
 
 export type { AccountSummary, AuthMethod, StoredAccount } from './auth-store'
 
@@ -355,7 +355,7 @@ async function pollForToken(options: {
 }
 
 async function createAuthApi(): Promise<AuthApi> {
-  return new AuthApi({ proxyUrl: await resolveGitHubProxyUrl() })
+  return new AuthApi({ ...(await resolveGitHubTransport()) })
 }
 
 function getGitHubClientId(): string {

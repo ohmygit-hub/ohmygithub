@@ -14,7 +14,21 @@ export interface LocalConfig {
     activeAccountLogin: string | null
   }
   network: {
+    /**
+     * How GitHub connections choose a proxy:
+     * - `none`   — direct, ignoring env vars and the OS proxy
+     * - `system` — the OS/env proxy (default; matches the app's original behaviour)
+     * - `custom` — the explicit `proxyUrl` below
+     */
+    proxyMode: 'none' | 'system' | 'custom'
     proxyUrl: string | null
+    /**
+     * Opt-in: trust the OS system CA store (in addition to Node's bundled
+     * roots) for GitHub connections. Off by default — follows Node's default
+     * behaviour. Enable only to work with a locally-installed root CA, e.g. a
+     * reverse-proxy tool that MITMs github.com; at the user's own risk.
+     */
+    useSystemCa: boolean
   }
   ui: {
     locale: 'en' | 'zh'
@@ -118,7 +132,9 @@ function normalizeConfig(config: Partial<LocalConfig>): LocalConfig {
       activeAccountLogin: config.github?.activeAccountLogin ?? null
     },
     network: {
-      proxyUrl: normalizeProxyUrl(config.network?.proxyUrl)
+      proxyMode: normalizeProxyMode(config.network?.proxyMode, config.network?.proxyUrl),
+      proxyUrl: normalizeProxyUrl(config.network?.proxyUrl),
+      useSystemCa: config.network?.useSystemCa === true
     },
     ui: {
       locale: normalizeLocale(config.ui?.locale),
@@ -141,7 +157,9 @@ function defaultConfig(): LocalConfig {
       activeAccountLogin: null
     },
     network: {
-      proxyUrl: null
+      proxyMode: 'system',
+      proxyUrl: null,
+      useSystemCa: false
     },
     ui: {
       locale: 'en',
@@ -155,6 +173,19 @@ function defaultConfig(): LocalConfig {
       keyboardShortcuts: {}
     }
   }
+}
+
+function normalizeProxyMode(
+  value: unknown,
+  proxyUrl: unknown
+): LocalConfig['network']['proxyMode'] {
+  if (value === 'none' || value === 'system' || value === 'custom') {
+    return value
+  }
+
+  // Migrate configs written before proxyMode existed: an explicit proxyUrl meant
+  // "custom", otherwise the old null-cascade behaviour maps onto "system".
+  return typeof proxyUrl === 'string' && proxyUrl.trim() ? 'custom' : 'system'
 }
 
 function normalizeProxyUrl(value: unknown): string | null {

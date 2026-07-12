@@ -94,7 +94,7 @@ export function createGitHubApi(options: GitHubApiOptions): GitHubApi {
   const accounts = new AccountsApi(octokit)
   const actions = new ActionsApi(octokit)
   const activity = new ActivityApi(octokit)
-  const auth = new AuthApi({ octokit, proxyUrl: options.proxyUrl })
+  const auth = new AuthApi({ octokit, proxyUrl: options.proxyUrl, ca: options.ca })
   const deployments = new DeploymentsApi(octokit)
   const inbox = new InboxApi(octokit)
   const issues = new IssuesApi(octokit)

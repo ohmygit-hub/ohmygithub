@@ -152,6 +152,7 @@
     },
     "loginWithGitHub": "Login with GitHub",
     "missingClientId": "OAUTH_CLIENT_ID is not configured. Add it to your .env file or use a personal token.",
+    "networkSettings": "Network settings",
     "saveToken": "Save token",
     "subtitle": "Connect your GitHub account to start triage.",
     "switchAccount": "Switch account",
@@ -176,6 +177,7 @@
     "tabs": {
       "appearance": "Appearance",
       "keyboard": "Keyboard",
+      "network": "Network",
       "about": "About",
       "github-profile": "Public profile",
       "github-emails": "Emails",
@@ -201,6 +203,21 @@
       "upToDate": "Up to Date",
       "updateChecking": "Checking for Update",
       "updateDownloading": "Downloading {progress}%"
+    },
+    "network": {
+      "title": "Network",
+      "description": "Configure how Oh My GitHub connects to GitHub.",
+      "proxy": "Proxy",
+      "modes": {
+        "none": "None",
+        "system": "System",
+        "custom": "Custom"
+      },
+      "customUrl": "Proxy URL",
+      "customUrlDescription": "For example http://127.0.0.1:7890.",
+      "customUrlPlaceholder": "http://host:port",
+      "useSystemCa": "Trust system certificates",
+      "useSystemCaDescription": "Also trust the operating system's certificate store, so a locally-installed root CA (e.g. a reverse-proxy tool) is accepted. Leave off unless you need it — enabling it lowers TLS protection, at your own risk."
     },
     "appearance": {
       "codeFontFamily": "Code font",

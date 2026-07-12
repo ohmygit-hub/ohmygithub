@@ -1,7 +1,7 @@
 import { createGitHubApi, type GitHubNotification, type ListNotificationsOptions } from '@oh-my-github/api'
 import { ipcMain } from 'electron'
 import { getAuthenticatedAccessToken } from './auth'
-import { resolveGitHubProxyUrl } from './proxy'
+import { resolveGitHubTransport } from './proxy'
 
 export function registerInboxIpc(): void {
   ipcMain.handle('inbox:list-notifications', (_event, options?: ListNotificationsOptions) =>
@@ -41,7 +41,7 @@ async function unsubscribe(threadId: string) {
 async function createAuthenticatedGitHubApi() {
   return createGitHubApi({
     token: getAuthenticatedAccessToken(),
-    proxyUrl: await resolveGitHubProxyUrl(),
+    ...(await resolveGitHubTransport()),
   })
 }
 

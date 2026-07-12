@@ -11,7 +11,9 @@ type LocalConfig = {
     activeAccountLogin: string | null
   }
   network: {
+    proxyMode: 'none' | 'system' | 'custom'
     proxyUrl: string | null
+    useSystemCa: boolean
   }
   ui: {
     locale: 'en' | 'zh'

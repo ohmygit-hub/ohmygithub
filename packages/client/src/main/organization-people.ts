@@ -1,7 +1,7 @@
 import { createGitHubApi } from '@oh-my-github/api'
 import { ipcMain } from 'electron'
 import { getAuthenticatedAccessToken, getAuthenticatedAuthMetadata } from './auth'
-import { resolveGitHubProxyUrl } from './proxy'
+import { resolveGitHubTransport } from './proxy'
 
 export function registerOrganizationPeopleIpc(): void {
   ipcMain.handle('organization-people:get', (_event, org: string) => getOrganizationPeople(org))
@@ -138,7 +138,7 @@ function normalizeMemberRole(role: string | undefined): 'member' | 'admin' {
 async function createAuthenticatedGitHubApi() {
   return createGitHubApi({
     token: getAuthenticatedAccessToken(),
-    proxyUrl: await resolveGitHubProxyUrl()
+    ...(await resolveGitHubTransport())
   })
 }
 

@@ -13,7 +13,7 @@ import {
 } from '@oh-my-github/api'
 import { ipcMain } from 'electron'
 import { getAuthenticatedAccessToken } from './auth'
-import { resolveGitHubProxyUrl } from './proxy'
+import { resolveGitHubTransport } from './proxy'
 
 export function registerRepositorySettingsIpc(): void {
   ipcMain.handle('repository-settings:get-general', async (_event, owner: string, repo: string) =>
@@ -508,7 +508,7 @@ export function registerRepositorySettingsIpc(): void {
 async function createAuthenticatedGitHubApi() {
   return createGitHubApi({
     token: getAuthenticatedAccessToken(),
-    proxyUrl: await resolveGitHubProxyUrl()
+    ...(await resolveGitHubTransport())
   })
 }
 
