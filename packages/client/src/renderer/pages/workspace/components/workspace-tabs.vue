@@ -16,6 +16,8 @@ import {
   Copy,
   Folder,
   Github,
+  Maximize2,
+  Minimize2,
   PanelLeftClose,
   PanelLeftOpen,
   PanelRightClose,
@@ -38,10 +40,20 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
   useSidebar,
 } from '@oh-my-github/ui'
 import { useRightPanel } from '@/composables/use-right-panel'
 import { getWorkspaceTabView } from '@/pages/workspace/tab-presentation'
+import {
+  MIN_RIGHT_PANEL_WIDTH,
+  clampRightPanelWidth,
+  getDefaultRightPanelWidth,
+  getRightPanelMaxWidth,
+} from '@/pages/workspace/right-panel-width'
 import WorkspacePanel from './workspace-panel.vue'
 import WorkspaceRightPanel from './workspace-right-panel.vue'
 
@@ -81,21 +93,23 @@ const {
   toggleRightPanel,
 } = useRightPanel()
 const RIGHT_PANEL_WIDTH_STORAGE_KEY = 'oh-my-github:workspace-right-panel-width:v1'
-const DEFAULT_RIGHT_PANEL_WIDTH = 560
-const MIN_RIGHT_PANEL_WIDTH = 320
-const MAX_RIGHT_PANEL_WIDTH = 768
 const isMac = navigator.platform.toLowerCase().includes('mac')
 const scrollHost = ref<HTMLElement>()
+const workspaceContent = ref<HTMLElement>()
 const scrollMetrics = ref({ clientWidth: 0, scrollLeft: 0, scrollWidth: 0 })
 const isDraggingScrollbar = ref(false)
 const isRightPanelResizing = ref(false)
-const rightPanelWidth = ref(readStoredRightPanelWidth())
+const isRightPanelExpanded = ref(false)
+const preferredRightPanelWidth = ref(readStoredRightPanelWidth())
+const workspaceContentWidth = ref(window.innerWidth)
 const bookmarkMenuItemClass = 'h-7 !gap-1.5 !px-2 !py-1 !text-body'
 let resizeObserver: ResizeObserver | undefined
+let workspaceResizeObserver: ResizeObserver | undefined
 let dragStartX = 0
 let dragStartScrollLeft = 0
 let rightPanelResizeStartX = 0
 let rightPanelResizeStartWidth = 0
+let didRightPanelResize = false
 
 const sidebarLabel = computed(() =>
   state.value === 'expanded'
@@ -117,6 +131,19 @@ const activeBookmarkLabel = computed(() =>
 const rightPanelLabel = computed(() =>
   t(isRightPanelOpen.value ? 'workspace.rightPanel.close' : 'workspace.rightPanel.open'),
 )
+const rightPanelMaxWidth = computed(() => getRightPanelMaxWidth(workspaceContentWidth.value))
+const rightPanelWidth = computed(() => {
+  const preferredWidth = preferredRightPanelWidth.value
+    ?? getDefaultRightPanelWidth(workspaceContentWidth.value)
+  const width = isRightPanelExpanded.value ? rightPanelMaxWidth.value : preferredWidth
+  return clampRightPanelWidth(width, workspaceContentWidth.value)
+})
+const canExpandRightPanel = computed(() => rightPanelMaxWidth.value - rightPanelWidth.value > 1)
+const rightPanelExpandLabel = computed(() => t(
+  isRightPanelExpanded.value
+    ? 'workspace.rightPanel.restoreWidth'
+    : 'workspace.rightPanel.expand',
+))
 const hasTabOverflow = computed(() => scrollMetrics.value.scrollWidth > scrollMetrics.value.clientWidth + 1)
 const canScrollTabsLeft = computed(() => hasTabOverflow.value && scrollMetrics.value.scrollLeft > 1)
 const canScrollTabsRight = computed(() => {
@@ -281,20 +308,33 @@ function stopScrollbarDrag(): void {
   window.removeEventListener('pointermove', onScrollbarPointerMove)
 }
 
-function readStoredRightPanelWidth(): number {
+function readStoredRightPanelWidth(): number | null {
   const stored = localStorage.getItem(RIGHT_PANEL_WIDTH_STORAGE_KEY)
-  const width = stored === null ? DEFAULT_RIGHT_PANEL_WIDTH : Number(stored)
-  return clampRightPanelWidth(Number.isFinite(width) && width > 0 ? width : DEFAULT_RIGHT_PANEL_WIDTH)
+  if (stored === null) return null
+
+  const width = Number(stored)
+  return Number.isFinite(width) && width > 0 ? width : null
 }
 
-function clampRightPanelWidth(width: number): number {
-  const viewportMax = Math.floor(window.innerWidth * 0.7)
-  const maxWidth = Math.max(MIN_RIGHT_PANEL_WIDTH, Math.min(MAX_RIGHT_PANEL_WIDTH, viewportMax))
-  return Math.min(maxWidth, Math.max(MIN_RIGHT_PANEL_WIDTH, Math.round(width)))
+function updateWorkspaceContentWidth(): void {
+  const width = workspaceContent.value?.clientWidth
+  if (width && width > 0) {
+    workspaceContentWidth.value = width
+  }
 }
 
-function setRightPanelWidth(width: number): void {
-  rightPanelWidth.value = clampRightPanelWidth(width)
+function setRightPanelWidth(width: number, persist = false): void {
+  isRightPanelExpanded.value = false
+  preferredRightPanelWidth.value = clampRightPanelWidth(width, workspaceContentWidth.value)
+
+  if (persist) {
+    localStorage.setItem(RIGHT_PANEL_WIDTH_STORAGE_KEY, String(preferredRightPanelWidth.value))
+  }
+}
+
+function toggleRightPanelExpanded(): void {
+  if (!isRightPanelExpanded.value && !canExpandRightPanel.value) return
+  isRightPanelExpanded.value = !isRightPanelExpanded.value
 }
 
 function startRightPanelResize(event: PointerEvent): void {
@@ -302,27 +342,35 @@ function startRightPanelResize(event: PointerEvent): void {
 
   event.preventDefault()
   isRightPanelResizing.value = true
+  didRightPanelResize = false
   rightPanelResizeStartX = event.clientX
   rightPanelResizeStartWidth = rightPanelWidth.value
   document.body.style.cursor = 'col-resize'
   document.body.style.userSelect = 'none'
   window.addEventListener('pointermove', resizeRightPanel)
   window.addEventListener('pointerup', stopRightPanelResize, { once: true })
+  window.addEventListener('pointercancel', stopRightPanelResize, { once: true })
 }
 
 function resizeRightPanel(event: PointerEvent): void {
   if (!isRightPanelResizing.value) return
+  didRightPanelResize = true
   setRightPanelWidth(rightPanelResizeStartWidth + rightPanelResizeStartX - event.clientX)
 }
 
 function stopRightPanelResize(): void {
+  window.removeEventListener('pointermove', resizeRightPanel)
+  window.removeEventListener('pointerup', stopRightPanelResize)
+  window.removeEventListener('pointercancel', stopRightPanelResize)
   if (!isRightPanelResizing.value) return
 
   isRightPanelResizing.value = false
-  localStorage.setItem(RIGHT_PANEL_WIDTH_STORAGE_KEY, String(rightPanelWidth.value))
+  if (didRightPanelResize) {
+    localStorage.setItem(RIGHT_PANEL_WIDTH_STORAGE_KEY, String(rightPanelWidth.value))
+  }
+  didRightPanelResize = false
   document.body.style.cursor = ''
   document.body.style.userSelect = ''
-  window.removeEventListener('pointermove', resizeRightPanel)
 }
 
 onMounted(() => {
@@ -331,10 +379,16 @@ onMounted(() => {
     resizeObserver = new ResizeObserver(scrollActiveTabIntoView)
     resizeObserver.observe(scrollHost.value)
   }
+  if (workspaceContent.value) {
+    updateWorkspaceContentWidth()
+    workspaceResizeObserver = new ResizeObserver(updateWorkspaceContentWidth)
+    workspaceResizeObserver.observe(workspaceContent.value)
+  }
 })
 
 onBeforeUnmount(() => {
   resizeObserver?.disconnect()
+  workspaceResizeObserver?.disconnect()
   stopScrollbarDrag()
   stopRightPanelResize()
 })
@@ -586,28 +640,63 @@ watch(
         <Github class="size-3.5" />
       </Button>
 
-      <Button
-        :aria-label="rightPanelLabel"
-        :aria-pressed="isRightPanelOpen"
-        class="size-7"
-        :data-state="isRightPanelOpen ? 'open' : undefined"
-        size="icon-sm"
-        type="button"
-        variant="ghost"
-        @click="toggleRightPanel()"
-      >
-        <PanelRightClose
-          v-if="isRightPanelOpen"
-          class="size-3.5"
-        />
-        <PanelRightOpen
-          v-else
-          class="size-3.5"
-        />
-      </Button>
+      <TooltipProvider>
+        <Tooltip v-if="isRightPanelOpen">
+          <TooltipTrigger as-child>
+            <Button
+              :aria-label="rightPanelExpandLabel"
+              :aria-pressed="isRightPanelExpanded"
+              class="size-7"
+              :disabled="!isRightPanelExpanded && !canExpandRightPanel"
+              size="icon-sm"
+              type="button"
+              variant="ghost"
+              @click="toggleRightPanelExpanded"
+            >
+              <Minimize2
+                v-if="isRightPanelExpanded"
+                class="size-3.5"
+              />
+              <Maximize2
+                v-else
+                class="size-3.5"
+              />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>{{ rightPanelExpandLabel }}</TooltipContent>
+        </Tooltip>
+
+        <Tooltip>
+          <TooltipTrigger as-child>
+            <Button
+              :aria-label="rightPanelLabel"
+              :aria-pressed="isRightPanelOpen"
+              class="size-7"
+              :data-state="isRightPanelOpen ? 'open' : undefined"
+              size="icon-sm"
+              type="button"
+              variant="ghost"
+              @click="toggleRightPanel()"
+            >
+              <PanelRightClose
+                v-if="isRightPanelOpen"
+                class="size-3.5"
+              />
+              <PanelRightOpen
+                v-else
+                class="size-3.5"
+              />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>{{ rightPanelLabel }}</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     </div>
 
-    <div class="flex min-h-0 flex-1 overflow-hidden">
+    <div
+      ref="workspaceContent"
+      class="flex min-h-0 flex-1 overflow-hidden"
+    >
       <div class="min-w-0 flex-1 overflow-hidden">
         <TabsContent
           v-for="tab in props.tabs"
@@ -626,9 +715,14 @@ watch(
       </div>
 
       <WorkspaceRightPanel
+        :expanded="isRightPanelExpanded"
         :is-resizing="isRightPanelResizing"
+        :max-width="rightPanelMaxWidth"
+        :min-width="MIN_RIGHT_PANEL_WIDTH"
         :width="rightPanelWidth"
+        @resize="setRightPanelWidth($event, true)"
         @start-resize="startRightPanelResize"
+        @toggle-expanded="toggleRightPanelExpanded"
       />
     </div>
   </Tabs>

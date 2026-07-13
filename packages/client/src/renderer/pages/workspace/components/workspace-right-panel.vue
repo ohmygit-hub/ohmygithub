@@ -7,12 +7,17 @@ import { useRightPanel } from '@/composables/use-right-panel'
 import { GitHubMarkdownRenderer, MarkdownRenderer, ShikiCode } from '@/components'
 
 const props = defineProps<{
+  expanded: boolean
   isResizing: boolean
+  maxWidth: number
+  minWidth: number
   width: number
 }>()
 
 const emit = defineEmits<{
+  resize: [width: number]
   startResize: [event: PointerEvent]
+  toggleExpanded: []
 }>()
 
 const { t } = useI18n()
@@ -25,6 +30,19 @@ const panelTitle = computed(() => content.value?.title ?? t('workspace.rightPane
 const panelStyle = computed<Record<string, string>>(() => ({
   '--workspace-right-panel-width': `${props.width}px`,
 }))
+
+function resizeWithKeyboard(event: KeyboardEvent): void {
+  let nextWidth: number | undefined
+
+  if (event.key === 'ArrowLeft') nextWidth = props.width + 32
+  if (event.key === 'ArrowRight') nextWidth = props.width - 32
+  if (event.key === 'Home') nextWidth = props.minWidth
+  if (event.key === 'End') nextWidth = props.maxWidth
+  if (nextWidth === undefined) return
+
+  event.preventDefault()
+  emit('resize', nextWidth)
+}
 </script>
 
 <template>
@@ -33,17 +51,24 @@ const panelStyle = computed<Record<string, string>>(() => ({
       v-if="isOpen"
       class="workspace-right-panel relative grid h-full min-h-0 shrink-0 grid-rows-[minmax(0,1fr)] border-l border-border bg-background"
       :aria-label="panelTitle"
+      :data-expanded="props.expanded ? 'true' : undefined"
       :data-resizing="isResizing ? 'true' : undefined"
       :style="panelStyle"
     >
       <button
-        class="group absolute left-0 top-0 z-20 h-full w-1 -translate-x-1/2 cursor-col-resize bg-transparent outline-hidden"
+        class="group absolute left-0 top-0 z-20 h-full w-2 -translate-x-1/2 cursor-col-resize bg-transparent outline-hidden"
         :aria-label="t('workspace.rightPanel.resize')"
+        aria-orientation="vertical"
+        :aria-valuemax="props.maxWidth"
+        :aria-valuemin="props.minWidth"
+        :aria-valuenow="Math.round(props.width)"
         role="separator"
         type="button"
+        @dblclick="emit('toggleExpanded')"
+        @keydown="resizeWithKeyboard"
         @pointerdown="emit('startResize', $event)"
       >
-        <span class="block h-full w-full transition-colors group-hover:bg-border group-focus-visible:bg-ring" />
+        <span class="mx-auto block h-full w-px transition-colors group-hover:bg-border group-focus-visible:bg-ring" />
       </button>
 
       <div
@@ -170,8 +195,13 @@ const panelStyle = computed<Record<string, string>>(() => ({
 <style scoped>
 .workspace-right-panel {
   transform-origin: right center;
-  width: min(var(--workspace-right-panel-width), 70vw);
-  max-width: 48rem;
+  width: var(--workspace-right-panel-width);
+  max-width: 100%;
+  transition: width 0.18s ease;
+}
+
+.workspace-right-panel[data-resizing="true"] {
+  transition: none;
 }
 
 /* min-height percentages don't resolve against the auto-height wrapper,
@@ -209,6 +239,7 @@ const panelStyle = computed<Record<string, string>>(() => ({
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .workspace-right-panel,
   .workspace-right-panel-enter-active,
   .workspace-right-panel-leave-active {
     transition: none;

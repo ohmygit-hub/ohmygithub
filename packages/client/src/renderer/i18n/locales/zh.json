@@ -2853,8 +2853,10 @@
         "unavailable": "无法下载"
       },
       "empty": "当前没有打开预览。代码、图片、视频和 Markdown 预览会显示在这里。",
+      "expand": "展开预览面板",
       "open": "打开预览面板",
       "resize": "调整预览面板宽度",
+      "restoreWidth": "恢复预览面板宽度",
       "title": "预览"
     },
     "panel": {

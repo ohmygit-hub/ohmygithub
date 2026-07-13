@@ -2853,8 +2853,10 @@
         "unavailable": "Download unavailable"
       },
       "empty": "No preview is open. Code, image, video, and Markdown previews will appear here.",
+      "expand": "Expand preview panel",
       "open": "Open preview panel",
       "resize": "Resize preview panel",
+      "restoreWidth": "Restore preview panel width",
       "title": "Preview"
     },
     "panel": {
