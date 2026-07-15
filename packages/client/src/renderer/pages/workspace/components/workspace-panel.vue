@@ -13,6 +13,7 @@ import PullRequestListPage from '@/pages/pull-request-list/pull-request-list-pag
 import PullRequestPage from '@/pages/pull-request/pull-request-page.vue'
 import RepositoryPage from '@/pages/repository/repository-page.vue'
 import SearchResultPage from '@/pages/search-result/search-result-page.vue'
+import TeamPage from '@/pages/team/team-page.vue'
 import NotFoundPage from '@/pages/not-found/not-found-page.vue'
 import InboxPage from '@/pages/inbox/inbox-page.vue'
 import ActivityPage from '@/pages/activity/activity-page.vue'
@@ -55,6 +56,13 @@ function translate(key: string, params?: WorkspaceMessageParams): string {
     v-else-if="tab.type === 'repo'"
     :is-active="isActive"
     :tab="tab"
+    @replace-active-url="emit('replaceActiveUrl', $event)"
+  />
+
+  <TeamPage
+    v-else-if="tab.type === 'team'"
+    :tab="tab"
+    :viewer="viewer"
     @replace-active-url="emit('replaceActiveUrl', $event)"
   />
 

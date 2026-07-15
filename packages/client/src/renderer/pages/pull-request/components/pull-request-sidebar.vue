@@ -693,6 +693,7 @@ function isDateItem(value: DateItem | null): value is DateItem {
           <GitHubActorLink
             :avatar-url="request.reviewer.avatarUrl"
             :login="request.reviewer.login"
+            :team-org="request.reviewerType === 'team' ? pullRequest.owner : null"
           />
         </div>
       </div>

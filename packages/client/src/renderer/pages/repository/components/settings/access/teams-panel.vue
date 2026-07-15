@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Plus, Trash2 } from 'lucide-vue-next'
 import {
@@ -9,7 +9,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  Input,
   Label,
   Select,
   SelectContent,
@@ -19,6 +18,9 @@ import {
   Spinner,
 } from '@oh-my-github/ui'
 import SettingsSection from '@/pages/settings/components/appearance-settings/settings-section.vue'
+import LocalSearchSelect from '@/components/github/local-search-select.vue'
+import type { LocalSearchSelectItem } from '@/components/github/local-search-select-types'
+import { useOrganizationTeamsQuery } from '@/composables/github/use-organization-teams'
 import { removeTeamAccess, setTeamAccess } from '@/composables/github/use-repository-settings'
 import { useToast } from '@/composables/use-toast'
 
@@ -38,19 +40,56 @@ const { t } = useI18n()
 const toast = useToast()
 
 const isAddDialogOpen = ref(false)
-const newTeamSlug = ref('')
+const newTeamSearch = ref('')
+const newTeamSlug = ref<string | null>(null)
 const newPermission = ref<string>('pull')
 const isAdding = ref(false)
 const addError = ref<string | null>(null)
 const pendingKeys = ref(new Set<string>())
 
+// The owner is the organization on this panel; the shared teams query feeds
+// a picker so nobody has to type a slug from memory.
+const organizationTeamsQuery = useOrganizationTeamsQuery(() => props.owner, isAddDialogOpen)
+const grantedSlugs = computed(() => new Set(props.overview.teams.map((team) => team.slug.toLowerCase())))
+const teamItems = computed<LocalSearchSelectItem[]>(() =>
+  (organizationTeamsQuery.data.value?.teams ?? [])
+    .filter((team) => !grantedSlugs.value.has(team.slug.toLowerCase()))
+    .map((team) => ({
+      id: team.slug,
+      label: team.name,
+      sublabel: team.slug,
+      avatarUrl: team.avatarUrl,
+    }))
+)
+const selectedTeamItem = computed(() =>
+  newTeamSlug.value
+    ? teamItems.value.find((item) => item.id === newTeamSlug.value) ?? null
+    : null
+)
+
 watch(isAddDialogOpen, (open) => {
   if (open) {
-    newTeamSlug.value = ''
+    newTeamSearch.value = ''
+    newTeamSlug.value = null
     newPermission.value = 'pull'
     addError.value = null
   }
 })
+
+watch(newTeamSearch, (value) => {
+  if (selectedTeamItem.value && value !== selectedTeamItem.value.label) {
+    newTeamSlug.value = null
+  }
+})
+
+function selectTeamItem(item: LocalSearchSelectItem): void {
+  newTeamSlug.value = item.id
+}
+
+// Falls back to the typed slug so teams beyond the list cap stay addable.
+function resolveNewTeamSlug(): string {
+  return newTeamSlug.value ?? newTeamSearch.value.trim()
+}
 
 function isPending(key: string): boolean {
   return pendingKeys.value.has(key)
@@ -73,7 +112,7 @@ async function run(key: string, action: () => Promise<void>): Promise<void> {
 }
 
 async function add(): Promise<void> {
-  const slug = newTeamSlug.value.trim()
+  const slug = resolveNewTeamSlug()
   if (!slug || isAdding.value) return
   isAdding.value = true
   addError.value = null
@@ -184,11 +223,13 @@ function remove(slug: string): void {
       >
         <div class="grid gap-1.5">
           <Label for="team-slug">{{ t('repository.settings.access.teams.addPlaceholder') }}</Label>
-          <Input
-            id="team-slug"
-            v-model="newTeamSlug"
-            autocomplete="off"
-            spellcheck="false"
+          <LocalSearchSelect
+            v-model="newTeamSearch"
+            :empty-label="t('repository.settings.access.teams.pickerEmpty')"
+            input-id="team-slug"
+            :items="teamItems"
+            :placeholder="t('repository.settings.access.teams.pickerPlaceholder')"
+            @select="selectTeamItem"
           />
         </div>
         <div class="grid gap-1.5">
@@ -228,7 +269,7 @@ function remove(slug: string): void {
           {{ t('repository.settings.general.dangerZone.cancel') }}
         </Button>
         <Button
-          :disabled="isAdding || !newTeamSlug.trim()"
+          :disabled="isAdding || !resolveNewTeamSlug()"
           size="sm"
           type="button"
           @click="add"
