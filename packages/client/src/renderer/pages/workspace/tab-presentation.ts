@@ -11,6 +11,7 @@ import {
   Search,
   SearchX,
   UserRound,
+  UsersRound,
   Workflow,
 } from 'lucide-vue-next'
 
@@ -194,6 +195,20 @@ export function getWorkspaceTabView(tab: WorkspaceTab): WorkspaceTabView {
       stats: [
         { id: 'category', labelKey: 'workspace.panel.stats.category', valueKey: issueCategoryValueKey(tab.issueCategory) },
         { id: 'source', labelKey: 'workspace.panel.stats.source', valueKey: 'workspace.panel.values.githubSearch' },
+        { id: 'status', labelKey: 'workspace.panel.stats.status', valueKey: 'workspace.panel.values.placeholder' },
+      ],
+    })
+  }
+
+  if (tab.type === 'team') {
+    return createResourceView(tab, {
+      icon: UsersRound,
+      eyebrowKey: 'workspace.panel.eyebrows.team',
+      headingKey: 'workspace.panel.headings.team',
+      descriptionKey: 'workspace.panel.descriptions.team',
+      stats: [
+        { id: 'organization', labelKey: 'workspace.panel.stats.organization', value: tab.owner ?? '' },
+        { id: 'team', labelKey: 'workspace.panel.stats.team', value: tab.teamSlug ?? '' },
         { id: 'status', labelKey: 'workspace.panel.stats.status', valueKey: 'workspace.panel.values.placeholder' },
       ],
     })

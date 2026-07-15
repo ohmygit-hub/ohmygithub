@@ -1,12 +1,13 @@
 import type { RouteLocationNormalizedLoaded } from 'vue-router'
-import type { AccountTabId, RepositoryTabId, WorkspaceTab, WorkspaceTabType } from './types'
+import type { AccountTabId, RepositoryTabId, TeamTabId, WorkspaceTab, WorkspaceTabType } from './types'
 
 export const DEFAULT_WORKSPACE_URL = '/inbox'
 
 const INTERNAL_TYPES = new Set<WorkspaceTabType>(['inbox', 'reviews', 'activity', 'new-repository'])
-const INTERNAL_PATHS = new Set(['pull-requests', 'issues', 'search', 'not-found', 'apps'])
+const INTERNAL_PATHS = new Set(['pull-requests', 'issues', 'search', 'not-found', 'apps', 'orgs'])
 const DEFAULT_ACCOUNT_SECTION: AccountTabId = 'overview'
 const DEFAULT_REPOSITORY_SECTION: RepositoryTabId = 'overview'
+const DEFAULT_TEAM_SECTION: TeamTabId = 'members'
 const PULL_REQUEST_CATEGORIES = new Set<GitHubPullRequestCategory>([
   'created-by-me',
   'needs-review',
@@ -55,6 +56,7 @@ const VALID_TYPES = new Set<WorkspaceTabType>([
   'account',
   'app',
   'repo',
+  'team',
   'pull-request-list',
   'issue-list',
   'pull-request',
@@ -83,6 +85,10 @@ export function routeToWorkspaceUrl(route: RouteLocationNormalizedLoaded): strin
 
   if (isActionRunWorkspacePath(path)) {
     return createActionRunWorkspaceUrlFromPath(path, typeof route.query.job === 'string' ? route.query.job : '')
+  }
+
+  if (isOrgsWorkspacePath(path)) {
+    return createOrgsUrlFromPath(path, typeof route.query.tab === 'string' ? route.query.tab : '')
   }
 
   if (isRepositoryWorkspacePath(path)) {
@@ -127,6 +133,10 @@ export function normalizeWorkspaceUrl(url: string): string {
 
   if (isActionRunWorkspacePath(path)) {
     return createActionRunWorkspaceUrlFromPath(path, search.get('job') ?? '')
+  }
+
+  if (isOrgsWorkspacePath(path)) {
+    return createOrgsUrlFromPath(path, search.get('tab') ?? '')
   }
 
   if (isRepositoryWorkspacePath(path)) {
@@ -181,6 +191,20 @@ export function createAccountWorkspaceUrl(
 ): string {
   const path = `/${sanitizeSegment(login)}`
   return createAccountUrlFromPath(path, accountSectionToQuery(section))
+}
+
+export function createTeamWorkspaceUrl(
+  org: string,
+  teamSlug: string,
+  section: TeamTabId = DEFAULT_TEAM_SECTION,
+): string {
+  const path = `/orgs/${sanitizeSegment(org)}/teams/${sanitizeSegment(teamSlug)}`
+
+  if (section === DEFAULT_TEAM_SECTION) return path
+
+  const params = new URLSearchParams()
+  params.set('tab', section)
+  return `${path}?${params.toString()}`
 }
 
 export function createAppWorkspaceUrl(slug: string): string {
@@ -243,6 +267,48 @@ function parseWorkspaceUrl(url: string): Omit<WorkspaceTab, 'title'> {
         type: 'app',
         appSlug,
       }
+    }
+  }
+
+  // GitHub-style organization paths: /orgs/{org}, /orgs/{org}/teams, and
+  // /orgs/{org}/teams/{slug}(/members|/repositories|/teams).
+  if (firstSegment === 'orgs') {
+    const org = sanitizeSegment(segments[1])
+
+    if (!org) {
+      return { url: DEFAULT_WORKSPACE_URL, type: 'inbox' }
+    }
+
+    if (segments[2] === 'teams') {
+      const teamSlug = sanitizeSegment(segments[3])
+
+      if (teamSlug) {
+        const teamSection = sanitizeTeamSection(sanitizeSegment(segments[4]) || (query.get('tab') ?? ''))
+
+        return {
+          url: createTeamWorkspaceUrl(org, teamSlug, teamSection),
+          type: 'team',
+          owner: org,
+          teamSlug,
+          teamSection,
+        }
+      }
+
+      return {
+        url: createAccountWorkspaceUrl(org, 'teams'),
+        type: 'account',
+        owner: org,
+        accountSection: 'teams',
+      }
+    }
+
+    const accountSection = sanitizeAccountSection(query.get('tab') ?? '')
+
+    return {
+      url: createAccountWorkspaceUrl(org, accountSection),
+      type: 'account',
+      owner: org,
+      accountSection,
     }
   }
 
@@ -359,6 +425,7 @@ function titleForWorkspaceTab(tab: Omit<WorkspaceTab, 'title'>): string {
   if (tab.type === 'search-result') return tab.searchQuery ? `Search: ${tab.searchQuery}` : 'Search'
   if (tab.type === 'not-found') return tab.notFoundInput ? `Not Found: ${tab.notFoundInput}` : 'Not Found'
   if (tab.type === 'repo') return `${tab.owner}/${tab.repo}`
+  if (tab.type === 'team') return `@${tab.owner}/${tab.teamSlug ?? ''}`
   if (tab.type === 'app') return tab.appSlug ?? 'App'
   return tab.owner ?? 'Account'
 }
@@ -444,6 +511,31 @@ function isAccountWorkspacePath(path: string): boolean {
   return segments.length === 1 && !isReservedInternalPath(path)
 }
 
+function isOrgsWorkspacePath(path: string): boolean {
+  const [firstSegment] = normalizeWorkspacePath(path).split('/').filter(Boolean)
+  return firstSegment === 'orgs'
+}
+
+function createOrgsUrlFromPath(path: string, rawSection: string): string {
+  const segments = normalizeWorkspacePath(path).split('/').filter(Boolean).map(decodeURIComponent)
+  const org = sanitizeSegment(segments[1])
+
+  if (!org) return DEFAULT_WORKSPACE_URL
+
+  if (segments[2] === 'teams') {
+    const teamSlug = sanitizeSegment(segments[3])
+
+    if (teamSlug) {
+      const teamSection = sanitizeTeamSection(sanitizeSegment(segments[4]) || rawSection)
+      return createTeamWorkspaceUrl(org, teamSlug, teamSection)
+    }
+
+    return createAccountWorkspaceUrl(org, 'teams')
+  }
+
+  return createAccountWorkspaceUrl(org, sanitizeAccountSection(rawSection))
+}
+
 function createSearchUrl(mode: GitHubWorkspaceSearchMode, query: string): string {
   const searchQuery = sanitizeSearchQuery(query)
   const params = new URLSearchParams()
@@ -511,7 +603,15 @@ function sanitizeAccountSection(value: string | undefined): AccountTabId {
   if (value === 'followers') return 'followers'
   if (value === 'sponsors') return 'sponsors'
   if (value === 'people') return 'people'
+  if (value === 'teams') return 'teams'
   return DEFAULT_ACCOUNT_SECTION
+}
+
+function sanitizeTeamSection(value: string | undefined): TeamTabId {
+  if (value === 'repositories') return 'repositories'
+  if (value === 'teams') return 'teams'
+  if (value === 'settings') return 'settings'
+  return DEFAULT_TEAM_SECTION
 }
 
 const REPOSITORY_SECTION_QUERY_TOKENS: Partial<Record<RepositoryTabId, string>> = {

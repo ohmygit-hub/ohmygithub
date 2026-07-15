@@ -14,6 +14,10 @@ export function workspaceTabToGitHubUrl(tab: WorkspaceTab): string | null {
     return repositoryGitHubUrl(tab)
   }
 
+  if (tab.type === 'team' && tab.owner && tab.teamSlug) {
+    return teamGitHubUrl(tab)
+  }
+
   if (tab.type === 'pull-request' && tab.owner && tab.repo && tab.number) {
     return `${repositoryBaseUrl(tab.owner, tab.repo)}/pull/${tab.number}`
   }
@@ -48,6 +52,11 @@ export function workspaceTabToGitHubUrl(tab: WorkspaceTab): string | null {
 }
 
 function accountGitHubUrl(owner: string, section: WorkspaceTab['accountSection']): string {
+  // Teams only exist on organizations, where GitHub serves them under /orgs.
+  if (section === 'teams') {
+    return `${GITHUB_ORIGIN}/orgs/${pathSegment(owner)}/teams`
+  }
+
   const url = new URL(`${GITHUB_ORIGIN}/${pathSegment(owner)}`)
 
   if (section === 'repositories' || section === 'stars') {
@@ -55,6 +64,17 @@ function accountGitHubUrl(owner: string, section: WorkspaceTab['accountSection']
   }
 
   return url.toString()
+}
+
+function teamGitHubUrl(tab: WorkspaceTab): string {
+  const baseUrl = `${GITHUB_ORIGIN}/orgs/${pathSegment(tab.owner ?? '')}/teams/${pathSegment(tab.teamSlug ?? '')}`
+
+  if (tab.teamSection === 'repositories') return `${baseUrl}/repositories`
+  if (tab.teamSection === 'teams') return `${baseUrl}/teams`
+  // GitHub hosts team settings on the /edit page.
+  if (tab.teamSection === 'settings') return `${baseUrl}/edit`
+
+  return baseUrl
 }
 
 function repositoryGitHubUrl(tab: WorkspaceTab): string {
