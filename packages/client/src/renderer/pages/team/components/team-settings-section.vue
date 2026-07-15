@@ -10,7 +10,6 @@ import {
   DialogHeader,
   DialogTitle,
   Input,
-  Label,
   Select,
   SelectContent,
   SelectItem,
@@ -18,6 +17,9 @@ import {
   SelectValue,
   Spinner,
 } from '@oh-my-github/ui'
+import SettingsSection from '@/pages/settings/components/appearance-settings/settings-section.vue'
+import SettingsBlock from '@/pages/settings/components/appearance-settings/settings-block.vue'
+import SettingsRow from '@/pages/settings/components/appearance-settings/settings-row.vue'
 import { deleteTeam, updateTeam, useTeamInvalidation } from '@/composables/github/use-organization-teams'
 import { useToast } from '@/composables/use-toast'
 
@@ -85,12 +87,6 @@ async function save(): Promise<void> {
   }
 }
 
-function resetForm(): void {
-  name.value = props.team.name
-  description.value = props.team.description ?? ''
-  privacy.value = props.team.privacy
-}
-
 async function confirmDelete(): Promise<void> {
   if (isDeleting.value) return
 
@@ -123,78 +119,11 @@ function resolveErrorMessage(error: unknown): string | undefined {
 </script>
 
 <template>
-  <section class="grid gap-3">
-    <div class="grid gap-4 rounded-lg border border-border bg-card p-4">
-      <p class="select-none text-label font-medium text-foreground">
-        {{ t('teams.settings.title') }}
-      </p>
-
-      <div class="grid gap-3">
-        <div class="grid gap-1.5">
-          <Label for="team-settings-name">{{ t('teams.settings.nameLabel') }}</Label>
-          <Input
-            id="team-settings-name"
-            v-model="name"
-            autocomplete="off"
-            spellcheck="false"
-          />
-          <p class="text-caption text-muted-foreground">
-            {{ t('teams.settings.renameHint') }}
-          </p>
-        </div>
-
-        <div class="grid gap-1.5">
-          <Label for="team-settings-description">{{ t('teams.settings.descriptionLabel') }}</Label>
-          <Input
-            id="team-settings-description"
-            v-model="description"
-            autocomplete="off"
-          />
-        </div>
-
-        <div class="grid gap-1.5">
-          <Label for="team-settings-privacy">{{ t('teams.settings.privacyLabel') }}</Label>
-          <Select
-            v-model="privacy"
-            :disabled="privacyLocked"
-          >
-            <SelectTrigger
-              id="team-settings-privacy"
-              class="w-full sm:w-64"
-              size="sm"
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="visible">
-                {{ t('teams.privacy.visible') }}
-              </SelectItem>
-              <SelectItem value="secret">
-                {{ t('teams.privacy.secret') }}
-              </SelectItem>
-            </SelectContent>
-          </Select>
-          <p
-            v-if="privacyLocked"
-            class="text-caption text-muted-foreground"
-          >
-            {{ t('teams.create.privacyLockedHint') }}
-          </p>
-        </div>
-      </div>
-
-      <div class="flex items-center justify-end gap-2">
+  <div class="mx-auto w-full max-w-3xl space-y-8 px-2">
+    <SettingsSection :title="t('teams.settings.title')">
+      <template #actions>
         <Button
           v-if="hasChanges"
-          :disabled="isSaving"
-          size="sm"
-          type="button"
-          variant="outline"
-          @click="resetForm"
-        >
-          {{ t('teams.settings.reset') }}
-        </Button>
-        <Button
           :disabled="!canSave"
           size="sm"
           type="button"
@@ -206,28 +135,77 @@ function resolveErrorMessage(error: unknown): string | undefined {
           />
           {{ t('teams.settings.save') }}
         </Button>
-      </div>
-    </div>
+      </template>
 
-    <div class="grid gap-3 rounded-lg border border-destructive/40 bg-card p-4">
-      <p class="select-none text-label font-medium text-foreground">
-        {{ t('teams.settings.dangerZone.title') }}
-      </p>
+      <SettingsRow
+        :description="t('teams.settings.renameHint')"
+        :label="t('teams.settings.nameLabel')"
+      >
+        <Input
+          v-model="name"
+          autocomplete="off"
+          class="w-64"
+          spellcheck="false"
+        />
+      </SettingsRow>
 
-      <div class="flex min-w-0 flex-wrap items-center justify-between gap-3">
-        <p class="min-w-0 flex-1 text-body text-muted-foreground">
-          {{ t('teams.settings.dangerZone.deleteDescription') }}
-        </p>
-        <Button
-          size="sm"
-          type="button"
-          variant="destructive"
-          @click="isDeleteOpen = true"
+      <SettingsBlock :label="t('teams.settings.descriptionLabel')">
+        <Input
+          v-model="description"
+          autocomplete="off"
+        />
+      </SettingsBlock>
+
+      <SettingsRow
+        :description="privacyLocked ? t('teams.create.privacyLockedHint') : ''"
+        :label="t('teams.settings.privacyLabel')"
+      >
+        <Select
+          v-model="privacy"
+          :disabled="privacyLocked"
         >
-          {{ t('teams.settings.dangerZone.delete') }}
-        </Button>
+          <SelectTrigger
+            :aria-label="t('teams.settings.privacyLabel')"
+            class="w-40"
+            size="sm"
+          >
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent align="end">
+            <SelectItem value="visible">
+              {{ t('teams.privacy.visible') }}
+            </SelectItem>
+            <SelectItem value="secret">
+              {{ t('teams.privacy.secret') }}
+            </SelectItem>
+          </SelectContent>
+        </Select>
+      </SettingsRow>
+    </SettingsSection>
+
+    <section class="space-y-2.5">
+      <div class="flex min-h-7 items-center px-2">
+        <h3 class="select-none text-caption font-medium text-destructive">
+          {{ t('teams.settings.dangerZone.title') }}
+        </h3>
       </div>
-    </div>
+
+      <div class="overflow-hidden rounded-[var(--radius-menu-shell)] border border-destructive/40 bg-card">
+        <SettingsRow
+          :description="t('teams.settings.dangerZone.deleteDescription')"
+          :label="t('teams.settings.dangerZone.deleteTitle')"
+        >
+          <Button
+            size="sm"
+            type="button"
+            variant="destructive"
+            @click="isDeleteOpen = true"
+          >
+            {{ t('teams.settings.dangerZone.delete') }}
+          </Button>
+        </SettingsRow>
+      </div>
+    </section>
 
     <Dialog
       :open="isDeleteOpen"
@@ -266,5 +244,5 @@ function resolveErrorMessage(error: unknown): string | undefined {
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  </section>
+  </div>
 </template>

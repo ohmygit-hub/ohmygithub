@@ -3250,7 +3250,6 @@
       "renameHint": "重命名会同时更改团队的 slug 和提及方式。",
       "descriptionLabel": "描述",
       "privacyLabel": "可见性",
-      "reset": "重置",
       "save": "保存更改",
       "toasts": {
         "saved": "已保存团队设置"
@@ -3263,7 +3262,8 @@
         "confirmTitle": "删除 {name}？",
         "confirmDescription": "{org} 中的 {name} 团队将被永久删除，其子团队将被提升为根团队。此操作无法撤销。",
         "cancel": "取消",
-        "confirm": "删除团队"
+        "confirm": "删除团队",
+        "deleteTitle": "删除此团队"
       }
     }
   }

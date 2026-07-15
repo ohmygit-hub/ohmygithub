@@ -106,6 +106,9 @@ const visibleRows = computed<TeamRow[]>(() => {
 
   return rows
 })
+// The chevron column only earns its width when something can actually expand;
+// a flat team list would otherwise carry a dead spacer on every row.
+const showTreeControls = computed(() => visibleRows.value.some((row) => row.hasChildren))
 
 watch(
   () => props.login,
@@ -291,7 +294,7 @@ function onTeamCreated(created: GitHubCreatedTeam): void {
               />
             </Button>
             <span
-              v-else
+              v-else-if="showTreeControls"
               class="size-7 shrink-0"
             />
 

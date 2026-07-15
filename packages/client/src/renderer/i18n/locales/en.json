@@ -3250,7 +3250,6 @@
       "renameHint": "Renaming changes the team slug and mentions.",
       "descriptionLabel": "Description",
       "privacyLabel": "Visibility",
-      "reset": "Reset",
       "save": "Save changes",
       "toasts": {
         "saved": "Team settings saved"
@@ -3263,7 +3262,8 @@
         "confirmTitle": "Delete {name}?",
         "confirmDescription": "The {name} team in {org} will be deleted permanently. Child teams will be promoted to the root level. This cannot be undone.",
         "cancel": "Cancel",
-        "confirm": "Delete team"
+        "confirm": "Delete team",
+        "deleteTitle": "Delete this team"
       }
     }
   }
