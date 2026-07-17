@@ -216,6 +216,7 @@ export function createGitHubApi(options: GitHubApiOptions): GitHubApi {
     listPullRequestFiles: (options) => pulls.listPullRequestFiles(options),
     listPullRequestCommits: (options) => pulls.listPullRequestCommits(options),
     submitPullRequestReview: (options) => pulls.submitPullRequestReview(options),
+    listPullRequestReviewThreads: (options) => pulls.listPullRequestReviewThreads(options),
     listIssueCategory: (options) => issues.listIssueCategory(options),
     listViewerIssues: (options) => issues.listViewerIssues(options),
     listRepositoryIssues: (options) => issues.listRepositoryIssues(options),

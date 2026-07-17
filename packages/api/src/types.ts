@@ -1505,9 +1505,12 @@ export interface GitHubPullRequestTimelineReference {
   url?: string | null
 }
 
+export type GitHubPullRequestDiffSide = 'LEFT' | 'RIGHT'
+
 export interface GitHubPullRequestReviewComment {
   id: string
   nodeId: string
+  databaseId: number | null
   author: GitHubActor
   body: string
   createdAt: string
@@ -1521,6 +1524,33 @@ export interface GitHubPullRequestReviewComment {
   outdated: boolean
   isReply: boolean
   reactions: GitHubIssueReaction[]
+}
+
+export interface GitHubPullRequestReviewThread {
+  id: string
+  path: string
+  line: number | null
+  startLine: number | null
+  side: GitHubPullRequestDiffSide
+  startSide: GitHubPullRequestDiffSide | null
+  isResolved: boolean
+  isOutdated: boolean
+  isPending: boolean
+  viewerCanResolve: boolean
+  viewerCanUnresolve: boolean
+  viewerCanReply: boolean
+  comments: GitHubPullRequestReviewComment[]
+}
+
+export interface GitHubPullRequestPendingReview {
+  id: string
+  body: string
+  commentCount: number
+}
+
+export interface GitHubPullRequestReviewThreadsResult {
+  threads: GitHubPullRequestReviewThread[]
+  pendingReview: GitHubPullRequestPendingReview | null
 }
 
 export interface GitHubPullRequestTimelineEvent {
@@ -1704,6 +1734,7 @@ export interface GitHubClient {
   listPullRequestFiles(options: GetPullRequestDetailOptions): Promise<GitHubCommitFile[]>
   listPullRequestCommits(options: ListPullRequestCommitsOptions): Promise<GitHubRepositoryCommitPage>
   submitPullRequestReview(options: SubmitPullRequestReviewOptions): Promise<void>
+  listPullRequestReviewThreads(options: GetPullRequestDetailOptions): Promise<GitHubPullRequestReviewThreadsResult>
   listIssueCategory(options: ListIssueCategoryOptions): Promise<GitHubIssue[]>
   listViewerIssues(options?: ListWorkspaceItemsOptions): Promise<GitHubIssue[]>
   listRepositoryIssues(options: ListRepositoryWorkspaceItemsOptions): Promise<GitHubIssue[]>
