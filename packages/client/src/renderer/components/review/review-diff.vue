@@ -2,7 +2,7 @@
 import type { ThemedToken } from 'shiki'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { MessageSquare } from 'lucide-vue-next'
+import { MessageSquare, MessageSquarePlus } from 'lucide-vue-next'
 import { useCodeTheme } from '../code/code-theme'
 import { parseDiff } from '../code/parse-diff'
 import { useShikiTokenizer } from '../code/use-shiki-highlighter'
@@ -76,6 +76,7 @@ const markerByAnchor = computed(() => {
 const dragStart = ref<ReviewDiffAnchor | null>(null)
 const dragRange = ref<ReviewDiffRange | null>(null)
 const activeRange = computed(() => dragRange.value ?? props.selection ?? null)
+const hoveredIndex = ref<number | null>(null)
 
 function beginDrag(row: ReviewDiffRow): void {
   if (!row.anchor) return
@@ -111,10 +112,27 @@ function rowMarker(row: ReviewDiffRow): ReviewDiffMarker | undefined {
   if (!row.anchor) return undefined
   return markerByAnchor.value.get(`${row.anchor.side}:${row.anchor.line}`)
 }
+
+function onRowEnter(row: ReviewDiffRow, index: number): void {
+  hoveredIndex.value = index
+  extendDrag(row)
+}
+
+// The comment-bubble hint surfaces the click/drag-to-select affordance at the
+// hovered row; thread markers keep priority over the hint in the same slot.
+function showCommentHint(row: ReviewDiffRow, index: number): boolean {
+  return hoveredIndex.value === index
+    && row.anchor !== null
+    && !dragStart.value
+    && !rowMarker(row)
+}
 </script>
 
 <template>
-  <div class="shiki review-diff min-w-0 font-mono text-body leading-relaxed">
+  <div
+    class="shiki review-diff min-w-0 font-mono text-body leading-relaxed"
+    @mouseleave="hoveredIndex = null"
+  >
     <div
       v-for="(row, index) in rows"
       :key="index"
@@ -124,7 +142,7 @@ function rowMarker(row: ReviewDiffRow): ReviewDiffMarker | undefined {
         'bg-diff-remove': row.diff.type === 'del' && !isRowSelected(row),
         'bg-accent': isRowSelected(row),
       }"
-      @mouseenter="extendDrag(row)"
+      @mouseenter="onRowEnter(row, index)"
     >
       <template v-if="row.diff.type === 'hunk'">
         <div
@@ -142,6 +160,13 @@ function rowMarker(row: ReviewDiffRow): ReviewDiffMarker | undefined {
           :style="gutterStyle"
           @mousedown.prevent="beginDrag(row)"
         >
+          <span
+            v-if="showCommentHint(row, index)"
+            aria-hidden="true"
+            class="absolute left-0.5 inline-flex items-center text-muted-foreground"
+          >
+            <MessageSquarePlus class="size-3.5" />
+          </span>
           <button
             v-if="rowMarker(row)"
             :aria-label="t('pullRequest.review.diff.viewThread')"
