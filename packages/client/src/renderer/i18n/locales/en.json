@@ -2311,6 +2311,24 @@
       "reply": "replied",
       "diff": {
         "viewThread": "View review thread"
+      },
+      "anchor": {
+        "commentingOn": "Commenting on {path} · {range}",
+        "oldSide": "(old code)",
+        "clear": "Clear selected lines"
+      },
+      "addSingleComment": "Add single comment",
+      "addToReview": "Add to review",
+      "singleDisabledPending": "You have a pending review; new comments join it.",
+      "threadError": "The comment could not be added. Reselect the lines and try again.",
+      "pending": {
+        "count": "{count} pending review comments",
+        "discard": "Discard review",
+        "discardTitle": "Discard pending review?",
+        "discardDescription": "All pending review comments will be deleted. This cannot be undone.",
+        "discardConfirm": "Discard",
+        "discardCancel": "Cancel",
+        "discardError": "The pending review could not be discarded."
       }
     },
     "reviewDecision": {

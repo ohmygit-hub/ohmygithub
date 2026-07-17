@@ -2311,6 +2311,24 @@
       "reply": "回复了",
       "diff": {
         "viewThread": "查看评论线程"
+      },
+      "anchor": {
+        "commentingOn": "评论 {path} · {range}",
+        "oldSide": "（旧代码）",
+        "clear": "清除所选行"
+      },
+      "addSingleComment": "单条评论",
+      "addToReview": "加入 Review",
+      "singleDisabledPending": "存在待提交的 review，新评论将加入其中。",
+      "threadError": "评论添加失败，请重新选择行后重试。",
+      "pending": {
+        "count": "{count} 条待提交评论",
+        "discard": "丢弃 Review",
+        "discardTitle": "丢弃待提交的 review？",
+        "discardDescription": "所有待提交的 review 评论都会被删除，且无法恢复。",
+        "discardConfirm": "丢弃",
+        "discardCancel": "取消",
+        "discardError": "待提交的 review 丢弃失败。"
       }
     },
     "reviewDecision": {
