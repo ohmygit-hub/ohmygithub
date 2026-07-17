@@ -56,6 +56,7 @@ import {
   useRepositoryLabelsQuery,
   useRepositoryMilestonesQuery,
 } from '@/composables/github/use-issues'
+import { useToast } from '@/composables/use-toast'
 import {
   canApplyMergeDialogOpenChange,
   type PullRequestMergeDialogOpenChangeReason,
@@ -83,6 +84,7 @@ interface DateItem {
 
 const { t } = useI18n()
 const { invalidatePullRequestLists } = usePullRequestListInvalidation()
+const toast = useToast()
 
 const isSavingField = ref(false)
 const assigneePickerOpen = ref(false)
@@ -121,21 +123,24 @@ function changedIds(current: string[], next: string[]): string[] {
   return [...current.filter((id) => !nxt.has(id)), ...next.filter((id) => !cur.has(id))]
 }
 
-async function applyUpdate(changes: { assignees?: string[], labels?: string[], milestone?: number | null }, pendingIds: Ref<string[]>, pending: string[]): Promise<void> {
+async function applyUpdate(changes: { assignees?: string[], labels?: string[], milestone?: number | null }, pendingIds: Ref<string[]>, pending: string[], successMessage: string): Promise<void> {
   if (isSavingField.value) return
   isSavingField.value = true
   pendingIds.value = pending
   try {
     await updatePullRequest(props.pullRequest.owner, props.pullRequest.repo, props.pullRequest.number, changes)
+    toast.success(successMessage)
     await props.refetch()
+  } catch {
+    toast.error(t('pullRequest.toasts.updateFailed'))
   } finally {
     isSavingField.value = false
     pendingIds.value = []
   }
 }
-function onAssigneesChange(next: string[]): void { void applyUpdate({ assignees: next }, pendingAssigneeIds, changedIds(assigneeLogins.value, next)) }
-function onLabelsChange(next: string[]): void { void applyUpdate({ labels: next }, pendingLabelIds, changedIds(labelNames.value, next)) }
-function onMilestoneSelect(next: string[]): void { const v = next[0] ?? ''; void applyUpdate({ milestone: v === '' ? null : Number(v) }, pendingMilestoneIds, changedIds(milestoneIds.value, next)) }
+function onAssigneesChange(next: string[]): void { void applyUpdate({ assignees: next }, pendingAssigneeIds, changedIds(assigneeLogins.value, next), t('pullRequest.toasts.assigneesUpdated')) }
+function onLabelsChange(next: string[]): void { void applyUpdate({ labels: next }, pendingLabelIds, changedIds(labelNames.value, next), t('pullRequest.toasts.labelsUpdated')) }
+function onMilestoneSelect(next: string[]): void { const v = next[0] ?? ''; void applyUpdate({ milestone: v === '' ? null : Number(v) }, pendingMilestoneIds, changedIds(milestoneIds.value, next), t('pullRequest.toasts.milestoneUpdated')) }
 async function onReviewersChange(next: string[]): Promise<void> {
   if (isSavingField.value) return
   const current = reviewerLogins.value
@@ -146,7 +151,11 @@ async function onReviewersChange(next: string[]): Promise<void> {
   pendingReviewerIds.value = [...added, ...removed]
   try {
     await requestPullRequestReviewers(props.pullRequest.owner, props.pullRequest.repo, props.pullRequest.number, added, removed)
+    if (added.length > 0) toast.success(t('pullRequest.toasts.reviewersAdded', { logins: added.join(', ') }))
+    if (removed.length > 0) toast.success(t('pullRequest.toasts.reviewersRemoved', { logins: removed.join(', ') }))
     await props.refetch()
+  } catch {
+    toast.error(t('pullRequest.toasts.updateFailed'))
   } finally {
     isSavingField.value = false
     pendingReviewerIds.value = []
@@ -381,6 +390,7 @@ async function confirmMerge(): Promise<void> {
     })
     bypassRules.value = false
     setMergeDialogOpen(false, 'merge-success')
+    toast.success(t('pullRequest.toasts.merged'))
     void props.refetch()
     invalidatePullRequestLists(props.pullRequest.owner, props.pullRequest.repo)
   } catch {
@@ -400,6 +410,7 @@ async function closeCurrentPullRequest(): Promise<void> {
 
   try {
     await closePullRequest(props.pullRequest.owner, props.pullRequest.repo, props.pullRequest.number)
+    toast.success(t('pullRequest.toasts.closed'))
     void props.refetch()
     invalidatePullRequestLists(props.pullRequest.owner, props.pullRequest.repo)
   } catch {
@@ -422,6 +433,7 @@ async function markReadyForReview(): Promise<void> {
       props.pullRequest.number,
       props.pullRequest.nodeId,
     )
+    toast.success(t('pullRequest.toasts.readyForReview'))
     void props.refetch()
     invalidatePullRequestLists(props.pullRequest.owner, props.pullRequest.repo)
   } catch {

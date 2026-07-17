@@ -29,6 +29,7 @@ import {
   usePullRequestReviewThreadsQuery,
   useReviewThreadsInvalidation,
 } from '@/composables/github/use-pull-requests'
+import { useToast } from '@/composables/use-toast'
 
 const props = defineProps<{
   active: boolean
@@ -41,6 +42,7 @@ const props = defineProps<{
 const emit = defineEmits<{ refetch: [] }>()
 
 const { t } = useI18n()
+const toast = useToast()
 
 const filesQuery = usePullRequestFilesQuery(
   () => props.owner,
@@ -140,6 +142,13 @@ async function submitReview(event: GitHubPullRequestReviewEvent): Promise<void> 
       })
     }
     reviewBody.value = ''
+    toast.success(t(
+      event === 'APPROVE'
+        ? 'pullRequest.toasts.reviewApproved'
+        : event === 'REQUEST_CHANGES'
+          ? 'pullRequest.toasts.reviewChangesRequested'
+          : 'pullRequest.toasts.reviewCommented',
+    ))
     invalidateReviewThreads(props.owner, props.repo, props.number)
     emit('refetch')
   } catch {

@@ -893,6 +893,9 @@
     "verified": "已验证"
   },
   "repository": {
+    "star": {
+      "error": "无法更新 Star，请重试。"
+    },
     "description": "{repository} 的仓库导航已经准备好。真实仓库数据会在这里继续接入。",
     "eyebrow": "仓库",
     "ownerFallback": "Owner",
@@ -2159,6 +2162,30 @@
     }
   },
   "pullRequest": {
+    "toasts": {
+      "commentPosted": "评论已发布",
+      "commentUpdated": "评论已更新",
+      "bodyUpdated": "描述已更新",
+      "titleUpdated": "标题已更新",
+      "assigneesUpdated": "负责人已更新",
+      "labelsUpdated": "标签已更新",
+      "milestoneUpdated": "里程碑已更新",
+      "reviewersAdded": "已添加 Reviewer：{logins}",
+      "reviewersRemoved": "已移除 Reviewer：{logins}",
+      "merged": "Pull Request 已合并",
+      "closed": "Pull Request 已关闭",
+      "readyForReview": "已标记为 Ready for review",
+      "reviewApproved": "已批准该 Pull Request",
+      "reviewChangesRequested": "已请求修改",
+      "reviewCommented": "Review 评论已提交",
+      "subscribed": "已订阅通知",
+      "unsubscribed": "已取消订阅通知",
+      "locked": "对话已锁定",
+      "unlocked": "对话已解锁",
+      "updateFailed": "更新失败，请重试。",
+      "actionFailed": "操作失败，请重试。",
+      "reactionFailed": "无法更新表情回应，请重试。"
+    },
     "actions": {
       "close": "关闭 Pull Request",
       "copyUrl": "复制链接",
@@ -2492,6 +2519,29 @@
     "description": "{category} 分类下的 Pull Request。"
   },
   "issue": {
+    "toasts": {
+      "commentPosted": "评论已发布",
+      "commentUpdated": "评论已更新",
+      "bodyUpdated": "描述已更新",
+      "titleUpdated": "标题已更新",
+      "assigneesUpdated": "负责人已更新",
+      "labelsUpdated": "标签已更新",
+      "milestoneUpdated": "里程碑已更新",
+      "closedCompleted": "Issue 已关闭为已完成",
+      "closedNotPlanned": "Issue 已关闭为不计划",
+      "reopened": "Issue 已重新打开",
+      "deleted": "Issue 已删除",
+      "deleteFailed": "删除 Issue 失败，请重试。",
+      "pinned": "Issue 已置顶",
+      "unpinned": "Issue 已取消置顶",
+      "subscribed": "已订阅通知",
+      "unsubscribed": "已取消订阅通知",
+      "locked": "对话已锁定",
+      "unlocked": "对话已解锁",
+      "updateFailed": "更新失败，请重试。",
+      "actionFailed": "操作失败，请重试。",
+      "reactionFailed": "无法更新表情回应，请重试。"
+    },
     "description": "{repository} {number} 已作为 Issue 工作页打开。讨论、标签和项目数据会在这里继续接入。",
     "eyebrow": "Issue",
     "actions": {

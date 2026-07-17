@@ -35,6 +35,7 @@ import {
   useRepositoryLabelsQuery,
   useRepositoryMilestonesQuery,
 } from '@/composables/github/use-issues'
+import { useToast } from '@/composables/use-toast'
 
 const props = defineProps<{
   issue: IssueDetail
@@ -60,6 +61,7 @@ interface LinkedPullRequestReference {
 
 const { t } = useI18n()
 const { invalidateIssueLists } = useIssueListInvalidation()
+const toast = useToast()
 
 const assignees = computed(() => props.issue.assignees ?? [])
 const labels = computed(() => normalizeLabels(props.issue.labels))
@@ -137,6 +139,7 @@ async function applyIssueUpdate(
     labels?: string[]
     milestone?: number | null
   },
+  successMessage: string,
   pendingIds?: Ref<string[]>,
   pending: string[] = [],
 ): Promise<void> {
@@ -145,8 +148,11 @@ async function applyIssueUpdate(
   if (pendingIds) pendingIds.value = pending
   try {
     await updateIssue(props.issue.owner, props.issue.repo, props.issue.number, changes)
+    toast.success(successMessage)
     await props.refetch()
     invalidateIssueLists(props.issue.owner, props.issue.repo)
+  } catch {
+    toast.error(t('issue.toasts.updateFailed'))
   } finally {
     isSavingField.value = false
     if (pendingIds) pendingIds.value = []
@@ -154,28 +160,28 @@ async function applyIssueUpdate(
 }
 
 function onAssigneesChange(next: string[]): void {
-  void applyIssueUpdate({ assignees: next }, pendingAssigneeIds, changedIds(assigneeLogins.value, next))
+  void applyIssueUpdate({ assignees: next }, t('issue.toasts.assigneesUpdated'), pendingAssigneeIds, changedIds(assigneeLogins.value, next))
 }
 
 function onLabelsChange(next: string[]): void {
-  void applyIssueUpdate({ labels: next }, pendingLabelIds, changedIds(labelNames.value, next))
+  void applyIssueUpdate({ labels: next }, t('issue.toasts.labelsUpdated'), pendingLabelIds, changedIds(labelNames.value, next))
 }
 
 function onMilestoneSelect(next: string[]): void {
   const value = next[0] ?? ''
-  void applyIssueUpdate({ milestone: value === '' ? null : Number(value) }, pendingMilestoneIds, changedIds(milestoneIds.value, next))
+  void applyIssueUpdate({ milestone: value === '' ? null : Number(value) }, t('issue.toasts.milestoneUpdated'), pendingMilestoneIds, changedIds(milestoneIds.value, next))
 }
 
 function closeAsCompleted(): void {
-  void applyIssueUpdate({ state: 'closed', stateReason: 'completed' })
+  void applyIssueUpdate({ state: 'closed', stateReason: 'completed' }, t('issue.toasts.closedCompleted'))
 }
 
 function closeAsNotPlanned(): void {
-  void applyIssueUpdate({ state: 'closed', stateReason: 'not_planned' })
+  void applyIssueUpdate({ state: 'closed', stateReason: 'not_planned' }, t('issue.toasts.closedNotPlanned'))
 }
 
 function reopenIssue(): void {
-  void applyIssueUpdate({ state: 'open' })
+  void applyIssueUpdate({ state: 'open' }, t('issue.toasts.reopened'))
 }
 
 const issueStateLabel = computed(() => {

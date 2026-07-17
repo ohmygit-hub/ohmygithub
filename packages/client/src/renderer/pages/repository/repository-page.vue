@@ -376,6 +376,7 @@ async function toggleStarred(): Promise<void> {
     }
     invalidateStarredRepositories()
   } catch {
+    toast.error(t('repository.star.error'))
     void loadRepositoryViewerState()
   } finally {
     pendingRepositoryAction.value = null

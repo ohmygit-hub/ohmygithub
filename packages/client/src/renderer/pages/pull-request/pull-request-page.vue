@@ -29,6 +29,7 @@ import {
   usePullRequestDetailQuery,
 } from '@/composables/github/use-pull-requests'
 import { setReaction } from '@/composables/github/use-reactions'
+import { useToast } from '@/composables/use-toast'
 import { isReactionContent } from '@/components/conversation/reactions'
 import PullRequestHeader from './components/pull-request-header.vue'
 import PullRequestSidebar from './components/pull-request-sidebar.vue'
@@ -44,6 +45,7 @@ const props = defineProps<{
 }>()
 
 const { t } = useI18n()
+const toast = useToast()
 
 const owner = computed(() => props.tab.owner ?? '')
 const repo = computed(() => props.tab.repo ?? '')
@@ -98,6 +100,7 @@ async function submitPullRequestComment(): Promise<void> {
   try {
     await createPullRequestComment(owner.value, repo.value, number.value, body)
     commentBody.value = ''
+    toast.success(t('pullRequest.toasts.commentPosted'))
     await pullRequestQuery.refetch()
   } catch {
     commentError.value = t('pullRequest.comment.error')
@@ -132,6 +135,7 @@ async function savePullRequestBody(): Promise<void> {
     })
     isEditingBody.value = false
     bodyDraft.value = ''
+    toast.success(t('pullRequest.toasts.bodyUpdated'))
     await pullRequestQuery.refetch()
   } catch {
     bodyError.value = t('pullRequest.edit.bodyError')
@@ -159,6 +163,7 @@ async function toggleReaction(subjectId: string | undefined, content: string, re
     await setReaction(subjectId, content, reacted)
   } catch {
     // The refetch below restores the server state, reverting the optimistic toggle.
+    toast.error(t('pullRequest.toasts.reactionFailed'))
   }
 
   await pullRequestQuery.refetch()
@@ -174,6 +179,7 @@ async function savePullRequestCommentEdit(): Promise<void> {
   try {
     await updatePullRequestComment(owner.value, repo.value, commentId, commentDraft.value)
     cancelCommentEdit()
+    toast.success(t('pullRequest.toasts.commentUpdated'))
     await pullRequestQuery.refetch()
   } catch {
     commentEditError.value = t('pullRequest.edit.commentError')

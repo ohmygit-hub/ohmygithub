@@ -893,6 +893,9 @@
     "verified": "Verified"
   },
   "repository": {
+    "star": {
+      "error": "Couldn't update star. Please try again."
+    },
     "description": "{repository} is ready for repository navigation. Real repository data will be connected here later.",
     "eyebrow": "Repository",
     "ownerFallback": "Owner",
@@ -2159,6 +2162,30 @@
     }
   },
   "pullRequest": {
+    "toasts": {
+      "commentPosted": "Comment posted",
+      "commentUpdated": "Comment updated",
+      "bodyUpdated": "Description updated",
+      "titleUpdated": "Title updated",
+      "assigneesUpdated": "Assignees updated",
+      "labelsUpdated": "Labels updated",
+      "milestoneUpdated": "Milestone updated",
+      "reviewersAdded": "Requested review from {logins}",
+      "reviewersRemoved": "Removed reviewer {logins}",
+      "merged": "Pull Request merged",
+      "closed": "Pull Request closed",
+      "readyForReview": "Marked ready for review",
+      "reviewApproved": "Pull Request approved",
+      "reviewChangesRequested": "Changes requested",
+      "reviewCommented": "Review comment submitted",
+      "subscribed": "Subscribed to notifications",
+      "unsubscribed": "Unsubscribed from notifications",
+      "locked": "Conversation locked",
+      "unlocked": "Conversation unlocked",
+      "updateFailed": "Update failed. Please try again.",
+      "actionFailed": "Action failed. Please try again.",
+      "reactionFailed": "Couldn't update reaction. Please try again."
+    },
     "actions": {
       "close": "Close pull request",
       "copyUrl": "Copy URL",
@@ -2492,6 +2519,29 @@
     "description": "Pull requests in the {category} category."
   },
   "issue": {
+    "toasts": {
+      "commentPosted": "Comment posted",
+      "commentUpdated": "Comment updated",
+      "bodyUpdated": "Description updated",
+      "titleUpdated": "Title updated",
+      "assigneesUpdated": "Assignees updated",
+      "labelsUpdated": "Labels updated",
+      "milestoneUpdated": "Milestone updated",
+      "closedCompleted": "Issue closed as completed",
+      "closedNotPlanned": "Issue closed as not planned",
+      "reopened": "Issue reopened",
+      "deleted": "Issue deleted",
+      "deleteFailed": "Failed to delete issue. Please try again.",
+      "pinned": "Issue pinned",
+      "unpinned": "Issue unpinned",
+      "subscribed": "Subscribed to notifications",
+      "unsubscribed": "Unsubscribed from notifications",
+      "locked": "Conversation locked",
+      "unlocked": "Conversation unlocked",
+      "updateFailed": "Update failed. Please try again.",
+      "actionFailed": "Action failed. Please try again.",
+      "reactionFailed": "Couldn't update reaction. Please try again."
+    },
     "description": "{repository} {number} is open as an issue workspace. Conversation, labels, and project data will be connected here later.",
     "eyebrow": "Issue",
     "actions": {

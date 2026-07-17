@@ -35,6 +35,7 @@ import { GitHubActorLink, WorkItemStateBadge } from '@/components'
 import TabSwitcher, { type TabSwitcherItem } from '@/components/navigation/tab-switcher.vue'
 import { setIssueLock, setIssueSubscription } from '@/composables/github/use-issues'
 import { updatePullRequest } from '@/composables/github/use-pull-requests'
+import { useToast } from '@/composables/use-toast'
 
 const props = defineProps<{
   pullRequest: PullRequestDetail
@@ -55,6 +56,7 @@ interface PullRequestHeaderStatus {
 
 const { t } = useI18n()
 const router = useRouter()
+const toast = useToast()
 
 const pullRequestNumber = computed(() => `#${props.pullRequest.number}`)
 const createdAt = computed(() => formatDate(props.pullRequest.createdAt))
@@ -207,19 +209,35 @@ const tabs = computed<TabSwitcherItem[]>(() => [
   },
 ])
 
-async function runAction(action: () => Promise<void>): Promise<void> {
+async function runAction(action: () => Promise<void>, successMessage: string): Promise<void> {
   if (isBusy.value) return
   isBusy.value = true
-  try { await action(); emit('refetch') } finally { isBusy.value = false }
+  try {
+    await action()
+    toast.success(successMessage)
+    emit('refetch')
+  } catch {
+    toast.error(t('pullRequest.toasts.actionFailed'))
+  } finally {
+    isBusy.value = false
+  }
 }
 
 function toggleSubscription(): void {
   if (!nodeId.value) return
-  void runAction(() => setIssueSubscription(nodeId.value, !isSubscribed.value))
+  const nextSubscribed = !isSubscribed.value
+  void runAction(
+    () => setIssueSubscription(nodeId.value, nextSubscribed),
+    t(nextSubscribed ? 'pullRequest.toasts.subscribed' : 'pullRequest.toasts.unsubscribed'),
+  )
 }
 
 function toggleLock(): void {
-  void runAction(() => setIssueLock(props.pullRequest.owner, props.pullRequest.repo, props.pullRequest.number, !isLocked.value))
+  const nextLocked = !isLocked.value
+  void runAction(
+    () => setIssueLock(props.pullRequest.owner, props.pullRequest.repo, props.pullRequest.number, nextLocked),
+    t(nextLocked ? 'pullRequest.toasts.locked' : 'pullRequest.toasts.unlocked'),
+  )
 }
 
 function openRepository(): void {
@@ -259,6 +277,7 @@ async function saveTitle(): Promise<void> {
       title: nextTitle,
     })
     cancelTitleEdit()
+    toast.success(t('pullRequest.toasts.titleUpdated'))
     emit('refetch')
   } catch {
     titleError.value = t('pullRequest.edit.titleError')

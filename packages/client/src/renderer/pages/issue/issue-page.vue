@@ -29,6 +29,7 @@ import {
   useIssueDetailQuery,
 } from '@/composables/github/use-issues'
 import { setReaction } from '@/composables/github/use-reactions'
+import { useToast } from '@/composables/use-toast'
 import { isReactionContent } from '@/components/conversation/reactions'
 import IssueHeader from './components/issue-header.vue'
 import IssueSidebar from './components/issue-sidebar.vue'
@@ -39,6 +40,7 @@ const props = defineProps<{
 }>()
 
 const { t } = useI18n()
+const toast = useToast()
 
 const owner = computed(() => props.tab.owner ?? '')
 const repo = computed(() => props.tab.repo ?? '')
@@ -90,6 +92,7 @@ async function submitIssueComment(): Promise<void> {
   try {
     await createIssueComment(owner.value, repo.value, number.value, body)
     commentBody.value = ''
+    toast.success(t('issue.toasts.commentPosted'))
     await issueQuery.refetch()
   } catch {
     commentError.value = t('issue.comment.error')
@@ -124,6 +127,7 @@ async function saveIssueBody(): Promise<void> {
     })
     isEditingBody.value = false
     bodyDraft.value = ''
+    toast.success(t('issue.toasts.bodyUpdated'))
     await issueQuery.refetch()
   } catch {
     bodyError.value = t('issue.edit.bodyError')
@@ -151,6 +155,7 @@ async function toggleReaction(subjectId: string | undefined, content: string, re
     await setReaction(subjectId, content, reacted)
   } catch {
     // The refetch below restores the server state, reverting the optimistic toggle.
+    toast.error(t('issue.toasts.reactionFailed'))
   }
 
   await issueQuery.refetch()
@@ -166,6 +171,7 @@ async function saveIssueCommentEdit(): Promise<void> {
   try {
     await updateIssueComment(owner.value, repo.value, commentId, commentDraft.value)
     cancelCommentEdit()
+    toast.success(t('issue.toasts.commentUpdated'))
     await issueQuery.refetch()
   } catch {
     commentEditError.value = t('issue.edit.commentError')
