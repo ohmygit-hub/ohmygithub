@@ -231,6 +231,7 @@ async function submitReview(event: GitHubPullRequestReviewEvent): Promise<void> 
         <ChangedFilesTree
           :files="files"
           :owner="owner"
+          :pull-request-number="number"
           :repo="repo"
         />
       </div>

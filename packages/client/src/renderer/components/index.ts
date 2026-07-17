@@ -12,6 +12,8 @@ export { default as MermaidRenderer } from "./mermaid/mermaid-renderer.vue";
 export { default as AppPagination } from "./navigation/app-pagination.vue";
 export { default as MultiSelectPicker } from "./navigation/multi-select-picker.vue";
 export { default as SectionSidebar } from "./navigation/section-sidebar.vue";
+export { default as PullRequestReviewDiffPanel } from "./review/pull-request-review-diff-panel.vue";
+export { default as ReviewDiff } from "./review/review-diff.vue";
 export { default as ShikiCode } from "./code/shiki-code.vue";
 export { default as ShikiDiff } from "./code/shiki-diff.vue";
 export { default as ConversationActorLine } from "./conversation/conversation-actor-line.vue";

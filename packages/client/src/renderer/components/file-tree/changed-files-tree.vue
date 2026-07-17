@@ -8,6 +8,8 @@ const props = defineProps<{
   files: GitHubCommitFile[]
   owner: string
   repo: string
+  /** When set, file diffs open as commentable pull-request diffs. */
+  pullRequestNumber?: number
 }>()
 
 const { t } = useI18n()
@@ -77,6 +79,21 @@ function selectNode(node: GitHubRepositoryFileNode): void {
       filename: file.filename,
       title: file.filename,
       description: t('commit.files.noDiff'),
+    })
+    return
+  }
+
+  if (props.pullRequestNumber) {
+    openRightPanel({
+      type: 'pull-request-diff',
+      owner: props.owner,
+      repo: props.repo,
+      number: props.pullRequestNumber,
+      path: file.filename,
+      patch: file.patch,
+      additions: file.additions,
+      deletions: file.deletions,
+      title: file.filename,
     })
     return
   }
