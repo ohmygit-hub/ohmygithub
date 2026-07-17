@@ -2042,6 +2042,7 @@ type GitHubPullRequestCommitSummary = {
 type GitHubPullRequestReviewComment = {
   id: string
   nodeId: string
+  databaseId: number | null
   author: GitHubActor
   body: string
   createdAt: string
@@ -2055,6 +2056,35 @@ type GitHubPullRequestReviewComment = {
   outdated: boolean
   isReply: boolean
   reactions: GitHubIssueReaction[]
+}
+
+type GitHubPullRequestDiffSide = 'LEFT' | 'RIGHT'
+
+type GitHubPullRequestReviewThread = {
+  id: string
+  path: string
+  line: number | null
+  startLine: number | null
+  side: GitHubPullRequestDiffSide
+  startSide: GitHubPullRequestDiffSide | null
+  isResolved: boolean
+  isOutdated: boolean
+  isPending: boolean
+  viewerCanResolve: boolean
+  viewerCanUnresolve: boolean
+  viewerCanReply: boolean
+  comments: GitHubPullRequestReviewComment[]
+}
+
+type GitHubPullRequestPendingReview = {
+  id: string
+  body: string
+  commentCount: number
+}
+
+type GitHubPullRequestReviewThreadsResult = {
+  threads: GitHubPullRequestReviewThread[]
+  pendingReview: GitHubPullRequestPendingReview | null
 }
 
 type GitHubPullRequestTimelineEvent = {
@@ -2393,6 +2423,50 @@ interface Window {
           event: GitHubPullRequestReviewEvent
           body?: string
         }
+      ) => Promise<void>
+      listPullRequestReviewThreads: (
+        owner: string,
+        repo: string,
+        number: number
+      ) => Promise<GitHubPullRequestReviewThreadsResult>
+      addPullRequestReviewThread: (
+        owner: string,
+        repo: string,
+        number: number,
+        options: {
+          pullRequestId: string
+          pendingReviewId: string | null
+          mode: 'single' | 'review'
+          path: string
+          side: GitHubPullRequestDiffSide
+          line: number
+          startLine: number | null
+          startSide: GitHubPullRequestDiffSide | null
+          body: string
+        }
+      ) => Promise<void>
+      replyToPullRequestReviewThread: (
+        owner: string,
+        repo: string,
+        number: number,
+        options: { commentDatabaseId: number, body: string }
+      ) => Promise<void>
+      setPullRequestReviewThreadResolved: (
+        owner: string,
+        repo: string,
+        threadId: string,
+        resolved: boolean
+      ) => Promise<void>
+      submitPendingPullRequestReview: (
+        owner: string,
+        repo: string,
+        number: number,
+        options: { reviewId: string, event: GitHubPullRequestReviewEvent, body?: string }
+      ) => Promise<void>
+      deletePendingPullRequestReview: (
+        owner: string,
+        repo: string,
+        reviewId: string
       ) => Promise<void>
     }
     inbox: {

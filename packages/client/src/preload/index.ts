@@ -154,7 +154,19 @@ const api = {
     listPullRequestCommits: (owner: string, repo: string, number: number, page?: number, perPage?: number) =>
       ipcRenderer.invoke('pulls:list-commits', owner, repo, number, page, perPage),
     submitPullRequestReview: (owner: string, repo: string, number: number, options: unknown) =>
-      ipcRenderer.invoke('pulls:submit-review', owner, repo, number, options)
+      ipcRenderer.invoke('pulls:submit-review', owner, repo, number, options),
+    listPullRequestReviewThreads: (owner: string, repo: string, number: number) =>
+      ipcRenderer.invoke('pulls:list-review-threads', owner, repo, number),
+    addPullRequestReviewThread: (owner: string, repo: string, number: number, options: unknown) =>
+      ipcRenderer.invoke('pulls:add-review-thread', owner, repo, number, options),
+    replyToPullRequestReviewThread: (owner: string, repo: string, number: number, options: unknown) =>
+      ipcRenderer.invoke('pulls:reply-review-thread', owner, repo, number, options),
+    setPullRequestReviewThreadResolved: (owner: string, repo: string, threadId: string, resolved: boolean) =>
+      ipcRenderer.invoke('pulls:set-review-thread-resolved', owner, repo, threadId, resolved),
+    submitPendingPullRequestReview: (owner: string, repo: string, number: number, options: unknown) =>
+      ipcRenderer.invoke('pulls:submit-pending-review', owner, repo, number, options),
+    deletePendingPullRequestReview: (owner: string, repo: string, reviewId: string) =>
+      ipcRenderer.invoke('pulls:delete-pending-review', owner, repo, reviewId)
   },
   inbox: {
     listNotifications: (options?: { all?: boolean, participating?: boolean, limit?: number }) =>

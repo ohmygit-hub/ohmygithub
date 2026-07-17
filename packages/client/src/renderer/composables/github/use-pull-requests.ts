@@ -321,3 +321,134 @@ export async function updatePullRequestComment(
 
   return window.ohMyGithub.pulls.updatePullRequestComment(owner, repo, commentId, body)
 }
+
+export function usePullRequestReviewThreadsQuery(
+  owner: MaybeRefOrGetter<string>,
+  repo: MaybeRefOrGetter<string>,
+  pullRequestNumber: MaybeRefOrGetter<number>,
+  enabled: MaybeRefOrGetter<boolean>,
+) {
+  return useQuery<GitHubPullRequestReviewThreadsResult>({
+    key: () => [
+      'github',
+      'pull-request-review-threads',
+      toValue(owner),
+      toValue(repo),
+      toValue(pullRequestNumber),
+    ],
+    enabled: () => {
+      const number = toValue(pullRequestNumber)
+
+      return Boolean(toValue(owner))
+        && Boolean(toValue(repo))
+        && Number.isInteger(number)
+        && number > 0
+        && toValue(enabled)
+    },
+    query: async () => {
+      if (!window.ohMyGithub?.pulls) {
+        throw new Error('GitHub pulls bridge is unavailable')
+      }
+
+      return window.ohMyGithub.pulls.listPullRequestReviewThreads(
+        toValue(owner),
+        toValue(repo),
+        toValue(pullRequestNumber),
+      )
+    },
+  })
+}
+
+// Line-comment mutations happen on the review tab while the detail query (and
+// sometimes the threads query in the right panel) may be inactive, so force
+// refetchActive: 'all' — same reasoning as usePullRequestListInvalidation.
+export function useReviewThreadsInvalidation() {
+  const queryCache = useQueryCache()
+
+  return {
+    invalidateReviewThreads(owner: string, repo: string, pullRequestNumber: number): void {
+      void queryCache.invalidateQueries(
+        { key: ['github', 'pull-request-review-threads', owner, repo, pullRequestNumber] },
+        'all',
+      )
+      void queryCache.invalidateQueries(
+        { key: ['github', 'pull-request-detail', owner, repo, pullRequestNumber] },
+        'all',
+      )
+    },
+  }
+}
+
+export async function addPullRequestReviewThread(
+  owner: string,
+  repo: string,
+  pullRequestNumber: number,
+  options: {
+    pullRequestId: string
+    pendingReviewId: string | null
+    mode: 'single' | 'review'
+    path: string
+    side: GitHubPullRequestDiffSide
+    line: number
+    startLine: number | null
+    startSide: GitHubPullRequestDiffSide | null
+    body: string
+  },
+): Promise<void> {
+  if (!window.ohMyGithub?.pulls) {
+    throw new Error('GitHub pulls bridge is unavailable')
+  }
+
+  return window.ohMyGithub.pulls.addPullRequestReviewThread(owner, repo, pullRequestNumber, options)
+}
+
+export async function replyToPullRequestReviewThread(
+  owner: string,
+  repo: string,
+  pullRequestNumber: number,
+  options: { commentDatabaseId: number, body: string },
+): Promise<void> {
+  if (!window.ohMyGithub?.pulls) {
+    throw new Error('GitHub pulls bridge is unavailable')
+  }
+
+  return window.ohMyGithub.pulls.replyToPullRequestReviewThread(owner, repo, pullRequestNumber, options)
+}
+
+export async function setPullRequestReviewThreadResolved(
+  owner: string,
+  repo: string,
+  threadId: string,
+  resolved: boolean,
+): Promise<void> {
+  if (!window.ohMyGithub?.pulls) {
+    throw new Error('GitHub pulls bridge is unavailable')
+  }
+
+  return window.ohMyGithub.pulls.setPullRequestReviewThreadResolved(owner, repo, threadId, resolved)
+}
+
+export async function submitPendingPullRequestReview(
+  owner: string,
+  repo: string,
+  pullRequestNumber: number,
+  options: { reviewId: string, event: GitHubPullRequestReviewEvent, body?: string },
+): Promise<void> {
+  if (!window.ohMyGithub?.pulls) {
+    throw new Error('GitHub pulls bridge is unavailable')
+  }
+
+  return window.ohMyGithub.pulls.submitPendingPullRequestReview(owner, repo, pullRequestNumber, options)
+}
+
+export async function discardPendingPullRequestReview(
+  owner: string,
+  repo: string,
+  reviewId: string,
+): Promise<void> {
+  if (!window.ohMyGithub?.pulls) {
+    throw new Error('GitHub pulls bridge is unavailable')
+  }
+
+  return window.ohMyGithub.pulls.deletePendingPullRequestReview(owner, repo, reviewId)
+}

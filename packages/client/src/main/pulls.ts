@@ -3,6 +3,7 @@ import {
   type CreatePullRequestCommentOptions,
   type GetPullRequestDetailOptions,
   type GitHubPullRequestCategory,
+  type GitHubPullRequestDiffSide,
   type GitHubPullRequestMergeMethod,
   type GitHubPullRequestReviewEvent,
   type GitHubPullRequestSearchState,
@@ -56,6 +57,24 @@ export function registerPullsIpc(): void {
   )
   ipcMain.handle('pulls:submit-review', (_event, owner: string, repo: string, number: number, options: unknown) =>
     submitPullRequestReview(owner, repo, number, options)
+  )
+  ipcMain.handle('pulls:list-review-threads', (_event, owner: string, repo: string, number: number) =>
+    listPullRequestReviewThreads(owner, repo, number)
+  )
+  ipcMain.handle('pulls:add-review-thread', (_event, owner: string, repo: string, number: number, options: unknown) =>
+    addPullRequestReviewThread(owner, repo, number, options)
+  )
+  ipcMain.handle('pulls:reply-review-thread', (_event, owner: string, repo: string, number: number, options: unknown) =>
+    replyToPullRequestReviewThread(owner, repo, number, options)
+  )
+  ipcMain.handle('pulls:set-review-thread-resolved', (_event, owner: string, repo: string, threadId: string, resolved: boolean) =>
+    setPullRequestReviewThreadResolved(owner, repo, threadId, resolved)
+  )
+  ipcMain.handle('pulls:submit-pending-review', (_event, owner: string, repo: string, number: number, options: unknown) =>
+    submitPendingPullRequestReview(owner, repo, number, options)
+  )
+  ipcMain.handle('pulls:delete-pending-review', (_event, owner: string, repo: string, reviewId: string) =>
+    deletePendingPullRequestReview(owner, repo, reviewId)
   )
 }
 
@@ -234,6 +253,138 @@ function normalizeReviewEvent(value: GitHubPullRequestReviewEvent | undefined): 
   if (value === 'APPROVE' || value === 'COMMENT' || value === 'REQUEST_CHANGES') return value
 
   throw new Error('Unknown pull request review event')
+}
+
+async function listPullRequestReviewThreads(owner: string, repo: string, number: number) {
+  const normalizedOptions = normalizePullRequestDetailOptions({ owner, repo, number })
+  const api = await createAuthenticatedGitHubApi()
+
+  return api.pulls.listPullRequestReviewThreads(normalizedOptions)
+}
+
+async function addPullRequestReviewThread(owner: string, repo: string, number: number, options: unknown) {
+  const normalizedOptions = normalizePullRequestDetailOptions({ owner, repo, number })
+  const payload = (options ?? {}) as {
+    pullRequestId?: string
+    pendingReviewId?: string | null
+    mode?: 'single' | 'review'
+    path?: string
+    side?: GitHubPullRequestDiffSide
+    line?: number
+    startLine?: number | null
+    startSide?: GitHubPullRequestDiffSide | null
+    body?: string
+  }
+
+  if (payload.mode !== 'single' && payload.mode !== 'review') {
+    throw new Error('Unknown review thread mode')
+  }
+
+  const body = typeof payload.body === 'string' ? payload.body.trim() : ''
+  if (!body) throw new Error('Review comment body is required')
+
+  const path = typeof payload.path === 'string' ? payload.path.trim() : ''
+  if (!path) throw new Error('Review comment path is required')
+
+  const line = normalizeLineNumber(payload.line)
+  const startLine = payload.startLine == null ? null : normalizeLineNumber(payload.startLine)
+  if (startLine !== null && startLine >= line) {
+    throw new Error('Review comment start line must be less than the end line')
+  }
+
+  const side = normalizeDiffSide(payload.side)
+  const api = await createAuthenticatedGitHubApi()
+
+  return api.pulls.addPullRequestReviewThread({
+    ...normalizedOptions,
+    pullRequestId: requireNonEmpty(payload.pullRequestId?.trim(), 'Pull request id is required'),
+    pendingReviewId:
+      typeof payload.pendingReviewId === 'string' && payload.pendingReviewId ? payload.pendingReviewId : null,
+    mode: payload.mode,
+    path,
+    side,
+    line,
+    startLine,
+    startSide: startLine === null ? null : normalizeDiffSide(payload.startSide ?? side),
+    body,
+  })
+}
+
+async function replyToPullRequestReviewThread(owner: string, repo: string, number: number, options: unknown) {
+  const normalizedOptions = normalizePullRequestDetailOptions({ owner, repo, number })
+  const payload = (options ?? {}) as { commentDatabaseId?: number, body?: string }
+  const body = typeof payload.body === 'string' ? payload.body.trim() : ''
+  if (!body) throw new Error('Reply body is required')
+
+  const api = await createAuthenticatedGitHubApi()
+
+  return api.pulls.replyToPullRequestReviewThread({
+    ...normalizedOptions,
+    commentDatabaseId: normalizeLineNumber(payload.commentDatabaseId),
+    body,
+  })
+}
+
+async function setPullRequestReviewThreadResolved(owner: string, repo: string, threadId: string, resolved: boolean) {
+  const normalizedOwner = owner.trim()
+  const normalizedRepo = repo.trim()
+
+  if (!normalizedOwner || !normalizedRepo) {
+    throw new Error('Repository owner and name are required')
+  }
+
+  const id = requireNonEmpty(threadId.trim(), 'Review thread id is required')
+  const api = await createAuthenticatedGitHubApi()
+  const request = { owner: normalizedOwner, repo: normalizedRepo, threadId: id }
+
+  return resolved
+    ? api.pulls.resolvePullRequestReviewThread(request)
+    : api.pulls.unresolvePullRequestReviewThread(request)
+}
+
+async function submitPendingPullRequestReview(owner: string, repo: string, number: number, options: unknown) {
+  const normalizedOptions = normalizePullRequestDetailOptions({ owner, repo, number })
+  const payload = (options ?? {}) as { reviewId?: string, event?: GitHubPullRequestReviewEvent, body?: string }
+  const body = typeof payload.body === 'string' ? payload.body.trim() : ''
+  const api = await createAuthenticatedGitHubApi()
+
+  return api.pulls.submitPendingPullRequestReview({
+    ...normalizedOptions,
+    reviewId: requireNonEmpty(payload.reviewId?.trim(), 'Pending review id is required'),
+    event: normalizeReviewEvent(payload.event),
+    ...(body ? { body } : {}),
+  })
+}
+
+async function deletePendingPullRequestReview(owner: string, repo: string, reviewId: string) {
+  const normalizedOwner = owner.trim()
+  const normalizedRepo = repo.trim()
+
+  if (!normalizedOwner || !normalizedRepo) {
+    throw new Error('Repository owner and name are required')
+  }
+
+  const api = await createAuthenticatedGitHubApi()
+
+  return api.pulls.deletePendingPullRequestReview({
+    owner: normalizedOwner,
+    repo: normalizedRepo,
+    reviewId: requireNonEmpty(reviewId.trim(), 'Pending review id is required'),
+  })
+}
+
+function normalizeLineNumber(value: number | undefined): number {
+  if (typeof value !== 'number' || !Number.isInteger(value) || value <= 0) {
+    throw new Error('Line number must be a positive integer')
+  }
+
+  return value
+}
+
+function normalizeDiffSide(value: GitHubPullRequestDiffSide | null | undefined): GitHubPullRequestDiffSide {
+  if (value === 'LEFT' || value === 'RIGHT') return value
+
+  throw new Error('Unknown diff side')
 }
 
 async function updatePullRequestComment(owner: string, repo: string, commentId: string | number, body: string) {
