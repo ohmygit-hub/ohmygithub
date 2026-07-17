@@ -2308,7 +2308,10 @@
       "retry": "Retry",
       "title": "Submit a review",
       "outdated": "Outdated",
-      "reply": "replied"
+      "reply": "replied",
+      "diff": {
+        "viewThread": "View review thread"
+      }
     },
     "reviewDecision": {
       "approved": "Approved",

@@ -2308,7 +2308,10 @@
       "retry": "重试",
       "title": "提交 Review",
       "outdated": "已过时",
-      "reply": "回复了"
+      "reply": "回复了",
+      "diff": {
+        "viewThread": "查看评论线程"
+      }
     },
     "reviewDecision": {
       "approved": "已批准",
