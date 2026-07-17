@@ -1735,6 +1735,12 @@ export interface GitHubClient {
   listPullRequestCommits(options: ListPullRequestCommitsOptions): Promise<GitHubRepositoryCommitPage>
   submitPullRequestReview(options: SubmitPullRequestReviewOptions): Promise<void>
   listPullRequestReviewThreads(options: GetPullRequestDetailOptions): Promise<GitHubPullRequestReviewThreadsResult>
+  addPullRequestReviewThread(options: AddPullRequestReviewThreadOptions): Promise<void>
+  replyToPullRequestReviewThread(options: ReplyToPullRequestReviewThreadOptions): Promise<void>
+  resolvePullRequestReviewThread(options: ResolvePullRequestReviewThreadOptions): Promise<void>
+  unresolvePullRequestReviewThread(options: ResolvePullRequestReviewThreadOptions): Promise<void>
+  submitPendingPullRequestReview(options: SubmitPendingPullRequestReviewOptions): Promise<void>
+  deletePendingPullRequestReview(options: DeletePendingPullRequestReviewOptions): Promise<void>
   listIssueCategory(options: ListIssueCategoryOptions): Promise<GitHubIssue[]>
   listViewerIssues(options?: ListWorkspaceItemsOptions): Promise<GitHubIssue[]>
   listRepositoryIssues(options: ListRepositoryWorkspaceItemsOptions): Promise<GitHubIssue[]>
@@ -1947,6 +1953,37 @@ export type GitHubPullRequestReviewEvent = 'APPROVE' | 'COMMENT' | 'REQUEST_CHAN
 export interface SubmitPullRequestReviewOptions extends GetPullRequestDetailOptions {
   event: GitHubPullRequestReviewEvent
   body?: string
+}
+
+export interface AddPullRequestReviewThreadOptions extends GetPullRequestDetailOptions {
+  pullRequestId: string
+  pendingReviewId: string | null
+  mode: 'single' | 'review'
+  path: string
+  side: GitHubPullRequestDiffSide
+  line: number
+  startLine?: number | null
+  startSide?: GitHubPullRequestDiffSide | null
+  body: string
+}
+
+export interface ReplyToPullRequestReviewThreadOptions extends GetPullRequestDetailOptions {
+  commentDatabaseId: number
+  body: string
+}
+
+export interface ResolvePullRequestReviewThreadOptions extends RepositoryOptions {
+  threadId: string
+}
+
+export interface SubmitPendingPullRequestReviewOptions extends GetPullRequestDetailOptions {
+  reviewId: string
+  event: GitHubPullRequestReviewEvent
+  body?: string
+}
+
+export interface DeletePendingPullRequestReviewOptions extends RepositoryOptions {
+  reviewId: string
 }
 
 export interface SearchRepositoryPullRequestsOptions extends RepositoryOptions {

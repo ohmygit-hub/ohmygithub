@@ -1,9 +1,14 @@
 import type { GitHubOctokit } from '../transport'
 import type {
+  AddPullRequestReviewThreadOptions,
   ClosePullRequestOptions,
   CreatePullRequestCommentOptions,
+  DeletePendingPullRequestReviewOptions,
   GetPullRequestDetailOptions,
+  ReplyToPullRequestReviewThreadOptions,
   RequestPullRequestReviewersOptions,
+  ResolvePullRequestReviewThreadOptions,
+  SubmitPendingPullRequestReviewOptions,
   GitHubActor,
   GitHubCiState,
   GitHubCommitFile,
@@ -1714,6 +1719,54 @@ const pullRequestReviewThreadsQuery = `
   }
 `
 
+const addPullRequestReviewMutation = `
+  mutation AddPullRequestReview($pullRequestId: ID!, $event: PullRequestReviewEvent, $threads: [DraftPullRequestReviewThread]) {
+    addPullRequestReview(input: { pullRequestId: $pullRequestId, event: $event, threads: $threads }) {
+      pullRequestReview { id }
+    }
+  }
+`
+
+const addPullRequestReviewThreadMutation = `
+  mutation AddPullRequestReviewThread($reviewId: ID!, $path: String!, $line: Int!, $side: DiffSide, $startLine: Int, $startSide: DiffSide, $body: String!) {
+    addPullRequestReviewThread(input: { pullRequestReviewId: $reviewId, path: $path, line: $line, side: $side, startLine: $startLine, startSide: $startSide, body: $body }) {
+      thread { id }
+    }
+  }
+`
+
+const resolveReviewThreadMutation = `
+  mutation ResolveReviewThread($threadId: ID!) {
+    resolveReviewThread(input: { threadId: $threadId }) {
+      thread { id isResolved }
+    }
+  }
+`
+
+const unresolveReviewThreadMutation = `
+  mutation UnresolveReviewThread($threadId: ID!) {
+    unresolveReviewThread(input: { threadId: $threadId }) {
+      thread { id isResolved }
+    }
+  }
+`
+
+const submitPendingPullRequestReviewMutation = `
+  mutation SubmitPullRequestReview($reviewId: ID!, $event: PullRequestReviewEvent!, $body: String) {
+    submitPullRequestReview(input: { pullRequestReviewId: $reviewId, event: $event, body: $body }) {
+      pullRequestReview { id state }
+    }
+  }
+`
+
+const deletePendingPullRequestReviewMutation = `
+  mutation DeletePullRequestReview($reviewId: ID!) {
+    deletePullRequestReview(input: { pullRequestReviewId: $reviewId }) {
+      pullRequestReview { id }
+    }
+  }
+`
+
 const MAX_SEARCH_RESULTS = 1000
 
 export class PullsApi {
@@ -1998,6 +2051,69 @@ export class PullsApi {
           }
         : null
     }
+  }
+
+  async addPullRequestReviewThread(options: AddPullRequestReviewThreadOptions): Promise<void> {
+    const startLine = options.startLine ?? null
+    const startSide = startLine === null ? null : (options.startSide ?? options.side)
+
+    if (options.mode === 'review' && options.pendingReviewId) {
+      await this.octokit.graphql(addPullRequestReviewThreadMutation, {
+        reviewId: options.pendingReviewId,
+        path: options.path,
+        side: options.side,
+        line: options.line,
+        startLine,
+        startSide,
+        body: options.body
+      })
+      return
+    }
+
+    await this.octokit.graphql(addPullRequestReviewMutation, {
+      pullRequestId: normalizePullRequestNodeId(options.pullRequestId),
+      event: options.mode === 'single' ? 'COMMENT' : null,
+      threads: [
+        {
+          path: options.path,
+          side: options.side,
+          line: options.line,
+          startLine,
+          startSide,
+          body: options.body
+        }
+      ]
+    })
+  }
+
+  async replyToPullRequestReviewThread(options: ReplyToPullRequestReviewThreadOptions): Promise<void> {
+    await this.octokit.rest.pulls.createReplyForReviewComment({
+      owner: options.owner,
+      repo: options.repo,
+      pull_number: options.number,
+      comment_id: options.commentDatabaseId,
+      body: options.body
+    })
+  }
+
+  async resolvePullRequestReviewThread(options: ResolvePullRequestReviewThreadOptions): Promise<void> {
+    await this.octokit.graphql(resolveReviewThreadMutation, { threadId: options.threadId })
+  }
+
+  async unresolvePullRequestReviewThread(options: ResolvePullRequestReviewThreadOptions): Promise<void> {
+    await this.octokit.graphql(unresolveReviewThreadMutation, { threadId: options.threadId })
+  }
+
+  async submitPendingPullRequestReview(options: SubmitPendingPullRequestReviewOptions): Promise<void> {
+    await this.octokit.graphql(submitPendingPullRequestReviewMutation, {
+      reviewId: options.reviewId,
+      event: options.event,
+      body: options.body ?? null
+    })
+  }
+
+  async deletePendingPullRequestReview(options: DeletePendingPullRequestReviewOptions): Promise<void> {
+    await this.octokit.graphql(deletePendingPullRequestReviewMutation, { reviewId: options.reviewId })
   }
 
   async updatePullRequestComment(options: UpdatePullRequestCommentOptions): Promise<void> {

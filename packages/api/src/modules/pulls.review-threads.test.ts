@@ -162,3 +162,158 @@ describe('PullsApi review threads', () => {
     ).rejects.toThrow('Pull request not found')
   })
 })
+
+describe('PullsApi review thread mutations', () => {
+  it('adds a single comment through an immediately submitted review', async () => {
+    const { api, graphql } = createReviewApi()
+
+    await api.addPullRequestReviewThread({
+      owner: 'octo-org',
+      repo: 'hello-world',
+      number: 24,
+      pullRequestId: 'PR_kwDOExample',
+      pendingReviewId: null,
+      mode: 'single',
+      path: 'src/index.ts',
+      side: 'RIGHT',
+      line: 12,
+      startLine: 10,
+      startSide: 'RIGHT',
+      body: 'Watch this loop',
+    })
+
+    expect(graphql).toHaveBeenCalledWith(expect.stringContaining('addPullRequestReview('), {
+      pullRequestId: 'PR_kwDOExample',
+      event: 'COMMENT',
+      threads: [
+        { path: 'src/index.ts', side: 'RIGHT', line: 12, startLine: 10, startSide: 'RIGHT', body: 'Watch this loop' },
+      ],
+    })
+  })
+
+  it('creates a pending review when adding the first review comment', async () => {
+    const { api, graphql } = createReviewApi()
+
+    await api.addPullRequestReviewThread({
+      owner: 'octo-org',
+      repo: 'hello-world',
+      number: 24,
+      pullRequestId: 'PR_kwDOExample',
+      pendingReviewId: null,
+      mode: 'review',
+      path: 'src/index.ts',
+      side: 'RIGHT',
+      line: 12,
+      body: 'Watch this loop',
+    })
+
+    expect(graphql).toHaveBeenCalledWith(expect.stringContaining('addPullRequestReview('), {
+      pullRequestId: 'PR_kwDOExample',
+      event: null,
+      threads: [
+        { path: 'src/index.ts', side: 'RIGHT', line: 12, startLine: null, startSide: null, body: 'Watch this loop' },
+      ],
+    })
+  })
+
+  it('appends to the existing pending review', async () => {
+    const { api, graphql } = createReviewApi()
+
+    await api.addPullRequestReviewThread({
+      owner: 'octo-org',
+      repo: 'hello-world',
+      number: 24,
+      pullRequestId: 'PR_kwDOExample',
+      pendingReviewId: 'PRR_9',
+      mode: 'review',
+      path: 'src/index.ts',
+      side: 'LEFT',
+      line: 8,
+      body: 'Old branch handled this',
+    })
+
+    expect(graphql).toHaveBeenCalledWith(expect.stringContaining('addPullRequestReviewThread('), {
+      reviewId: 'PRR_9',
+      path: 'src/index.ts',
+      side: 'LEFT',
+      line: 8,
+      startLine: null,
+      startSide: null,
+      body: 'Old branch handled this',
+    })
+  })
+
+  it('replies through the REST review comment endpoint', async () => {
+    const { api, createReplyForReviewComment } = createReviewApi()
+
+    await api.replyToPullRequestReviewThread({
+      owner: 'octo-org',
+      repo: 'hello-world',
+      number: 24,
+      commentDatabaseId: 555,
+      body: 'Agreed',
+    })
+
+    expect(createReplyForReviewComment).toHaveBeenCalledWith({
+      owner: 'octo-org',
+      repo: 'hello-world',
+      pull_number: 24,
+      comment_id: 555,
+      body: 'Agreed',
+    })
+  })
+
+  it('resolves and unresolves threads by node id', async () => {
+    const { api, graphql } = createReviewApi()
+
+    await api.resolvePullRequestReviewThread({ owner: 'octo-org', repo: 'hello-world', threadId: 'PRRT_1' })
+    expect(graphql).toHaveBeenCalledWith(expect.stringContaining('resolveReviewThread'), { threadId: 'PRRT_1' })
+
+    await api.unresolvePullRequestReviewThread({ owner: 'octo-org', repo: 'hello-world', threadId: 'PRRT_1' })
+    expect(graphql).toHaveBeenCalledWith(expect.stringContaining('unresolveReviewThread'), { threadId: 'PRRT_1' })
+  })
+
+  it('submits the pending review with an event and body', async () => {
+    const { api, graphql } = createReviewApi()
+
+    await api.submitPendingPullRequestReview({
+      owner: 'octo-org',
+      repo: 'hello-world',
+      number: 24,
+      reviewId: 'PRR_9',
+      event: 'REQUEST_CHANGES',
+      body: 'See inline notes',
+    })
+
+    expect(graphql).toHaveBeenCalledWith(expect.stringContaining('submitPullRequestReview('), {
+      reviewId: 'PRR_9',
+      event: 'REQUEST_CHANGES',
+      body: 'See inline notes',
+    })
+  })
+
+  it('deletes the pending review', async () => {
+    const { api, graphql } = createReviewApi()
+
+    await api.deletePendingPullRequestReview({ owner: 'octo-org', repo: 'hello-world', reviewId: 'PRR_9' })
+
+    expect(graphql).toHaveBeenCalledWith(expect.stringContaining('deletePullRequestReview('), {
+      reviewId: 'PRR_9',
+    })
+  })
+})
+
+function createReviewApi() {
+  const graphql = vi.fn().mockResolvedValue({})
+  const createReplyForReviewComment = vi.fn().mockResolvedValue({ data: {} })
+  const api = new PullsApi({
+    graphql,
+    rest: {
+      pulls: {
+        createReplyForReviewComment,
+      },
+    },
+  } as unknown as GitHubOctokit)
+
+  return { api, graphql, createReplyForReviewComment }
+}

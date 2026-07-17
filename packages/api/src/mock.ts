@@ -1230,6 +1230,30 @@ export class MockGitHubClient implements GitHubClient {
     }
   }
 
+  async addPullRequestReviewThread(): Promise<void> {
+    return
+  }
+
+  async replyToPullRequestReviewThread(): Promise<void> {
+    return
+  }
+
+  async resolvePullRequestReviewThread(): Promise<void> {
+    return
+  }
+
+  async unresolvePullRequestReviewThread(): Promise<void> {
+    return
+  }
+
+  async submitPendingPullRequestReview(): Promise<void> {
+    return
+  }
+
+  async deletePendingPullRequestReview(): Promise<void> {
+    return
+  }
+
   async listViewerIssues(): Promise<GitHubIssue[]> {
     return Object.values(issuesByRepository).flat().slice(0, 8)
   }
