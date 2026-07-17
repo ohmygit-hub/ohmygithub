@@ -2356,6 +2356,26 @@
         "discardConfirm": "丢弃",
         "discardCancel": "取消",
         "discardError": "待提交的 review 丢弃失败。"
+      },
+      "threads": {
+        "title": "Review 线程",
+        "pendingBadge": "待提交",
+        "outdatedBadge": "已过期",
+        "resolvedBadge": "已解决",
+        "outdatedLine": "位置已过期",
+        "resolve": "标记解决",
+        "unresolve": "取消解决",
+        "reply": "回复",
+        "replyError": "回复发送失败，请重试。",
+        "resolveError": "线程状态更新失败，请重试。",
+        "errorTitle": "无法加载 review 线程",
+        "errorDescription": "review 线程加载失败，请检查网络后重试。"
+      },
+      "replyComposer": {
+        "inputLabel": "回复 review 线程",
+        "placeholder": "写下回复",
+        "emptyPreview": "暂无可预览内容。",
+        "submit": "回复"
       }
     },
     "reviewDecision": {

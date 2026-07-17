@@ -2356,6 +2356,26 @@
         "discardConfirm": "Discard",
         "discardCancel": "Cancel",
         "discardError": "The pending review could not be discarded."
+      },
+      "threads": {
+        "title": "Review threads",
+        "pendingBadge": "Pending",
+        "outdatedBadge": "Outdated",
+        "resolvedBadge": "Resolved",
+        "outdatedLine": "outdated location",
+        "resolve": "Resolve",
+        "unresolve": "Unresolve",
+        "reply": "Reply",
+        "replyError": "The reply could not be posted. Try again.",
+        "resolveError": "The thread state could not be updated. Try again.",
+        "errorTitle": "Could not load review threads",
+        "errorDescription": "Review threads could not be loaded. Check the connection and try again."
+      },
+      "replyComposer": {
+        "inputLabel": "Reply to review thread",
+        "placeholder": "Write a reply",
+        "emptyPreview": "Nothing to preview.",
+        "submit": "Reply"
       }
     },
     "reviewDecision": {

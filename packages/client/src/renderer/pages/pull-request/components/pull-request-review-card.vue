@@ -9,6 +9,7 @@ import ShikiDiff from '@/components/code/shiki-diff.vue'
 import ConversationActorLine from '@/components/conversation/conversation-actor-line.vue'
 import ConversationReactionBar from '@/components/conversation/conversation-reaction-bar.vue'
 import { hasRenderableText } from '@/components/conversation/format'
+import { trimDiffHunk } from '@/components/code/diff-hunk'
 
 const props = defineProps<{
   actor: ConversationActor
@@ -24,8 +25,6 @@ const props = defineProps<{
 const emit = defineEmits<{
   'reaction-toggle': [subjectId: string, content: string, reacted: boolean]
 }>()
-
-const MAX_HUNK_LINES = 4
 
 const { t } = useI18n()
 
@@ -44,14 +43,6 @@ const commentBlocks = computed(() => props.comments.map((comment) => ({
   trimmedHunk: trimDiffHunk(comment.diffHunk),
   showReactionBar: props.canReact || (comment.reactions ?? []).some((reaction) => reaction.count > 0),
 })))
-
-function trimDiffHunk(diffHunk: string | null): string {
-  if (!diffHunk) return ''
-
-  const lines = diffHunk.split('\n').filter((line) => !line.startsWith('@@'))
-
-  return lines.slice(-MAX_HUNK_LINES).join('\n')
-}
 
 function toCommentActor(author: GitHubActor): ConversationActor {
   return {

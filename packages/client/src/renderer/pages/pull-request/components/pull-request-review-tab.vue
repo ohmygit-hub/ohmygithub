@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { PullRequestDetail } from './types'
+import PullRequestReviewThreads from './pull-request-review-threads.vue'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
@@ -66,6 +67,9 @@ const threadsQuery = usePullRequestReviewThreadsQuery(
   () => props.active,
 )
 const pendingReview = computed(() => threadsQuery.data.value?.pendingReview ?? null)
+const threads = computed(() => threadsQuery.data.value?.threads ?? [])
+const isLoadingThreads = computed(() => threadsQuery.isLoading.value && threads.value.length === 0)
+const hasThreadsError = computed(() => Boolean(threadsQuery.error.value))
 const { invalidateReviewThreads } = useReviewThreadsInvalidation()
 const { selection, clearSelection } = useReviewSelection()
 
@@ -116,6 +120,15 @@ onMounted(async () => {
 
 function retryFiles(): void {
   void filesQuery.refetch()
+}
+
+function retryThreads(): void {
+  void threadsQuery.refetch()
+}
+
+function onThreadsChanged(): void {
+  invalidateReviewThreads(props.owner, props.repo, props.number)
+  emit('refetch')
 }
 
 async function submitReview(event: GitHubPullRequestReviewEvent): Promise<void> {
@@ -333,6 +346,17 @@ async function discardPendingReview(): Promise<void> {
         </template>
       </ConversationCommentComposer>
     </section>
+
+    <PullRequestReviewThreads
+      :has-error="hasThreadsError"
+      :is-loading="isLoadingThreads"
+      :number="number"
+      :owner="owner"
+      :repo="repo"
+      :threads="threads"
+      @changed="onThreadsChanged"
+      @retry="retryThreads"
+    />
 
     <section class="grid gap-2">
       <div class="flex flex-wrap items-baseline gap-2">
