@@ -152,8 +152,8 @@ export function useWorkspaceTabs() {
 
     const removedUrls = new Set(tabs.value.slice(index + 1).map((tab) => tab.url))
     tabs.value = tabs.value.slice(0, index + 1)
-    backStack.value = []
-    forwardStack.value = []
+    backStack.value = removeSnapshotTabs(backStack.value, removedUrls)
+    forwardStack.value = removeSnapshotTabs(forwardStack.value, removedUrls)
 
     if (removedUrls.has(activeUrl.value)) {
       activeUrl.value = url
