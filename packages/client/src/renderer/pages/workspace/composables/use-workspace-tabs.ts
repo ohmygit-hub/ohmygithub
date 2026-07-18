@@ -43,6 +43,9 @@ export function useWorkspaceTabs() {
   })
   const canGoBack = computed(() => backStack.value.length > 0)
   const canGoForward = computed(() => forwardStack.value.length > 0)
+  const canCloseAllTabs = computed(() =>
+    tabs.value.length > 1 || tabs.value[0]?.url !== DEFAULT_WORKSPACE_URL,
+  )
 
   async function selectTab(url: string): Promise<void> {
     await pushWorkspaceUrl(url)
@@ -128,9 +131,10 @@ export function useWorkspaceTabs() {
     const target = tabs.value.find((tab) => tab.url === url)
     if (!target) return
 
+    const removedUrls = new Set(tabs.value.filter((tab) => tab.url !== target.url).map((tab) => tab.url))
     tabs.value = [target]
-    backStack.value = []
-    forwardStack.value = []
+    backStack.value = removeSnapshotTabs(backStack.value, removedUrls)
+    forwardStack.value = removeSnapshotTabs(forwardStack.value, removedUrls)
 
     if (activeUrl.value !== target.url) {
       activeUrl.value = target.url
@@ -148,8 +152,8 @@ export function useWorkspaceTabs() {
 
     const removedUrls = new Set(tabs.value.slice(index + 1).map((tab) => tab.url))
     tabs.value = tabs.value.slice(0, index + 1)
-    backStack.value = []
-    forwardStack.value = []
+    backStack.value = removeSnapshotTabs(backStack.value, removedUrls)
+    forwardStack.value = removeSnapshotTabs(forwardStack.value, removedUrls)
 
     if (removedUrls.has(activeUrl.value)) {
       activeUrl.value = url
@@ -163,6 +167,9 @@ export function useWorkspaceTabs() {
 
   async function closeAllTabs(): Promise<void> {
     const defaultTab = createWorkspaceTabFromUrl(DEFAULT_WORKSPACE_URL)
+
+    // No-op when the workspace is already just the default tab.
+    if (tabs.value.length === 1 && tabs.value[0]?.url === defaultTab.url) return
 
     tabs.value = [defaultTab]
     backStack.value = []
@@ -320,6 +327,7 @@ export function useWorkspaceTabs() {
   return {
     activeTab,
     activeUrl,
+    canCloseAllTabs,
     canGoBack,
     canGoForward,
     closeTab,
@@ -421,6 +429,19 @@ function removeSnapshotTab(
     .map((snapshot) => ({
       activeUrl: snapshot.activeUrl,
       tabs: snapshot.tabs.filter((tab) => tab.url !== url),
+    }))
+    .filter((snapshot) => snapshot.tabs.length > 0)
+}
+
+function removeSnapshotTabs(
+  stack: WorkspaceNavigationSnapshot[],
+  urls: Set<string>,
+): WorkspaceNavigationSnapshot[] {
+  return stack
+    .filter((snapshot) => !urls.has(snapshot.activeUrl))
+    .map((snapshot) => ({
+      activeUrl: snapshot.activeUrl,
+      tabs: snapshot.tabs.filter((tab) => !urls.has(tab.url)),
     }))
     .filter((snapshot) => snapshot.tabs.length > 0)
 }

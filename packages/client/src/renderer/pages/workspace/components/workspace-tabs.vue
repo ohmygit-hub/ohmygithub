@@ -22,6 +22,7 @@ import {
   PanelLeftOpen,
   PanelRightClose,
   PanelRightOpen,
+  Trash2,
   X,
 } from 'lucide-vue-next'
 import {
@@ -63,6 +64,7 @@ const props = defineProps<{
   bookmarkFolders: WorkspaceBookmarkFolder[]
   bookmarks: WorkspaceBookmark[]
   bookmarkedUrls: Set<string>
+  canCloseAllTabs: boolean
   canGoBack: boolean
   canGoForward: boolean
   isFullscreen: boolean
@@ -546,6 +548,7 @@ watch(
                 <div
                   class="workspace-tab-chip"
                   :data-active="activeUrl === tab.url ? 'true' : undefined"
+                  @mousedown.right.prevent
                 >
                   <TabsTrigger
                     :value="tab.url"
@@ -593,9 +596,10 @@ watch(
                 <ContextMenuSeparator />
                 <ContextMenuItem
                   variant="destructive"
+                  :disabled="!props.canCloseAllTabs"
                   @select="emit('closeAll')"
                 >
-                  <X />
+                  <Trash2 />
                   <span>{{ t('workspace.tabs.context.closeAll') }}</span>
                 </ContextMenuItem>
               </ContextMenuContent>
