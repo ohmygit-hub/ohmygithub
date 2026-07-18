@@ -18,6 +18,17 @@ export type RightPanelContent =
       title?: string
     }
   | {
+      type: 'pull-request-diff'
+      owner: string
+      repo: string
+      number: number
+      path: string
+      patch: string
+      additions?: number
+      deletions?: number
+      title?: string
+    }
+  | {
       type: 'markdown'
       content: string
       owner?: string | null

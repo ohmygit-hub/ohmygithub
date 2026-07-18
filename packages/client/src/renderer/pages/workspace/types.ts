@@ -29,6 +29,13 @@ export type AccountTabId =
   | 'followers'
   | 'sponsors'
   | 'people'
+  | 'teams'
+
+export type TeamTabId =
+  | 'members'
+  | 'repositories'
+  | 'teams'
+  | 'settings'
 
 export type WorkspaceTabType =
   | 'inbox'
@@ -38,6 +45,7 @@ export type WorkspaceTabType =
   | 'account'
   | 'app'
   | 'repo'
+  | 'team'
   | 'pull-request-list'
   | 'issue-list'
   | 'pull-request'
@@ -75,6 +83,8 @@ export interface WorkspaceTab {
   appSlug?: string
   repositorySection?: RepositoryTabId
   repositorySettingsSub?: string
+  teamSlug?: string
+  teamSection?: TeamTabId
   pullRequestCategory?: GitHubPullRequestCategory
   issueCategory?: GitHubIssueCategory
   searchMode?: GitHubWorkspaceSearchMode
@@ -105,6 +115,8 @@ export interface WorkspaceBookmark {
   appSlug?: string
   repositorySection?: RepositoryTabId
   repositorySettingsSub?: string
+  teamSlug?: string
+  teamSection?: TeamTabId
   pullRequestCategory?: GitHubPullRequestCategory
   issueCategory?: GitHubIssueCategory
   searchMode?: GitHubWorkspaceSearchMode

@@ -4,6 +4,7 @@ import type {
   BundledTheme,
   HighlighterGeneric,
   ShikiTransformer,
+  ThemedToken,
   ThemeRegistrationRaw
 } from 'shiki'
 import { useSettingsStore } from '@/stores/settings'
@@ -168,4 +169,38 @@ export function useShikiHighlighter() {
     html,
     loading
   }
+}
+
+export function useShikiTokenizer() {
+  const settings = useSettingsStore()
+
+  async function tokenize(
+    code: string,
+    options: ShikiHighlightOptions = {}
+  ): Promise<ThemedToken[][] | null> {
+    try {
+      const highlighter = await getHighlighter()
+      const language = await ensureLanguage(highlighter, resolveCodeLanguage(options))
+      const themes = options.themes ?? getSchemeCodeThemes(settings.colorScheme)
+
+      await Promise.all([
+        ensureTheme(highlighter, themes.light),
+        ensureTheme(highlighter, themes.dark)
+      ])
+
+      // Dual-theme tokens carry htmlStyle with the light color plus a
+      // --shiki-dark variable, so rows rendered inside a `.shiki` container
+      // pick up dark mode from the existing stylesheet rule.
+      return highlighter.codeToTokens(code, {
+        lang: language as BundledLanguage,
+        themes,
+        defaultColor: 'light',
+        cssVariablePrefix: '--shiki-'
+      }).tokens
+    } catch {
+      return null
+    }
+  }
+
+  return { tokenize }
 }

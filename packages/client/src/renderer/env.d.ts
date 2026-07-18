@@ -414,6 +414,105 @@ type SetOrganizationMembershipVisibilityOptions = {
   publicized: boolean
 }
 
+type GitHubTeamPrivacy = 'visible' | 'secret'
+
+type GitHubTeam = {
+  id: number
+  slug: string
+  name: string
+  description: string | null
+  privacy: GitHubTeamPrivacy
+  org: string
+  avatarUrl: string | null
+  parentSlug: string | null
+  parentName: string | null
+  membersCount: number
+  reposCount: number
+  childTeamsCount: number
+}
+
+type GitHubOrganizationTeams = {
+  teams: GitHubTeam[]
+  totalCount: number
+  truncated: boolean
+  viewerCanAdminister: boolean
+  missingAdminScopes: string[]
+}
+
+type GitHubTeamMemberRole = 'member' | 'maintainer'
+
+type GitHubTeamMember = {
+  id: number
+  login: string
+  name: string | null
+  avatarUrl: string
+  role: GitHubTeamMemberRole
+}
+
+type GitHubTeamRepository = {
+  owner: string
+  name: string
+  nameWithOwner: string
+  description: string | null
+  isPrivate: boolean
+  permission: string
+}
+
+type GitHubTeamDetail = {
+  team: GitHubTeam
+  viewerCanAdminister: boolean
+  members: GitHubTeamMember[]
+  membersTruncated: boolean
+  repositories: GitHubTeamRepository[]
+  repositoriesTruncated: boolean
+  childTeams: GitHubTeam[]
+}
+
+type GitHubCreatedTeam = {
+  id: number
+  slug: string
+  name: string
+}
+
+type OrganizationTeamOptions = {
+  org: string
+  teamSlug: string
+}
+
+type CreateTeamOptions = {
+  org: string
+  name: string
+  description?: string
+  privacy?: GitHubTeamPrivacy
+  parentTeamId?: number
+}
+
+type UpdateTeamOptions = OrganizationTeamOptions & {
+  name?: string
+  description?: string
+  privacy?: GitHubTeamPrivacy
+}
+
+type SetTeamMembershipOptions = OrganizationTeamOptions & {
+  login: string
+  role: GitHubTeamMemberRole
+}
+
+type TeamMemberOptions = OrganizationTeamOptions & {
+  login: string
+}
+
+type AddOrUpdateTeamRepositoryOptions = OrganizationTeamOptions & {
+  owner: string
+  repo: string
+  permission: string
+}
+
+type TeamRepositoryOptions = OrganizationTeamOptions & {
+  owner: string
+  repo: string
+}
+
 type GitHubRepository = {
   id: number
   name: string
@@ -1943,6 +2042,7 @@ type GitHubPullRequestCommitSummary = {
 type GitHubPullRequestReviewComment = {
   id: string
   nodeId: string
+  databaseId: number | null
   author: GitHubActor
   body: string
   createdAt: string
@@ -1956,6 +2056,35 @@ type GitHubPullRequestReviewComment = {
   outdated: boolean
   isReply: boolean
   reactions: GitHubIssueReaction[]
+}
+
+type GitHubPullRequestDiffSide = 'LEFT' | 'RIGHT'
+
+type GitHubPullRequestReviewThread = {
+  id: string
+  path: string
+  line: number | null
+  startLine: number | null
+  side: GitHubPullRequestDiffSide
+  startSide: GitHubPullRequestDiffSide | null
+  isResolved: boolean
+  isOutdated: boolean
+  isPending: boolean
+  viewerCanResolve: boolean
+  viewerCanUnresolve: boolean
+  viewerCanReply: boolean
+  comments: GitHubPullRequestReviewComment[]
+}
+
+type GitHubPullRequestPendingReview = {
+  id: string
+  body: string
+  commentCount: number
+}
+
+type GitHubPullRequestReviewThreadsResult = {
+  threads: GitHubPullRequestReviewThread[]
+  pendingReview: GitHubPullRequestPendingReview | null
 }
 
 type GitHubPullRequestTimelineEvent = {
@@ -2154,6 +2283,17 @@ interface Window {
       cancelInvitation: (options: CancelOrganizationInvitationOptions) => Promise<void>
       setMembershipVisibility: (options: SetOrganizationMembershipVisibilityOptions) => Promise<void>
     }
+    organizationTeams: {
+      getTeams: (org: string) => Promise<GitHubOrganizationTeams>
+      getTeamDetail: (options: OrganizationTeamOptions) => Promise<GitHubTeamDetail>
+      createTeam: (options: CreateTeamOptions) => Promise<GitHubCreatedTeam>
+      updateTeam: (options: UpdateTeamOptions) => Promise<GitHubCreatedTeam>
+      deleteTeam: (options: OrganizationTeamOptions) => Promise<void>
+      setTeamMembership: (options: SetTeamMembershipOptions) => Promise<void>
+      removeTeamMember: (options: TeamMemberOptions) => Promise<void>
+      addOrUpdateTeamRepository: (options: AddOrUpdateTeamRepositoryOptions) => Promise<void>
+      removeTeamRepository: (options: TeamRepositoryOptions) => Promise<void>
+    }
     actions: {
       listRepositoryWorkflows: (owner: string, repo: string) => Promise<GitHubActionWorkflow[]>
       listRepositoryWorkflowRuns: (options: ListRepositoryWorkflowRunsOptions) => Promise<GitHubActionRunPage>
@@ -2283,6 +2423,50 @@ interface Window {
           event: GitHubPullRequestReviewEvent
           body?: string
         }
+      ) => Promise<void>
+      listPullRequestReviewThreads: (
+        owner: string,
+        repo: string,
+        number: number
+      ) => Promise<GitHubPullRequestReviewThreadsResult>
+      addPullRequestReviewThread: (
+        owner: string,
+        repo: string,
+        number: number,
+        options: {
+          pullRequestId: string
+          pendingReviewId: string | null
+          mode: 'single' | 'review'
+          path: string
+          side: GitHubPullRequestDiffSide
+          line: number
+          startLine: number | null
+          startSide: GitHubPullRequestDiffSide | null
+          body: string
+        }
+      ) => Promise<void>
+      replyToPullRequestReviewThread: (
+        owner: string,
+        repo: string,
+        number: number,
+        options: { commentDatabaseId: number, body: string }
+      ) => Promise<void>
+      setPullRequestReviewThreadResolved: (
+        owner: string,
+        repo: string,
+        threadId: string,
+        resolved: boolean
+      ) => Promise<void>
+      submitPendingPullRequestReview: (
+        owner: string,
+        repo: string,
+        number: number,
+        options: { reviewId: string, event: GitHubPullRequestReviewEvent, body?: string }
+      ) => Promise<void>
+      deletePendingPullRequestReview: (
+        owner: string,
+        repo: string,
+        reviewId: string
       ) => Promise<void>
     }
     inbox: {

@@ -28,6 +28,7 @@ import {
   updateIssue,
   useIssueListInvalidation,
 } from '@/composables/github/use-issues'
+import { useToast } from '@/composables/use-toast'
 
 const props = defineProps<{
   issue: IssueDetail
@@ -39,6 +40,7 @@ const emit = defineEmits<{ refetch: [] }>()
 const { t } = useI18n()
 const router = useRouter()
 const { invalidateIssueLists } = useIssueListInvalidation()
+const toast = useToast()
 
 const issueNumber = computed(() => `#${props.issue.number}`)
 const createdAt = computed(() => formatDate(props.issue.createdAt))
@@ -70,12 +72,15 @@ const isSubscribed = computed(() => props.issue.viewerSubscription === 'SUBSCRIB
 const isLocked = computed(() => Boolean(props.issue.locked))
 const isPinned = computed(() => Boolean(props.issue.isPinned))
 
-async function runAction(action: () => Promise<void>): Promise<void> {
+async function runAction(action: () => Promise<void>, successMessage: string): Promise<void> {
   if (isBusy.value) return
   isBusy.value = true
   try {
     await action()
+    toast.success(successMessage)
     emit('refetch')
+  } catch {
+    toast.error(t('issue.toasts.actionFailed'))
   } finally {
     isBusy.value = false
   }
@@ -83,16 +88,28 @@ async function runAction(action: () => Promise<void>): Promise<void> {
 
 function toggleSubscription(): void {
   if (!nodeId.value) return
-  void runAction(() => setIssueSubscription(nodeId.value, !isSubscribed.value))
+  const nextSubscribed = !isSubscribed.value
+  void runAction(
+    () => setIssueSubscription(nodeId.value, nextSubscribed),
+    t(nextSubscribed ? 'issue.toasts.subscribed' : 'issue.toasts.unsubscribed'),
+  )
 }
 
 function toggleLock(): void {
-  void runAction(() => setIssueLock(props.issue.owner, props.issue.repo, props.issue.number, !isLocked.value))
+  const nextLocked = !isLocked.value
+  void runAction(
+    () => setIssueLock(props.issue.owner, props.issue.repo, props.issue.number, nextLocked),
+    t(nextLocked ? 'issue.toasts.locked' : 'issue.toasts.unlocked'),
+  )
 }
 
 function togglePin(): void {
   if (!nodeId.value) return
-  void runAction(() => setIssuePinned(nodeId.value, !isPinned.value))
+  const nextPinned = !isPinned.value
+  void runAction(
+    () => setIssuePinned(nodeId.value, nextPinned),
+    t(nextPinned ? 'issue.toasts.pinned' : 'issue.toasts.unpinned'),
+  )
 }
 
 function openDeleteDialog(): void {
@@ -107,8 +124,11 @@ async function confirmDelete(): Promise<void> {
   try {
     await deleteIssue(nodeId.value)
     isDeleteDialogOpen.value = false
+    toast.success(t('issue.toasts.deleted'))
     emit('refetch')
     invalidateIssueLists(props.issue.owner, props.issue.repo)
+  } catch {
+    toast.error(t('issue.toasts.deleteFailed'))
   } finally {
     isBusy.value = false
   }
@@ -151,6 +171,7 @@ async function saveTitle(): Promise<void> {
       title: nextTitle,
     })
     cancelTitleEdit()
+    toast.success(t('issue.toasts.titleUpdated'))
     emit('refetch')
     invalidateIssueLists(props.issue.owner, props.issue.repo)
   } catch {

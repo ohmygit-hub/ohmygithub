@@ -7,6 +7,7 @@ import {
   AvatarFallback,
   AvatarImage,
 } from '@oh-my-github/ui'
+import { createTeamWorkspaceUrl } from '@/pages/workspace/workspace-url'
 import { createAccountWorkspaceUrl, createAppWorkspaceUrl, createGitHubAvatarUrl } from './github-reference'
 
 defineOptions({
@@ -23,6 +24,8 @@ const props = withDefaults(defineProps<{
   variant?: 'plain' | 'pill'
   isBot?: boolean
   showBotBadge?: boolean
+  /** When set, `login` is a team slug in this organization and the link opens the team page. */
+  teamOrg?: string | null
 }>(), {
   showAvatar: true,
   showUsername: true,
@@ -31,6 +34,7 @@ const props = withDefaults(defineProps<{
   variant: 'plain',
   isBot: false,
   showBotBadge: true,
+  teamOrg: null,
 })
 
 const router = useRouter()
@@ -67,6 +71,11 @@ const linkClass = computed(() => [
 
 function openProfile(): void {
   if (!props.interactive || !normalizedLogin.value) return
+
+  if (props.teamOrg) {
+    void router.push(createTeamWorkspaceUrl(props.teamOrg, normalizedLogin.value))
+    return
+  }
 
   void router.push(
     props.isBot

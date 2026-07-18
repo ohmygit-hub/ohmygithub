@@ -360,6 +360,15 @@ function selectItem(): void {
   }
 }
 
+function activateItem(): void {
+  if (isBookmarkFolder.value) {
+    toggleItem()
+    return
+  }
+
+  selectItem()
+}
+
 function toggleItem(): void {
   if (hasChevron.value) {
     emit('toggle', props.item.id)
@@ -471,15 +480,16 @@ function sortableItemIds(container: HTMLElement): string[] {
         <SidebarMenuButton
           as="div"
           class="relative gap-1 pr-1 before:hidden"
-          :class="displayItem.url ? 'cursor-pointer' : 'cursor-default'"
+          :class="displayItem.url || isBookmarkFolder ? 'cursor-pointer' : 'cursor-default'"
+          :aria-expanded="isBookmarkFolder ? isExpanded : undefined"
           role="button"
           size="sm"
           tabindex="0"
           :is-active="displayItem.isActive"
           :tooltip="displayItem.label"
-          @click="selectItem"
-          @keydown.enter.prevent="selectItem"
-          @keydown.space.prevent="selectItem"
+          @click="activateItem"
+          @keydown.enter.prevent="activateItem"
+          @keydown.space.prevent="activateItem"
         >
           <span
             v-if="displayItem.workItem?.hasUpdates"
@@ -718,14 +728,15 @@ function sortableItemIds(container: HTMLElement): string[] {
         <SidebarMenuSubButton
           as="div"
           class="relative gap-1 pr-1"
-          :class="displayItem.url ? 'cursor-pointer' : 'cursor-default'"
+          :class="displayItem.url || isBookmarkFolder ? 'cursor-pointer' : 'cursor-default'"
+          :aria-expanded="isBookmarkFolder ? isExpanded : undefined"
           role="button"
           size="sm"
           tabindex="0"
           :is-active="displayItem.isActive"
-          @click="selectItem"
-          @keydown.enter.prevent="selectItem"
-          @keydown.space.prevent="selectItem"
+          @click="activateItem"
+          @keydown.enter.prevent="activateItem"
+          @keydown.space.prevent="activateItem"
         >
           <span
             v-if="displayItem.workItem?.hasUpdates"

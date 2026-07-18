@@ -1,9 +1,14 @@
 import type { GitHubOctokit } from '../transport'
 import type {
+  AddPullRequestReviewThreadOptions,
   ClosePullRequestOptions,
   CreatePullRequestCommentOptions,
+  DeletePendingPullRequestReviewOptions,
   GetPullRequestDetailOptions,
+  ReplyToPullRequestReviewThreadOptions,
   RequestPullRequestReviewersOptions,
+  ResolvePullRequestReviewThreadOptions,
+  SubmitPendingPullRequestReviewOptions,
   GitHubActor,
   GitHubCiState,
   GitHubCommitFile,
@@ -16,9 +21,12 @@ import type {
   GitHubPullRequestComment,
   GitHubPullRequestCommitSummary,
   GitHubPullRequestDetail,
+  GitHubPullRequestDiffSide,
   GitHubPullRequestLinkedIssue,
   GitHubPullRequestMergeMethod,
   GitHubPullRequestReviewComment,
+  GitHubPullRequestReviewThread,
+  GitHubPullRequestReviewThreadsResult,
   GitHubPullRequestReviewDecision,
   GitHubPullRequestReviewRequest,
   GitHubPullRequestReviewState,
@@ -169,6 +177,8 @@ interface GraphQLPullRequestReviewNode {
 
 interface GraphQLReviewCommentNode {
   id: string
+  databaseId?: number | null
+  state?: string | null
   body: string
   createdAt: string
   updatedAt: string
@@ -1625,6 +1635,138 @@ const markPullRequestReadyForReviewMutation = `
   }
 `
 
+interface GraphQLReviewThreadNode {
+  id: string
+  isResolved?: boolean | null
+  isOutdated?: boolean | null
+  path: string
+  line?: number | null
+  startLine?: number | null
+  diffSide?: string | null
+  startDiffSide?: string | null
+  viewerCanResolve?: boolean | null
+  viewerCanUnresolve?: boolean | null
+  viewerCanReply?: boolean | null
+  comments?: {
+    nodes?: Array<GraphQLReviewCommentNode | null> | null
+  } | null
+}
+
+interface PullRequestReviewThreadsResponse {
+  repository?: {
+    pullRequest?: {
+      reviewThreads?: {
+        nodes?: Array<GraphQLReviewThreadNode | null> | null
+      } | null
+      reviews?: {
+        nodes?: Array<{
+          id: string
+          body?: string | null
+          comments?: { totalCount?: number | null } | null
+        } | null> | null
+      } | null
+    } | null
+  } | null
+}
+
+const pullRequestReviewThreadsQuery = `
+  query PullRequestReviewThreads($owner: String!, $repo: String!, $number: Int!) {
+    repository(owner: $owner, name: $repo) {
+      pullRequest(number: $number) {
+        reviewThreads(first: 100) {
+          nodes {
+            id
+            isResolved
+            isOutdated
+            path
+            line
+            startLine
+            diffSide
+            startDiffSide
+            viewerCanResolve
+            viewerCanUnresolve
+            viewerCanReply
+            comments(first: 50) {
+              nodes {
+                id
+                databaseId
+                body
+                createdAt
+                updatedAt
+                url
+                path
+                diffHunk
+                line
+                originalLine
+                startLine
+                outdated
+                state
+                replyTo { id }
+                author { login avatarUrl }
+              }
+            }
+          }
+        }
+        reviews(states: [PENDING], first: 1) {
+          nodes {
+            id
+            body
+            comments(first: 1) { totalCount }
+          }
+        }
+      }
+    }
+  }
+`
+
+const addPullRequestReviewMutation = `
+  mutation AddPullRequestReview($pullRequestId: ID!, $event: PullRequestReviewEvent, $threads: [DraftPullRequestReviewThread]) {
+    addPullRequestReview(input: { pullRequestId: $pullRequestId, event: $event, threads: $threads }) {
+      pullRequestReview { id }
+    }
+  }
+`
+
+const addPullRequestReviewThreadMutation = `
+  mutation AddPullRequestReviewThread($reviewId: ID!, $path: String!, $line: Int!, $side: DiffSide, $startLine: Int, $startSide: DiffSide, $body: String!) {
+    addPullRequestReviewThread(input: { pullRequestReviewId: $reviewId, path: $path, line: $line, side: $side, startLine: $startLine, startSide: $startSide, body: $body }) {
+      thread { id }
+    }
+  }
+`
+
+const resolveReviewThreadMutation = `
+  mutation ResolveReviewThread($threadId: ID!) {
+    resolveReviewThread(input: { threadId: $threadId }) {
+      thread { id isResolved }
+    }
+  }
+`
+
+const unresolveReviewThreadMutation = `
+  mutation UnresolveReviewThread($threadId: ID!) {
+    unresolveReviewThread(input: { threadId: $threadId }) {
+      thread { id isResolved }
+    }
+  }
+`
+
+const submitPendingPullRequestReviewMutation = `
+  mutation SubmitPullRequestReview($reviewId: ID!, $event: PullRequestReviewEvent!, $body: String) {
+    submitPullRequestReview(input: { pullRequestReviewId: $reviewId, event: $event, body: $body }) {
+      pullRequestReview { id state }
+    }
+  }
+`
+
+const deletePendingPullRequestReviewMutation = `
+  mutation DeletePullRequestReview($reviewId: ID!) {
+    deletePullRequestReview(input: { pullRequestReviewId: $reviewId }) {
+      pullRequestReview { id }
+    }
+  }
+`
+
 const MAX_SEARCH_RESULTS = 1000
 
 export class PullsApi {
@@ -1878,6 +2020,100 @@ export class PullsApi {
       event: options.event,
       ...(options.body ? { body: options.body } : {})
     })
+  }
+
+  async listPullRequestReviewThreads(
+    options: GetPullRequestDetailOptions
+  ): Promise<GitHubPullRequestReviewThreadsResult> {
+    const response = await this.octokit.graphql<PullRequestReviewThreadsResponse>(
+      pullRequestReviewThreadsQuery,
+      {
+        owner: options.owner,
+        repo: options.repo,
+        number: options.number
+      }
+    )
+    const pullRequest = response.repository?.pullRequest
+
+    if (!pullRequest) {
+      throw new Error('Pull request not found')
+    }
+
+    const pendingNode = (pullRequest.reviews?.nodes ?? []).find((node) => node !== null) ?? null
+
+    return {
+      threads: mapReviewThreads(pullRequest.reviewThreads?.nodes),
+      pendingReview: pendingNode
+        ? {
+            id: pendingNode.id,
+            body: pendingNode.body ?? '',
+            commentCount: pendingNode.comments?.totalCount ?? 0
+          }
+        : null
+    }
+  }
+
+  async addPullRequestReviewThread(options: AddPullRequestReviewThreadOptions): Promise<void> {
+    const startLine = options.startLine ?? null
+    const startSide = startLine === null ? null : (options.startSide ?? options.side)
+
+    if (options.mode === 'review' && options.pendingReviewId) {
+      await this.octokit.graphql(addPullRequestReviewThreadMutation, {
+        reviewId: options.pendingReviewId,
+        path: options.path,
+        side: options.side,
+        line: options.line,
+        startLine,
+        startSide,
+        body: options.body
+      })
+      return
+    }
+
+    await this.octokit.graphql(addPullRequestReviewMutation, {
+      pullRequestId: normalizePullRequestNodeId(options.pullRequestId),
+      event: options.mode === 'single' ? 'COMMENT' : null,
+      threads: [
+        {
+          path: options.path,
+          side: options.side,
+          line: options.line,
+          startLine,
+          startSide,
+          body: options.body
+        }
+      ]
+    })
+  }
+
+  async replyToPullRequestReviewThread(options: ReplyToPullRequestReviewThreadOptions): Promise<void> {
+    await this.octokit.rest.pulls.createReplyForReviewComment({
+      owner: options.owner,
+      repo: options.repo,
+      pull_number: options.number,
+      comment_id: options.commentDatabaseId,
+      body: options.body
+    })
+  }
+
+  async resolvePullRequestReviewThread(options: ResolvePullRequestReviewThreadOptions): Promise<void> {
+    await this.octokit.graphql(resolveReviewThreadMutation, { threadId: options.threadId })
+  }
+
+  async unresolvePullRequestReviewThread(options: ResolvePullRequestReviewThreadOptions): Promise<void> {
+    await this.octokit.graphql(unresolveReviewThreadMutation, { threadId: options.threadId })
+  }
+
+  async submitPendingPullRequestReview(options: SubmitPendingPullRequestReviewOptions): Promise<void> {
+    await this.octokit.graphql(submitPendingPullRequestReviewMutation, {
+      reviewId: options.reviewId,
+      event: options.event,
+      body: options.body ?? null
+    })
+  }
+
+  async deletePendingPullRequestReview(options: DeletePendingPullRequestReviewOptions): Promise<void> {
+    await this.octokit.graphql(deletePendingPullRequestReviewMutation, { reviewId: options.reviewId })
   }
 
   async updatePullRequestComment(options: UpdatePullRequestCommentOptions): Promise<void> {
@@ -2307,6 +2543,7 @@ function mapReviewComments(
       {
         id: `pull-request-review-comment:${comment.id}`,
         nodeId: comment.id,
+        databaseId: comment.databaseId ?? null,
         author: normalizeActor(comment.author),
         body: comment.body,
         createdAt: comment.createdAt,
@@ -2323,6 +2560,36 @@ function mapReviewComments(
       }
     ]
   })
+}
+
+function mapReviewThreads(
+  nodes: Array<GraphQLReviewThreadNode | null> | null | undefined
+): GitHubPullRequestReviewThread[] {
+  return (nodes ?? []).flatMap((thread) => {
+    if (!thread) return []
+
+    return [
+      {
+        id: thread.id,
+        path: thread.path,
+        line: thread.line ?? null,
+        startLine: thread.startLine ?? null,
+        side: mapDiffSide(thread.diffSide) ?? 'RIGHT',
+        startSide: mapDiffSide(thread.startDiffSide),
+        isResolved: thread.isResolved ?? false,
+        isOutdated: thread.isOutdated ?? false,
+        isPending: (thread.comments?.nodes ?? []).some((comment) => comment?.state === 'PENDING'),
+        viewerCanResolve: thread.viewerCanResolve ?? false,
+        viewerCanUnresolve: thread.viewerCanUnresolve ?? false,
+        viewerCanReply: thread.viewerCanReply ?? false,
+        comments: mapReviewComments(thread.comments?.nodes)
+      }
+    ]
+  })
+}
+
+function mapDiffSide(value: string | null | undefined): GitHubPullRequestDiffSide | null {
+  return value === 'LEFT' || value === 'RIGHT' ? value : null
 }
 
 function mapLinkedIssues(

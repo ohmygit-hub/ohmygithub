@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   createActionRunWorkspaceUrl,
   createRepositoryWorkspaceUrl,
+  createTeamWorkspaceUrl,
   createWorkspaceTabFromUrl,
   normalizeWorkspaceUrl,
 } from './workspace-url'
@@ -84,5 +85,61 @@ describe('repository settings workspace URLs', () => {
       .toBe('/octo-org/hello-world?tab=settings-automation')
     expect(normalizeWorkspaceUrl('/octo-org/hello-world?tab=commits&sub=webhooks'))
       .toBe('/octo-org/hello-world?tab=commits')
+  })
+})
+
+describe('team workspace URLs', () => {
+  it('creates team urls with the members section as the default', () => {
+    expect(createTeamWorkspaceUrl('octo-org', 'core')).toBe('/orgs/octo-org/teams/core')
+    expect(createTeamWorkspaceUrl('octo-org', 'core', 'repositories'))
+      .toBe('/orgs/octo-org/teams/core?tab=repositories')
+  })
+
+  it('parses a team url into a team tab', () => {
+    expect(createWorkspaceTabFromUrl('/orgs/octo-org/teams/core')).toMatchObject({
+      type: 'team',
+      owner: 'octo-org',
+      teamSlug: 'core',
+      teamSection: 'members',
+      url: '/orgs/octo-org/teams/core',
+      title: '@octo-org/core',
+    })
+    expect(createWorkspaceTabFromUrl('/orgs/octo-org/teams/core?tab=settings')).toMatchObject({
+      type: 'team',
+      teamSection: 'settings',
+      url: '/orgs/octo-org/teams/core?tab=settings',
+    })
+  })
+
+  it('maps GitHub-style team sub paths onto section tabs', () => {
+    expect(normalizeWorkspaceUrl('/orgs/octo-org/teams/core/repositories'))
+      .toBe('/orgs/octo-org/teams/core?tab=repositories')
+    expect(normalizeWorkspaceUrl('/orgs/octo-org/teams/core/members'))
+      .toBe('/orgs/octo-org/teams/core')
+    expect(createWorkspaceTabFromUrl('/orgs/octo-org/teams/core/teams'))
+      .toMatchObject({ type: 'team', teamSection: 'teams' })
+  })
+
+  it('maps the org teams index to the account teams section', () => {
+    expect(normalizeWorkspaceUrl('/orgs/octo-org/teams')).toBe('/octo-org?tab=teams')
+    expect(createWorkspaceTabFromUrl('/orgs/octo-org/teams')).toMatchObject({
+      type: 'account',
+      owner: 'octo-org',
+      accountSection: 'teams',
+    })
+  })
+
+  it('maps a bare org path to the account tab', () => {
+    expect(normalizeWorkspaceUrl('/orgs/octo-org')).toBe('/octo-org')
+    expect(createWorkspaceTabFromUrl('/orgs/octo-org')).toMatchObject({
+      type: 'account',
+      owner: 'octo-org',
+      accountSection: 'overview',
+    })
+  })
+
+  it('drops invalid team sections back to members', () => {
+    expect(normalizeWorkspaceUrl('/orgs/octo-org/teams/core?tab=nope'))
+      .toBe('/orgs/octo-org/teams/core')
   })
 })

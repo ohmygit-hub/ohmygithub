@@ -35,6 +35,17 @@ const api = {
     cancelInvitation: (options: unknown) => ipcRenderer.invoke('organization-people:cancel-invitation', options),
     setMembershipVisibility: (options: unknown) => ipcRenderer.invoke('organization-people:set-visibility', options)
   },
+  organizationTeams: {
+    getTeams: (org: string) => ipcRenderer.invoke('organization-teams:get', org),
+    getTeamDetail: (options: unknown) => ipcRenderer.invoke('organization-teams:get-detail', options),
+    createTeam: (options: unknown) => ipcRenderer.invoke('organization-teams:create', options),
+    updateTeam: (options: unknown) => ipcRenderer.invoke('organization-teams:update', options),
+    deleteTeam: (options: unknown) => ipcRenderer.invoke('organization-teams:delete', options),
+    setTeamMembership: (options: unknown) => ipcRenderer.invoke('organization-teams:set-membership', options),
+    removeTeamMember: (options: unknown) => ipcRenderer.invoke('organization-teams:remove-member', options),
+    addOrUpdateTeamRepository: (options: unknown) => ipcRenderer.invoke('organization-teams:add-repository', options),
+    removeTeamRepository: (options: unknown) => ipcRenderer.invoke('organization-teams:remove-repository', options)
+  },
   actions: {
     listRepositoryWorkflows: (owner: string, repo: string) =>
       ipcRenderer.invoke('actions:list-workflows', owner, repo),
@@ -143,7 +154,19 @@ const api = {
     listPullRequestCommits: (owner: string, repo: string, number: number, page?: number, perPage?: number) =>
       ipcRenderer.invoke('pulls:list-commits', owner, repo, number, page, perPage),
     submitPullRequestReview: (owner: string, repo: string, number: number, options: unknown) =>
-      ipcRenderer.invoke('pulls:submit-review', owner, repo, number, options)
+      ipcRenderer.invoke('pulls:submit-review', owner, repo, number, options),
+    listPullRequestReviewThreads: (owner: string, repo: string, number: number) =>
+      ipcRenderer.invoke('pulls:list-review-threads', owner, repo, number),
+    addPullRequestReviewThread: (owner: string, repo: string, number: number, options: unknown) =>
+      ipcRenderer.invoke('pulls:add-review-thread', owner, repo, number, options),
+    replyToPullRequestReviewThread: (owner: string, repo: string, number: number, options: unknown) =>
+      ipcRenderer.invoke('pulls:reply-review-thread', owner, repo, number, options),
+    setPullRequestReviewThreadResolved: (owner: string, repo: string, threadId: string, resolved: boolean) =>
+      ipcRenderer.invoke('pulls:set-review-thread-resolved', owner, repo, threadId, resolved),
+    submitPendingPullRequestReview: (owner: string, repo: string, number: number, options: unknown) =>
+      ipcRenderer.invoke('pulls:submit-pending-review', owner, repo, number, options),
+    deletePendingPullRequestReview: (owner: string, repo: string, reviewId: string) =>
+      ipcRenderer.invoke('pulls:delete-pending-review', owner, repo, reviewId)
   },
   inbox: {
     listNotifications: (options?: { all?: boolean, participating?: boolean, limit?: number }) =>

@@ -771,7 +771,8 @@
       "stars": "Stars",
       "followers": "关注",
       "sponsors": "赞助",
-      "people": "成员"
+      "people": "成员",
+      "teams": "团队"
     },
     "sidebar": {
       "navigation": "账号导航"
@@ -827,6 +828,32 @@
         },
         "placeholder": "搜索 Star 仓库"
       }
+    },
+    "teams": {
+      "title": "团队（{count}）",
+      "searchPlaceholder": "搜索团队",
+      "actions": {
+        "create": "新建团队",
+        "expand": "展开子团队",
+        "collapse": "收起子团队"
+      },
+      "missingAdminScope": "管理团队需要 {scopes} 权限，请重新授权 GitHub 后再试。",
+      "error": {
+        "title": "无法加载团队",
+        "description": "团队列表加载失败，请检查访问权限后重试。"
+      },
+      "empty": {
+        "none": {
+          "title": "还没有团队",
+          "description": "该组织还没有对你可见的团队。"
+        },
+        "filtered": {
+          "title": "没有匹配的团队",
+          "description": "没有符合搜索条件的团队。"
+        }
+      },
+      "truncated": "仅显示前若干团队，完整列表请前往 GitHub 查看。",
+      "meta": "{members} 名成员 · {repos} 个仓库"
     }
   },
   "repositoryCard": {
@@ -866,6 +893,9 @@
     "verified": "已验证"
   },
   "repository": {
+    "star": {
+      "error": "无法更新 Star，请重试。"
+    },
     "description": "{repository} 的仓库导航已经准备好。真实仓库数据会在这里继续接入。",
     "eyebrow": "仓库",
     "ownerFallback": "Owner",
@@ -1846,7 +1876,9 @@
           "addPlaceholder": "团队 slug",
           "remove": "移除团队",
           "empty": "还没有团队拥有此仓库的访问权限。",
-          "addTitle": "添加团队"
+          "addTitle": "添加团队",
+          "pickerPlaceholder": "搜索团队",
+          "pickerEmpty": "没有匹配的团队"
         },
         "moderation": {
           "title": "互动限制",
@@ -2130,6 +2162,30 @@
     }
   },
   "pullRequest": {
+    "toasts": {
+      "commentPosted": "评论已发布",
+      "commentUpdated": "评论已更新",
+      "bodyUpdated": "描述已更新",
+      "titleUpdated": "标题已更新",
+      "assigneesUpdated": "负责人已更新",
+      "labelsUpdated": "标签已更新",
+      "milestoneUpdated": "里程碑已更新",
+      "reviewersAdded": "已添加 Reviewer：{logins}",
+      "reviewersRemoved": "已移除 Reviewer：{logins}",
+      "merged": "Pull Request 已合并",
+      "closed": "Pull Request 已关闭",
+      "readyForReview": "已标记为 Ready for review",
+      "reviewApproved": "已批准该 Pull Request",
+      "reviewChangesRequested": "已请求修改",
+      "reviewCommented": "Review 评论已提交",
+      "subscribed": "已订阅通知",
+      "unsubscribed": "已取消订阅通知",
+      "locked": "对话已锁定",
+      "unlocked": "对话已解锁",
+      "updateFailed": "更新失败，请重试。",
+      "actionFailed": "操作失败，请重试。",
+      "reactionFailed": "无法更新表情回应，请重试。"
+    },
     "actions": {
       "close": "关闭 Pull Request",
       "copyUrl": "复制链接",
@@ -2279,7 +2335,48 @@
       "retry": "重试",
       "title": "提交 Review",
       "outdated": "已过时",
-      "reply": "回复了"
+      "reply": "回复了",
+      "diff": {
+        "viewThread": "查看评论线程"
+      },
+      "anchor": {
+        "commentingOn": "评论 {path} · {range}",
+        "oldSide": "（旧代码）",
+        "clear": "清除所选行"
+      },
+      "addSingleComment": "单条评论",
+      "addToReview": "加入 Review",
+      "singleDisabledPending": "存在待提交的 review，新评论将加入其中。",
+      "threadError": "评论添加失败，请重新选择行后重试。",
+      "pending": {
+        "count": "{count} 条待提交评论",
+        "discard": "丢弃 Review",
+        "discardTitle": "丢弃待提交的 review？",
+        "discardDescription": "所有待提交的 review 评论都会被删除，且无法恢复。",
+        "discardConfirm": "丢弃",
+        "discardCancel": "取消",
+        "discardError": "待提交的 review 丢弃失败。"
+      },
+      "threads": {
+        "title": "Review 线程",
+        "pendingBadge": "待提交",
+        "outdatedBadge": "已过期",
+        "resolvedBadge": "已解决",
+        "outdatedLine": "位置已过期",
+        "resolve": "标记解决",
+        "unresolve": "取消解决",
+        "reply": "回复",
+        "replyError": "回复发送失败，请重试。",
+        "resolveError": "线程状态更新失败，请重试。",
+        "errorTitle": "无法加载 review 线程",
+        "errorDescription": "review 线程加载失败，请检查网络后重试。"
+      },
+      "replyComposer": {
+        "inputLabel": "回复 review 线程",
+        "placeholder": "写下回复",
+        "emptyPreview": "暂无可预览内容。",
+        "submit": "回复"
+      }
     },
     "reviewDecision": {
       "approved": "已批准",
@@ -2442,6 +2539,29 @@
     "description": "{category} 分类下的 Pull Request。"
   },
   "issue": {
+    "toasts": {
+      "commentPosted": "评论已发布",
+      "commentUpdated": "评论已更新",
+      "bodyUpdated": "描述已更新",
+      "titleUpdated": "标题已更新",
+      "assigneesUpdated": "负责人已更新",
+      "labelsUpdated": "标签已更新",
+      "milestoneUpdated": "里程碑已更新",
+      "closedCompleted": "Issue 已关闭为已完成",
+      "closedNotPlanned": "Issue 已关闭为不计划",
+      "reopened": "Issue 已重新打开",
+      "deleted": "Issue 已删除",
+      "deleteFailed": "删除 Issue 失败，请重试。",
+      "pinned": "Issue 已置顶",
+      "unpinned": "Issue 已取消置顶",
+      "subscribed": "已订阅通知",
+      "unsubscribed": "已取消订阅通知",
+      "locked": "对话已锁定",
+      "unlocked": "对话已解锁",
+      "updateFailed": "更新失败，请重试。",
+      "actionFailed": "操作失败，请重试。",
+      "reactionFailed": "无法更新表情回应，请重试。"
+    },
     "description": "{repository} {number} 已作为 Issue 工作页打开。讨论、标签和项目数据会在这里继续接入。",
     "eyebrow": "Issue",
     "actions": {
@@ -2853,8 +2973,10 @@
         "unavailable": "无法下载"
       },
       "empty": "当前没有打开预览。代码、图片、视频和 Markdown 预览会显示在这里。",
+      "expand": "展开预览面板",
       "open": "打开预览面板",
       "resize": "调整预览面板宽度",
+      "restoreWidth": "恢复预览面板宽度",
       "title": "预览"
     },
     "panel": {
@@ -2914,7 +3036,8 @@
         "notFound": "没有匹配这个输入的 GitHub 账号、组织或仓库。",
         "repo": "{owner}/{repo} 已作为仓库 tab 打开。本次只保留 URL、类型和占位面板。",
         "reviews": "把等待你处理的拉取请求和合并前检查放在一个可切换 tab 中。",
-        "searchResult": "结果从 GitHub Search API 加载。"
+        "searchResult": "结果从 GitHub Search API 加载。",
+        "team": "该团队已作为团队 tab 打开。本次只保留 URL、类型和占位面板。"
       },
       "eyebrows": {
         "account": "Account",
@@ -2930,7 +3053,8 @@
         "repo": "仓库",
         "review": "Review",
         "searchResult": "搜索",
-        "triage": "Triage"
+        "triage": "Triage",
+        "team": "团队"
       },
       "headings": {
         "account": "{owner}",
@@ -2946,7 +3070,8 @@
         "pullRequestList": "{title}",
         "repo": "{owner}/{repo}",
         "reviews": "Review Queue",
-        "searchResult": "{title}"
+        "searchResult": "{title}",
+        "team": "团队"
       },
       "stats": {
         "account": "账号",
@@ -2969,7 +3094,8 @@
         "status": "状态",
         "type": "类型",
         "unread": "未读",
-        "waiting": "等待"
+        "waiting": "等待",
+        "team": "团队"
       },
       "values": {
         "account": "账号",
@@ -3079,5 +3205,157 @@
   "userSearch": {
     "empty": "没有匹配的用户",
     "searching": "正在搜索用户…"
+  },
+  "teams": {
+    "sections": {
+      "members": "成员",
+      "repositories": "仓库",
+      "teams": "子团队",
+      "settings": "设置"
+    },
+    "sidebar": {
+      "navigation": "团队分区"
+    },
+    "header": {
+      "parent": "父团队："
+    },
+    "privacy": {
+      "visible": "可见",
+      "secret": "私密"
+    },
+    "role": {
+      "member": "成员",
+      "maintainer": "维护者"
+    },
+    "toasts": {
+      "errorTitle": "团队操作失败"
+    },
+    "error": {
+      "title": "无法加载团队",
+      "description": "团队加载失败，请检查访问权限后重试。"
+    },
+    "empty": {
+      "title": "未找到团队",
+      "description": "该团队可能不存在，或你没有访问权限。"
+    },
+    "create": {
+      "title": "新建团队",
+      "description": "在 {org} 中创建团队。",
+      "nameLabel": "团队名称",
+      "namePlaceholder": "例如 platform-core",
+      "descriptionLabel": "描述",
+      "descriptionPlaceholder": "这个团队负责什么？",
+      "optional": "可选",
+      "privacyLabel": "可见性",
+      "privacyLockedHint": "子团队必须对组织保持可见。",
+      "parentLabel": "父团队",
+      "parentPlaceholder": "搜索团队",
+      "parentEmpty": "没有匹配的团队",
+      "clearParent": "清除",
+      "cancel": "取消",
+      "submit": "创建团队",
+      "success": "已创建团队 {name}"
+    },
+    "members": {
+      "title": "成员（{count}）",
+      "you": "你",
+      "truncated": "仅显示前若干成员。",
+      "roleSelectLabel": "更改 {login} 的角色",
+      "actions": {
+        "add": "添加成员",
+        "remove": "将 {login} 移出团队"
+      },
+      "empty": {
+        "title": "暂无成员",
+        "description": "该团队还没有直属成员。"
+      },
+      "toasts": {
+        "added": "已添加 {login}",
+        "roleUpdated": "已更新 {login} 的角色",
+        "removed": "已移除 {login}"
+      },
+      "remove": {
+        "title": "移除 {login}？",
+        "description": "{login} 将被移出 {team} 团队。",
+        "cancel": "取消",
+        "confirm": "移除成员"
+      },
+      "add": {
+        "title": "添加成员",
+        "description": "将组织成员添加到 {team} 团队。",
+        "memberLabel": "成员",
+        "placeholder": "搜索组织成员",
+        "empty": "没有匹配的成员",
+        "roleLabel": "角色",
+        "cancel": "取消",
+        "submit": "添加成员"
+      }
+    },
+    "repositories": {
+      "title": "仓库（{count}）",
+      "private": "私有",
+      "truncated": "仅显示前若干仓库。",
+      "permissionSelectLabel": "更改 {repo} 的权限",
+      "actions": {
+        "add": "添加仓库",
+        "remove": "移除对 {repo} 的访问"
+      },
+      "empty": {
+        "title": "暂无仓库",
+        "description": "该团队还没有任何仓库访问权限。"
+      },
+      "toasts": {
+        "added": "已添加 {repo}",
+        "removed": "已移除 {repo}"
+      },
+      "remove": {
+        "title": "移除 {repo}？",
+        "description": "{team} 团队将失去对 {repo} 的访问权限。",
+        "cancel": "取消",
+        "confirm": "移除访问"
+      },
+      "add": {
+        "title": "添加仓库",
+        "description": "授予 {team} 团队某个仓库的访问权限。",
+        "repoLabel": "仓库",
+        "placeholder": "搜索组织仓库",
+        "empty": "没有匹配的仓库",
+        "permissionLabel": "权限",
+        "cancel": "取消",
+        "submit": "添加仓库"
+      }
+    },
+    "childTeams": {
+      "title": "子团队（{count}）",
+      "actions": {
+        "create": "新建子团队"
+      },
+      "empty": {
+        "title": "暂无子团队",
+        "description": "该团队还没有子团队。"
+      }
+    },
+    "settings": {
+      "title": "团队设置",
+      "nameLabel": "团队名称",
+      "renameHint": "重命名会同时更改团队的 slug 和提及方式。",
+      "descriptionLabel": "描述",
+      "privacyLabel": "可见性",
+      "save": "保存更改",
+      "toasts": {
+        "saved": "已保存团队设置"
+      },
+      "dangerZone": {
+        "title": "危险操作",
+        "deleteDescription": "删除团队后无法恢复，其子团队将被提升为根团队。",
+        "delete": "删除团队",
+        "deleted": "已删除 {name}",
+        "confirmTitle": "删除 {name}？",
+        "confirmDescription": "{org} 中的 {name} 团队将被永久删除，其子团队将被提升为根团队。此操作无法撤销。",
+        "cancel": "取消",
+        "confirm": "删除团队",
+        "deleteTitle": "删除此团队"
+      }
+    }
   }
 }

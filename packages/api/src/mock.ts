@@ -45,6 +45,7 @@ import type {
   GitHubPullRequest,
   GitHubPullRequestComment,
   GitHubPullRequestDetail,
+  GitHubPullRequestReviewThreadsResult,
   GitHubPullRequestSearchResult,
   GitHubRelease,
   GitHubReleasePage,
@@ -1184,6 +1185,72 @@ export class MockGitHubClient implements GitHubClient {
   }
 
   async submitPullRequestReview(): Promise<void> {
+    return
+  }
+
+  async listPullRequestReviewThreads(): Promise<GitHubPullRequestReviewThreadsResult> {
+    return {
+      threads: [
+        {
+          id: 'mock-review-thread-1',
+          path: 'README.md',
+          line: 3,
+          startLine: null,
+          side: 'RIGHT',
+          startSide: null,
+          isResolved: false,
+          isOutdated: false,
+          isPending: false,
+          viewerCanResolve: true,
+          viewerCanUnresolve: true,
+          viewerCanReply: true,
+          comments: [
+            {
+              id: 'pull-request-review-comment:mock-review-comment-1',
+              nodeId: 'mock-review-comment-1',
+              databaseId: 1001,
+              author: { login: 'octocat' },
+              body: 'Consider rewording this line.',
+              createdAt: '2026-01-02T00:00:00Z',
+              updatedAt: '2026-01-02T00:00:00Z',
+              url: null,
+              path: 'README.md',
+              diffHunk: '@@ -1,2 +1,3 @@\n title\n+added line',
+              line: 3,
+              originalLine: 3,
+              startLine: null,
+              outdated: false,
+              isReply: false,
+              reactions: [],
+            },
+          ],
+        },
+      ],
+      pendingReview: null,
+    }
+  }
+
+  async addPullRequestReviewThread(): Promise<void> {
+    return
+  }
+
+  async replyToPullRequestReviewThread(): Promise<void> {
+    return
+  }
+
+  async resolvePullRequestReviewThread(): Promise<void> {
+    return
+  }
+
+  async unresolvePullRequestReviewThread(): Promise<void> {
+    return
+  }
+
+  async submitPendingPullRequestReview(): Promise<void> {
+    return
+  }
+
+  async deletePendingPullRequestReview(): Promise<void> {
     return
   }
 

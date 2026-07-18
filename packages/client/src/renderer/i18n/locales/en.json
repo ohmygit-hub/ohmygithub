@@ -771,7 +771,8 @@
       "stars": "Stars",
       "followers": "Followers",
       "sponsors": "Sponsors",
-      "people": "People"
+      "people": "People",
+      "teams": "Teams"
     },
     "sidebar": {
       "navigation": "Account navigation"
@@ -827,6 +828,32 @@
         },
         "placeholder": "Search starred repositories"
       }
+    },
+    "teams": {
+      "title": "Teams ({count})",
+      "searchPlaceholder": "Search teams",
+      "actions": {
+        "create": "New team",
+        "expand": "Expand child teams",
+        "collapse": "Collapse child teams"
+      },
+      "missingAdminScope": "Managing teams requires the {scopes} scope. Re-authorize GitHub to enable team management.",
+      "error": {
+        "title": "Unable to load teams",
+        "description": "Teams could not be loaded. Check your access and try again."
+      },
+      "empty": {
+        "none": {
+          "title": "No teams yet",
+          "description": "This organization has no teams visible to you."
+        },
+        "filtered": {
+          "title": "No matching teams",
+          "description": "No team matches your search."
+        }
+      },
+      "truncated": "Only the first teams are shown. Visit GitHub for the full list.",
+      "meta": "{members} members · {repos} repositories"
     }
   },
   "repositoryCard": {
@@ -866,6 +893,9 @@
     "verified": "Verified"
   },
   "repository": {
+    "star": {
+      "error": "Couldn't update star. Please try again."
+    },
     "description": "{repository} is ready for repository navigation. Real repository data will be connected here later.",
     "eyebrow": "Repository",
     "ownerFallback": "Owner",
@@ -1846,7 +1876,9 @@
           "addPlaceholder": "Team slug",
           "remove": "Remove team",
           "empty": "No teams have access to this repository.",
-          "addTitle": "Add team"
+          "addTitle": "Add team",
+          "pickerPlaceholder": "Search teams",
+          "pickerEmpty": "No matching teams"
         },
         "moderation": {
           "title": "Interaction limits",
@@ -2130,6 +2162,30 @@
     }
   },
   "pullRequest": {
+    "toasts": {
+      "commentPosted": "Comment posted",
+      "commentUpdated": "Comment updated",
+      "bodyUpdated": "Description updated",
+      "titleUpdated": "Title updated",
+      "assigneesUpdated": "Assignees updated",
+      "labelsUpdated": "Labels updated",
+      "milestoneUpdated": "Milestone updated",
+      "reviewersAdded": "Requested review from {logins}",
+      "reviewersRemoved": "Removed reviewer {logins}",
+      "merged": "Pull Request merged",
+      "closed": "Pull Request closed",
+      "readyForReview": "Marked ready for review",
+      "reviewApproved": "Pull Request approved",
+      "reviewChangesRequested": "Changes requested",
+      "reviewCommented": "Review comment submitted",
+      "subscribed": "Subscribed to notifications",
+      "unsubscribed": "Unsubscribed from notifications",
+      "locked": "Conversation locked",
+      "unlocked": "Conversation unlocked",
+      "updateFailed": "Update failed. Please try again.",
+      "actionFailed": "Action failed. Please try again.",
+      "reactionFailed": "Couldn't update reaction. Please try again."
+    },
     "actions": {
       "close": "Close pull request",
       "copyUrl": "Copy URL",
@@ -2279,7 +2335,48 @@
       "retry": "Retry",
       "title": "Submit a review",
       "outdated": "Outdated",
-      "reply": "replied"
+      "reply": "replied",
+      "diff": {
+        "viewThread": "View review thread"
+      },
+      "anchor": {
+        "commentingOn": "Commenting on {path} · {range}",
+        "oldSide": "(old code)",
+        "clear": "Clear selected lines"
+      },
+      "addSingleComment": "Add single comment",
+      "addToReview": "Add to review",
+      "singleDisabledPending": "You have a pending review; new comments join it.",
+      "threadError": "The comment could not be added. Reselect the lines and try again.",
+      "pending": {
+        "count": "{count} pending review comments",
+        "discard": "Discard review",
+        "discardTitle": "Discard pending review?",
+        "discardDescription": "All pending review comments will be deleted. This cannot be undone.",
+        "discardConfirm": "Discard",
+        "discardCancel": "Cancel",
+        "discardError": "The pending review could not be discarded."
+      },
+      "threads": {
+        "title": "Review threads",
+        "pendingBadge": "Pending",
+        "outdatedBadge": "Outdated",
+        "resolvedBadge": "Resolved",
+        "outdatedLine": "outdated location",
+        "resolve": "Resolve",
+        "unresolve": "Unresolve",
+        "reply": "Reply",
+        "replyError": "The reply could not be posted. Try again.",
+        "resolveError": "The thread state could not be updated. Try again.",
+        "errorTitle": "Could not load review threads",
+        "errorDescription": "Review threads could not be loaded. Check the connection and try again."
+      },
+      "replyComposer": {
+        "inputLabel": "Reply to review thread",
+        "placeholder": "Write a reply",
+        "emptyPreview": "Nothing to preview.",
+        "submit": "Reply"
+      }
     },
     "reviewDecision": {
       "approved": "Approved",
@@ -2442,6 +2539,29 @@
     "description": "Pull requests in the {category} category."
   },
   "issue": {
+    "toasts": {
+      "commentPosted": "Comment posted",
+      "commentUpdated": "Comment updated",
+      "bodyUpdated": "Description updated",
+      "titleUpdated": "Title updated",
+      "assigneesUpdated": "Assignees updated",
+      "labelsUpdated": "Labels updated",
+      "milestoneUpdated": "Milestone updated",
+      "closedCompleted": "Issue closed as completed",
+      "closedNotPlanned": "Issue closed as not planned",
+      "reopened": "Issue reopened",
+      "deleted": "Issue deleted",
+      "deleteFailed": "Failed to delete issue. Please try again.",
+      "pinned": "Issue pinned",
+      "unpinned": "Issue unpinned",
+      "subscribed": "Subscribed to notifications",
+      "unsubscribed": "Unsubscribed from notifications",
+      "locked": "Conversation locked",
+      "unlocked": "Conversation unlocked",
+      "updateFailed": "Update failed. Please try again.",
+      "actionFailed": "Action failed. Please try again.",
+      "reactionFailed": "Couldn't update reaction. Please try again."
+    },
     "description": "{repository} {number} is open as an issue workspace. Conversation, labels, and project data will be connected here later.",
     "eyebrow": "Issue",
     "actions": {
@@ -2853,8 +2973,10 @@
         "unavailable": "Download unavailable"
       },
       "empty": "No preview is open. Code, image, video, and Markdown previews will appear here.",
+      "expand": "Expand preview panel",
       "open": "Open preview panel",
       "resize": "Resize preview panel",
+      "restoreWidth": "Restore preview panel width",
       "title": "Preview"
     },
     "panel": {
@@ -2914,7 +3036,8 @@
         "notFound": "No GitHub account, organization, or repository matched this input.",
         "repo": "{owner}/{repo} is open as a repository tab. This version only keeps URL, type, and placeholder state.",
         "reviews": "Keep pull requests and merge checks in a focused tab that can grow into real data later.",
-        "searchResult": "Results are loaded from the GitHub Search API."
+        "searchResult": "Results are loaded from the GitHub Search API.",
+        "team": "This team is open as a team tab. This version only keeps URL, type, and placeholder state."
       },
       "eyebrows": {
         "account": "Account",
@@ -2930,7 +3053,8 @@
         "repo": "Repository",
         "review": "Review",
         "searchResult": "Search",
-        "triage": "Triage"
+        "triage": "Triage",
+        "team": "Team"
       },
       "headings": {
         "account": "{owner}",
@@ -2946,7 +3070,8 @@
         "pullRequestList": "{title}",
         "repo": "{owner}/{repo}",
         "reviews": "Review Queue",
-        "searchResult": "{title}"
+        "searchResult": "{title}",
+        "team": "Team"
       },
       "stats": {
         "account": "Account",
@@ -2969,7 +3094,8 @@
         "status": "Status",
         "type": "Type",
         "unread": "Unread",
-        "waiting": "Waiting"
+        "waiting": "Waiting",
+        "team": "Team"
       },
       "values": {
         "account": "Account",
@@ -3079,5 +3205,157 @@
   "userSearch": {
     "empty": "No matching users",
     "searching": "Searching users…"
+  },
+  "teams": {
+    "sections": {
+      "members": "Members",
+      "repositories": "Repositories",
+      "teams": "Child teams",
+      "settings": "Settings"
+    },
+    "sidebar": {
+      "navigation": "Team sections"
+    },
+    "header": {
+      "parent": "Parent:"
+    },
+    "privacy": {
+      "visible": "Visible",
+      "secret": "Secret"
+    },
+    "role": {
+      "member": "Member",
+      "maintainer": "Maintainer"
+    },
+    "toasts": {
+      "errorTitle": "Team action failed"
+    },
+    "error": {
+      "title": "Unable to load team",
+      "description": "The team could not be loaded. Check your access and try again."
+    },
+    "empty": {
+      "title": "Team not found",
+      "description": "This team may not exist, or you may not have access to it."
+    },
+    "create": {
+      "title": "New team",
+      "description": "Create a team in {org}.",
+      "nameLabel": "Team name",
+      "namePlaceholder": "e.g. platform-core",
+      "descriptionLabel": "Description",
+      "descriptionPlaceholder": "What is this team responsible for?",
+      "optional": "optional",
+      "privacyLabel": "Visibility",
+      "privacyLockedHint": "Child teams must stay visible to the organization.",
+      "parentLabel": "Parent team",
+      "parentPlaceholder": "Search teams",
+      "parentEmpty": "No matching teams",
+      "clearParent": "Clear",
+      "cancel": "Cancel",
+      "submit": "Create team",
+      "success": "Team {name} created"
+    },
+    "members": {
+      "title": "Members ({count})",
+      "you": "You",
+      "truncated": "Only the first members are shown.",
+      "roleSelectLabel": "Change role for {login}",
+      "actions": {
+        "add": "Add member",
+        "remove": "Remove {login} from the team"
+      },
+      "empty": {
+        "title": "No members",
+        "description": "This team has no direct members yet."
+      },
+      "toasts": {
+        "added": "Added {login}",
+        "roleUpdated": "Updated role for {login}",
+        "removed": "Removed {login}"
+      },
+      "remove": {
+        "title": "Remove {login}?",
+        "description": "{login} will be removed from the {team} team.",
+        "cancel": "Cancel",
+        "confirm": "Remove member"
+      },
+      "add": {
+        "title": "Add member",
+        "description": "Add an organization member to the {team} team.",
+        "memberLabel": "Member",
+        "placeholder": "Search organization members",
+        "empty": "No matching members",
+        "roleLabel": "Role",
+        "cancel": "Cancel",
+        "submit": "Add member"
+      }
+    },
+    "repositories": {
+      "title": "Repositories ({count})",
+      "private": "Private",
+      "truncated": "Only the first repositories are shown.",
+      "permissionSelectLabel": "Change permission for {repo}",
+      "actions": {
+        "add": "Add repository",
+        "remove": "Remove access to {repo}"
+      },
+      "empty": {
+        "title": "No repositories",
+        "description": "This team has no repository access yet."
+      },
+      "toasts": {
+        "added": "Added {repo}",
+        "removed": "Removed {repo}"
+      },
+      "remove": {
+        "title": "Remove {repo}?",
+        "description": "The {team} team will lose access to {repo}.",
+        "cancel": "Cancel",
+        "confirm": "Remove access"
+      },
+      "add": {
+        "title": "Add repository",
+        "description": "Grant the {team} team access to a repository.",
+        "repoLabel": "Repository",
+        "placeholder": "Search organization repositories",
+        "empty": "No matching repositories",
+        "permissionLabel": "Permission",
+        "cancel": "Cancel",
+        "submit": "Add repository"
+      }
+    },
+    "childTeams": {
+      "title": "Child teams ({count})",
+      "actions": {
+        "create": "New child team"
+      },
+      "empty": {
+        "title": "No child teams",
+        "description": "This team has no child teams yet."
+      }
+    },
+    "settings": {
+      "title": "Team settings",
+      "nameLabel": "Team name",
+      "renameHint": "Renaming changes the team slug and mentions.",
+      "descriptionLabel": "Description",
+      "privacyLabel": "Visibility",
+      "save": "Save changes",
+      "toasts": {
+        "saved": "Team settings saved"
+      },
+      "dangerZone": {
+        "title": "Danger zone",
+        "deleteDescription": "Deleting a team removes it permanently. Child teams are promoted to the root level.",
+        "delete": "Delete team",
+        "deleted": "Deleted {name}",
+        "confirmTitle": "Delete {name}?",
+        "confirmDescription": "The {name} team in {org} will be deleted permanently. Child teams will be promoted to the root level. This cannot be undone.",
+        "cancel": "Cancel",
+        "confirm": "Delete team",
+        "deleteTitle": "Delete this team"
+      }
+    }
   }
 }

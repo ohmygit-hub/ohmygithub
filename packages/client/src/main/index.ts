@@ -13,6 +13,7 @@ import { listRecentNotifications, registerInboxIpc } from './inbox'
 import { registerIssuesIpc } from './issues'
 import { registerLinksIpc } from './links'
 import { registerOrganizationPeopleIpc } from './organization-people'
+import { registerOrganizationTeamsIpc } from './organization-teams'
 import { registerPackagesIpc } from './packages'
 import { registerPinsIpc } from './pins'
 import { registerPullsIpc } from './pulls'
@@ -217,6 +218,7 @@ if (!gotSingleInstanceLock) {
     registerIssuesIpc()
     registerLinksIpc()
     registerOrganizationPeopleIpc()
+    registerOrganizationTeamsIpc()
     registerPackagesIpc()
     registerPinsIpc()
     registerPullsIpc()

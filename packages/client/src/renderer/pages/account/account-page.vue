@@ -14,6 +14,7 @@ import {
   LinkIcon,
   Mail,
   MapPin,
+  Network,
   Star,
   UserRound,
   Users,
@@ -43,12 +44,13 @@ import {
 } from '@/composables/github/use-accounts'
 import SectionSidebar from '@/components/navigation/section-sidebar.vue'
 import GitHubOrganizationAvatar from '@/components/github/github-organization-avatar.vue'
-import { createAccountWorkspaceUrl, createRepositoryWorkspaceUrl } from '@/pages/workspace/workspace-url'
+import { createAccountWorkspaceUrl, createRepositoryWorkspaceUrl, createTeamWorkspaceUrl } from '@/pages/workspace/workspace-url'
 import AccountOverviewSection from './components/account-overview-section.vue'
 import AccountRepositoryGrid from './components/account-repository-grid.vue'
 import AccountFollowersSection from './components/account-followers-section.vue'
 import AccountSponsorsSection from './components/account-sponsors-section.vue'
 import AccountPeopleSection from './components/account-people-section.vue'
+import AccountTeamsSection from './components/account-teams-section.vue'
 
 const props = defineProps<{
   tab: WorkspaceTab
@@ -75,6 +77,7 @@ const accountSections: Array<{ id: AccountTabId; icon: Component }> = [
   { id: 'repositories', icon: FileText },
   { id: 'stars', icon: Star },
   { id: 'people', icon: UsersRound },
+  { id: 'teams', icon: Network },
   { id: 'followers', icon: Users },
   { id: 'sponsors', icon: Heart },
 ]
@@ -158,7 +161,7 @@ const starsLists = computed(() => starsListsQuery.data.value ?? [])
 const visibleAccountSections = computed(() =>
   accountSections.filter((section) => {
     if (isOrganizationProfile.value) return section.id !== 'stars'
-    return section.id !== 'people'
+    return section.id !== 'people' && section.id !== 'teams'
   })
 )
 const sidebarItems = computed(() =>
@@ -268,7 +271,10 @@ watch(
     if (!currentProfile) return
 
     const isOrganization = currentProfile.type === 'Organization'
-    if ((isOrganization && section === 'stars') || (!isOrganization && section === 'people')) {
+    if (
+      (isOrganization && section === 'stars')
+      || (!isOrganization && (section === 'people' || section === 'teams'))
+    ) {
       setActiveSection('overview')
     }
   },
@@ -424,6 +430,12 @@ function selectRepository(repository: GitHubAccountRepository): void {
 
 function selectAccount(accountLogin: string): void {
   void router.push(createAccountWorkspaceUrl(accountLogin))
+}
+
+function selectTeam(teamSlug: string): void {
+  if (!hasLogin.value) return
+
+  void router.push(createTeamWorkspaceUrl(login.value, teamSlug))
 }
 
 function formatNumber(value: number): string {
@@ -677,6 +689,12 @@ function normalizeExternalUrl(value: string | null): string | null {
               :login="login"
               :viewer-login="viewer?.login ?? null"
               @select-account="selectAccount"
+            />
+
+            <AccountTeamsSection
+              v-else-if="activeSection === 'teams' && isOrganizationProfile"
+              :login="login"
+              @select-team="selectTeam"
             />
 
             <AccountRepositoryGrid

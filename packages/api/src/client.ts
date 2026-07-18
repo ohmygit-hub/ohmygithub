@@ -6,6 +6,7 @@ import { DeploymentsApi } from './modules/deployments'
 import { InboxApi } from './modules/inbox'
 import { IssuesApi } from './modules/issues'
 import { OrganizationPeopleApi } from './modules/organization-people'
+import { OrganizationTeamsApi } from './modules/organization-teams'
 import { PackagesApi } from './modules/packages'
 import { PullsApi } from './modules/pulls'
 import { ReleasesApi } from './modules/releases'
@@ -76,6 +77,7 @@ export interface GitHubApi extends GitHubClient {
   readonly inbox: InboxApi
   readonly issues: IssuesApi
   readonly organizationPeople: OrganizationPeopleApi
+  readonly organizationTeams: OrganizationTeamsApi
   readonly packages: PackagesApi
   readonly pulls: PullsApi
   readonly releases: ReleasesApi
@@ -99,6 +101,7 @@ export function createGitHubApi(options: GitHubApiOptions): GitHubApi {
   const inbox = new InboxApi(octokit)
   const issues = new IssuesApi(octokit)
   const organizationPeople = new OrganizationPeopleApi(octokit)
+  const organizationTeams = new OrganizationTeamsApi(octokit)
   const packages = new PackagesApi(octokit)
   const pulls = new PullsApi(octokit)
   const releases = new ReleasesApi(octokit)
@@ -121,6 +124,7 @@ export function createGitHubApi(options: GitHubApiOptions): GitHubApi {
     inbox,
     issues,
     organizationPeople,
+    organizationTeams,
     packages,
     pulls,
     releases,
@@ -212,6 +216,13 @@ export function createGitHubApi(options: GitHubApiOptions): GitHubApi {
     listPullRequestFiles: (options) => pulls.listPullRequestFiles(options),
     listPullRequestCommits: (options) => pulls.listPullRequestCommits(options),
     submitPullRequestReview: (options) => pulls.submitPullRequestReview(options),
+    listPullRequestReviewThreads: (options) => pulls.listPullRequestReviewThreads(options),
+    addPullRequestReviewThread: (options) => pulls.addPullRequestReviewThread(options),
+    replyToPullRequestReviewThread: (options) => pulls.replyToPullRequestReviewThread(options),
+    resolvePullRequestReviewThread: (options) => pulls.resolvePullRequestReviewThread(options),
+    unresolvePullRequestReviewThread: (options) => pulls.unresolvePullRequestReviewThread(options),
+    submitPendingPullRequestReview: (options) => pulls.submitPendingPullRequestReview(options),
+    deletePendingPullRequestReview: (options) => pulls.deletePendingPullRequestReview(options),
     listIssueCategory: (options) => issues.listIssueCategory(options),
     listViewerIssues: (options) => issues.listViewerIssues(options),
     listRepositoryIssues: (options) => issues.listRepositoryIssues(options),
